@@ -1,0 +1,1602 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>视频文案提取 - 创作魔方Content Cube</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Helvetica, Arial, sans-serif;
+            background: #f8fafc;
+            min-height: 100vh;
+            line-height: 1.6;
+            color: #1f2937;
+        }
+        
+        /* 复用首页header样式 */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #e5e7eb;
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 48px;
+        }
+        
+        .logo {
+            font-size: 22px;
+            font-weight: 600;
+            color: #1f2937;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            cursor: pointer;
+        }
+        
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 32px;
+            margin-left: 20px;
+        }
+        
+        .nav-menu li {
+            color: #374151;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+            font-size: 16px;
+            position: relative;
+            padding: 8px 0;
+        }
+        
+        .nav-menu li:hover {
+            color: #3b82f6;
+        }
+        
+        .nav-menu li.active {
+            color: #3b82f6;
+        }
+        
+        .nav-menu li::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: 0;
+            left: 0;
+            background: #3b82f6;
+            transition: width 0.3s;
+        }
+        
+        .nav-menu li:hover::after,
+        .nav-menu li.active::after {
+            width: 100%;
+        }
+        
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .balance-display {
+            background: #f3f4f6;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #374151;
+        }
+        
+        .balance-amount {
+            color: #dc2626;
+            font-weight: 600;
+        }
+        
+        /* 用户下拉菜单样式 - 从首页复制 */
+        .user-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.2s;
+            border: 2px solid #e5e7eb;
+        }
+        
+        .user-avatar:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            border-color: #3b82f6;
+        }
+        
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 50px;
+            background: white;
+            min-width: 300px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border-radius: 12px;
+            padding: 24px;
+            z-index: 1001;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .user-dropdown:hover .dropdown-content {
+            display: block;
+        }
+        
+        .user-info-header {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e5e7eb;
+            margin-bottom: 20px;
+        }
+        
+        .user-id {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        .user-balance {
+            color: #dc2626;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .vip-button {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.2s;
+        }
+        
+        .vip-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        
+        .api-token-section {
+            margin-bottom: 20px;
+        }
+        
+        .api-token-title {
+            color: #374151;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+        
+        .token-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: #f9fafb;
+            font-family: 'SF Mono', 'Monaco', monospace;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        
+        .token-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+        
+        .menu-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 16px 12px;
+            border-radius: 8px;
+            background: #f9fafb;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .menu-item:hover {
+            background: #f3f4f6;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+        }
+        
+        .menu-icon {
+            width: 32px;
+            height: 32px;
+            background: #3b82f6;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        .menu-text {
+            font-size: 12px;
+            color: #374151;
+            font-weight: 500;
+        }
+        
+        .main-container {
+            display: flex;
+            height: calc(100vh - 80px);
+        }
+        
+        /* 侧边栏 */
+        .sidebar {
+            width: 300px;
+            background: white;
+            border-right: 1px solid #e5e7eb;
+            padding: 24px;
+            overflow-y: auto;
+        }
+        
+        .sidebar-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .new-task-btn {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 24px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .new-task-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        
+        .history-list {
+            max-height: calc(100vh - 300px);
+            overflow-y: auto;
+        }
+        
+        .history-item {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .history-item:hover {
+            background: #f3f4f6;
+            border-color: #3b82f6;
+        }
+        
+        .history-item.active {
+            background: #eff6ff;
+            border-color: #3b82f6;
+        }
+        
+        .history-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 8px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .history-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: #6b7280;
+        }
+        
+        .history-status {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 500;
+        }
+        
+        .status-completed {
+            background: #dcfce7;
+            color: #166534;
+        }
+        
+        .status-processing {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .status-failed {
+            background: #fecaca;
+            color: #991b1b;
+        }
+        
+        .empty-history {
+            text-align: center;
+            color: #6b7280;
+            font-size: 14px;
+            padding: 40px 20px;
+        }
+        
+        /* 主内容区 */
+        .main-content {
+            flex: 1;
+            padding: 32px;
+            overflow-y: auto;
+        }
+        
+        .page-header {
+            margin-bottom: 32px;
+        }
+        
+        .page-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+        
+        .page-description {
+            font-size: 16px;
+            color: #6b7280;
+            margin-bottom: 16px;
+        }
+        
+        .supported-platforms {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        
+        .platform-badge {
+            background: #eff6ff;
+            color: #1d4ed8;
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 500;
+            border: 1px solid #dbeafe;
+        }
+        
+        /* 输入区域 */
+        .input-section {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 24px;
+        }
+        
+        .input-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .input-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        
+        .url-input-area {
+            margin-bottom: 20px;
+        }
+        
+        .url-textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            line-height: 1.5;
+            resize: vertical;
+            transition: border-color 0.2s;
+        }
+        
+        .url-textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .url-textarea::placeholder {
+            color: #9ca3af;
+        }
+        
+        /* 选项配置 - 全宽度 */
+        .options-section {
+            margin-bottom: 24px;
+        }
+        
+        .option-card {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        
+        .option-card:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+        }
+        
+        .option-card.selected {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+        
+        .option-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .option-checkbox {
+            width: 20px;
+            height: 20px;
+            margin-right: 12px;
+            accent-color: #3b82f6;
+        }
+        
+        .option-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        
+        .option-description {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        .option-cost {
+            font-size: 12px;
+            color: #dc2626;
+            font-weight: 500;
+        }
+        
+        /* 导出格式选择 */
+        .export-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 24px;
+        }
+        
+        .export-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 16px;
+        }
+        
+        .export-options {
+            display: flex;
+            gap: 16px;
+        }
+        
+        .export-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+        
+        .export-radio {
+            width: 18px;
+            height: 18px;
+            accent-color: #3b82f6;
+        }
+        
+        .export-label {
+            font-size: 14px;
+            color: #374151;
+            cursor: pointer;
+        }
+
+        /* 计费标准区域 */
+        .pricing-section {
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .pricing-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #0369a1;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pricing-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .pricing-item {
+            background: rgba(255, 255, 255, 0.5);
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid #bae6fd;
+        }
+
+        .pricing-type {
+            font-weight: 600;
+            color: #0369a1;
+            font-size: 14px;
+        }
+
+        .pricing-rate {
+            color: #0284c7;
+            font-size: 13px;
+        }
+
+        .pricing-note {
+            background: rgba(255, 255, 255, 0.7);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 13px;
+            color: #0369a1;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .membership-promo {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .membership-promo:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(245, 158, 11, 0.4);
+        }
+
+        .recharge-btn {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .recharge-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+        }
+        
+        /* 提交按钮区域 */
+        .submit-section {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        
+        .cost-preview {
+            background: #fef3c7;
+            border: 1px solid #fbbf24;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .cost-text {
+            font-size: 14px;
+            color: #92400e;
+            margin-bottom: 4px;
+        }
+        
+        .cost-amount {
+            font-size: 18px;
+            font-weight: 600;
+            color: #dc2626;
+        }
+        
+        .submit-btn {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+        }
+        
+        .submit-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
+        }
+        
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        /* 结果区域 */
+        .result-section {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-top: 24px;
+            display: none;
+        }
+        
+        .result-section.show {
+            display: block;
+        }
+        
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .result-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        
+        .result-actions {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .action-btn {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .action-btn:hover {
+            background: #2563eb;
+        }
+        
+        .result-preview {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            background: #f9fafb;
+            font-size: 14px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+        
+        .result-stats {
+            display: flex;
+            gap: 24px;
+            margin: 16px 0;
+            font-size: 12px;
+            color: #6b7280;
+        }
+        
+        /* 进度条 */
+        .progress-section {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-top: 24px;
+            display: none;
+        }
+        
+        .progress-section.show {
+            display: block;
+        }
+        
+        .progress-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .progress-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+        
+        .progress-status {
+            font-size: 14px;
+            color: #6b7280;
+        }
+        
+        .progress-bar-container {
+            background: #e5e7eb;
+            border-radius: 8px;
+            height: 8px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 8px;
+            transition: width 0.3s;
+            width: 0%;
+        }
+        
+        .progress-percentage {
+            text-align: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        /* 使用说明 */
+        .help-section {
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .help-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #0369a1;
+            margin-bottom: 8px;
+        }
+        
+        .help-list {
+            list-style: none;
+            font-size: 13px;
+            color: #0369a1;
+        }
+        
+        .help-list li {
+            margin-bottom: 4px;
+        }
+        
+        .help-list li::before {
+            content: "• ";
+            color: #3b82f6;
+            font-weight: bold;
+        }
+        
+        @media (max-width: 1024px) {
+            .main-container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: auto;
+                border-right: none;
+                border-bottom: 1px solid #e5e7eb;
+            }
+            
+            .pricing-list {
+                grid-template-columns: 1fr;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .nav-menu {
+                display: none;
+            }
+            
+            .header-left {
+                gap: 20px;
+            }
+            
+            .main-content {
+                padding: 16px;
+            }
+            
+            .sidebar {
+                padding: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-left">
+            <div class="logo" onclick="goToHome()">创作魔方Content Cube</div>
+            <ul class="nav-menu">
+                <li onclick="goToHome()">首页</li>
+                <li onclick="goToAiReduce()">文章降AI率</li>
+                <li class="active">视频文案提取</li>
+                <li onclick="goToPromptGenerator()">提示词生成器</li>
+                <li onclick="goToWorkflowStore()">工作流商店</li>
+                <li onclick="goToCourseStore()">课程商店</li>
+                <li onclick="goToAutoPublish()">全平台爆款文案创作</li>
+                <li onclick="goToAiToolbox()">智能体工具箱</li>
+            </ul>
+        </div>
+        <div class="header-right">
+            <div class="balance-display">
+                余额: <span class="balance-amount">¥8.76</span>
+            </div>
+            <div class="user-dropdown">
+                <div class="user-avatar">O</div>
+                <div class="dropdown-content">
+                    <div class="user-info-header">
+                        <div class="user-id">ID: 253855 <button onclick="copyId()" style="border:none;background:#3b82f6;color:white;padding:4px 8px;border-radius:6px;font-size:12px;cursor:pointer;">复制</button></div>
+                        <div class="user-balance">余额: ¥8.76</div>
+                        <div style="font-size:12px;color:#6b7280;margin-bottom:16px;">余额即将耗尽，前往充值</div>
+                        <button class="vip-button">👑 成为会员</button>
+                    </div>
+                    
+                    <div class="api-token-section">
+                        <div class="api-token-title">API Token （插件密钥）</div>
+                        <input type="password" class="token-input" value="sk-proj-abc123defg456hijklmn789" readonly>
+                        <div style="display:flex;gap:8px;margin-top:12px;">
+                            <button onclick="copyToken()" style="flex:1;background:#3b82f6;color:white;border:none;padding:8px;border-radius:6px;cursor:pointer;font-size:12px;">📋 复制</button>
+                            <button onclick="refreshToken()" style="flex:1;background:#6b7280;color:white;border:none;padding:8px;border-radius:6px;cursor:pointer;font-size:12px;">🔄 更新</button>
+                        </div>
+                    </div>
+                    
+                    <div class="menu-grid">
+                        <div class="menu-item" onclick="goToUserCenter()">
+                            <div class="menu-icon">👤</div>
+                            <div class="menu-text">个人中心</div>
+                        </div>
+                        <div class="menu-item" onclick="goToVipPurchase()">
+                            <div class="menu-icon">👑</div>
+                            <div class="menu-text">会员购买</div>
+                        </div>
+                        <div class="menu-item" onclick="goToRecharge()">
+                            <div class="menu-icon">💳</div>
+                            <div class="menu-text">个人充值</div>
+                        </div>
+                        <div class="menu-item" onclick="goToPricing()">
+                            <div class="menu-icon">📖</div>
+                            <div class="menu-text">计费标准</div>
+                        </div>
+                        <div class="menu-item" onclick="goToWorkflowSystem()">
+                            <div class="menu-icon">⚙️</div>
+                            <div class="menu-text">工单系统</div>
+                        </div>
+                        <div class="menu-item" onclick="goToVideoGeneration()">
+                            <div class="menu-icon">📹</div>
+                            <div class="menu-text">查看生成任务</div>
+                        </div>
+                        <div class="menu-item" onclick="goToConsumptionDetails()">
+                            <div class="menu-icon">🕒</div>
+                            <div class="menu-text">消费明细</div>
+                        </div>
+                        <div class="menu-item" onclick="goToOfficialNews()">
+                            <div class="menu-icon">📘</div>
+                            <div class="menu-text">官方动态 <span style="background:#dc2626;color:white;border-radius:10px;font-size:10px;padding:2px 4px;margin-left:2px;">新</span></div>
+                        </div>
+                        <div class="menu-item" onclick="logout()">
+                            <div class="menu-icon">🚪</div>
+                            <div class="menu-text">退出登录</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-title">
+                📹 视频文案提取
+            </div>
+            
+            <button class="new-task-btn" onclick="startNewTask()">
+                ➕ 新建提取任务
+            </button>
+            
+            <div class="history-list" id="historyList">
+                <!-- 示例历史记录 -->
+                <div class="history-item active" onclick="loadHistoryItem(1)">
+                    <div class="history-title">抖音热门美食视频文案</div>
+                    <div class="history-meta">
+                        <span>2025-01-02 14:30</span>
+                        <span class="history-status status-completed">已完成</span>
+                    </div>
+                </div>
+                
+                <div class="history-item" onclick="loadHistoryItem(2)">
+                    <div class="history-title">小红书穿搭分享文案集</div>
+                    <div class="history-meta">
+                        <span>2025-01-01 16:45</span>
+                        <span class="history-status status-processing">处理中</span>
+                    </div>
+                </div>
+                
+                <div class="history-item" onclick="loadHistoryItem(3)">
+                    <div class="history-title">B站科技评测视频文案</div>
+                    <div class="history-meta">
+                        <span>2024-12-30 09:20</span>
+                        <span class="history-status status-failed">提取失败</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Page Header -->
+            <div class="page-header">
+                <h1 class="page-title">🎬 全平台短视频文案提取</h1>
+                <p class="page-description">一键提取短视频文案，支持抖音、小红书、B站、快手，自动纠错+Word输出，快速建立自己的文案库</p>
+                
+                <div class="supported-platforms">
+                    <span class="platform-badge">🎵 抖音</span>
+                    <span class="platform-badge">📱 小红书</span>
+                    <span class="platform-badge">📺 Bilibili</span>
+                    <span class="platform-badge">⚡ 快手</span>
+                </div>
+
+                <!-- 使用说明 -->
+                <div style="background: #fef3c7; border: 1px solid #fbbf24; border-radius: 8px; padding: 12px; margin-top: 16px; font-size: 13px; color: #92400e;">
+                    <strong>⚠️ 重要提醒：</strong>提取的视频文案仅用于交流、学习，请勿用于其他用途
+                </div>
+            </div>
+
+            <!-- Help Section -->
+            <div class="help-section">
+                <div class="help-title">💡 使用说明</div>
+                <ul class="help-list">
+                    <li>复制视频链接到输入框，支持分享链接和网页链接</li>
+                    <li>支持批量处理，没有视频数量上限</li>
+                    <li>智能纠错排版功能可自动修正字幕中的错别字、语法错误和标点符号，并优化文案格式</li>
+                    <li>支持导出Word文档，方便后续编辑和使用</li>
+                </ul>
+            </div>
+
+            <!-- Input Section -->
+            <div class="input-section">
+                <div class="input-header">
+                    <h3 class="input-title">输入视频链接</h3>
+                </div>
+                
+                <div class="url-input-area">
+                    <textarea 
+                        class="url-textarea" 
+                        id="urlInput" 
+                        placeholder="请输入视频链接，例如：
+• 抖音：https://v.douyin.com/xxxxxxx/
+• 小红书：http://xhslink.com/xxxxxxx
+• B站：https://www.bilibili.com/video/BVxxxxxxx
+• 快手：https://www.kuaishou.com/short-video/xxxxxxx
+
+支持同时输入多个链接，每行一个"
+                        oninput="updateCostPreview()"
+                    ></textarea>
+                </div>
+            </div>
+
+            <!-- Options Section - 全宽度 -->
+            <div class="options-section">
+                <div class="option-card" onclick="toggleOption('smartProcessing')">
+                    <div class="option-header">
+                        <input type="checkbox" class="option-checkbox" id="smartProcessingBox">
+                        <h4 class="option-title">🔍✨ 智能纠错排版</h4>
+                    </div>
+                    <p class="option-description">使用AI技术自动修正视频字幕中的错别字、语法错误和标点符号，同时优化文案格式，添加合适的换行、段落分隔，让内容更易阅读和更加专业规范</p>
+                    <p class="option-cost">额外消耗：每次使用 0.01 积分，处理时间 +30秒</p>
+                </div>
+            </div>
+
+            <!-- Export Section -->
+            <div class="export-section">
+                <h3 class="export-title">📄 导出格式</h3>
+                <div class="export-options">
+                    <label class="export-option">
+                        <input type="radio" class="export-radio" name="exportFormat" value="word" checked>
+                        <span class="export-label">📄 Word文档 (.docx)</span>
+                    </label>
+                    <label class="export-option">
+                        <input type="radio" class="export-radio" name="exportFormat" value="txt">
+                        <span class="export-label">📝 纯文本 (.txt)</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Pricing Section -->
+            <div class="pricing-section">
+                <div class="pricing-title">💰 计费标准</div>
+                <div class="pricing-list">
+                    <div class="pricing-item">
+                        <div class="pricing-type">月费会员</div>
+                        <div class="pricing-rate">0.07积分/分钟</div>
+                    </div>
+                    <div class="pricing-item">
+                        <div class="pricing-type">年费会员</div>
+                        <div class="pricing-rate">0.05积分/分钟</div>
+                    </div>
+                    <div class="pricing-item">
+                        <div class="pricing-type">非会员用户</div>
+                        <div class="pricing-rate">0.1积分/分钟</div>
+                    </div>
+                </div>
+                <div class="pricing-note">
+                    <strong>充值说明：</strong>1元 = 1积分，最低充值10元起
+                </div>
+                <div class="button-group">
+                    <button class="membership-promo" onclick="goToMembershipPromo()">
+                        🔥 限时八折 开通文案提取会员
+                    </button>
+                    <button class="recharge-btn" onclick="goToRecharge()">
+                        💳 提取额度充值
+                    </button>
+                </div>
+            </div>
+
+            <!-- Submit Section -->
+            <div class="submit-section">
+                <div class="cost-preview" id="costPreview">
+                    <div class="cost-text">预计消耗点数：</div>
+                    <div class="cost-amount">0 点数</div>
+                </div>
+                
+                <button class="submit-btn" id="submitBtn" onclick="startExtraction()">
+                    🚀 开始提取文案
+                </button>
+            </div>
+
+            <!-- Progress Section -->
+            <div class="progress-section" id="progressSection">
+                <div class="progress-header">
+                    <div class="progress-title">正在提取视频文案...</div>
+                    <div class="progress-status" id="progressStatus">准备中...</div>
+                </div>
+                
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+                
+                <div class="progress-percentage" id="progressPercentage">0%</div>
+            </div>
+
+            <!-- Result Section -->
+            <div class="result-section" id="resultSection">
+                <div class="result-header">
+                    <h3 class="result-title">提取结果</h3>
+                    <div class="result-actions">
+                        <button class="action-btn" onclick="downloadResult()">📥 下载</button>
+                        <button class="action-btn" onclick="copyResult()">📋 复制</button>
+                        <button class="action-btn" onclick="editResult()">✏️ 编辑</button>
+                    </div>
+                </div>
+                
+                <div class="result-stats">
+                    <span>总字数：<strong id="wordCount">0</strong></span>
+                    <span>视频数量：<strong id="videoCount">0</strong></span>
+                    <span>处理时间：<strong id="processTime">0</strong>秒</span>
+                </div>
+                
+                <div class="result-preview" id="resultPreview">
+                    这里将显示提取的文案内容...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let detectedLinks = [];
+        
+        // 视频链接正则表达式
+        const videoLinkPatterns = {
+            douyin: /(?:https?:\/\/)?(?:v\.douyin\.com|www\.douyin\.com|m\.douyin\.com)\/[^\s]+/gi,
+            xiaohongshu: /(?:https?:\/\/)?(?:xhslink\.com|www\.xiaohongshu\.com|www\.xhs\.com)\/[^\s]+/gi,
+            bilibili: /(?:https?:\/\/)?(?:www\.bilibili\.com|b23\.tv|bili2233\.cn)\/[^\s]+/gi,
+            kuaishou: /(?:https?:\/\/)?(?:www\.kuaishou\.com|v\.kuaishou\.com|ksnv\.com)\/[^\s]+/gi
+        };
+        
+        // 平台名称映射
+        const platformNames = {
+            douyin: '抖音',
+            xiaohongshu: '小红书',
+            bilibili: 'B站',
+            kuaishou: '快手'
+        };
+        
+        // 检测和提取视频链接
+        function detectVideoLinks(text) {
+            const links = [];
+            
+            Object.keys(videoLinkPatterns).forEach(platform => {
+                const pattern = videoLinkPatterns[platform];
+                const matches = text.match(pattern);
+                
+                if (matches) {
+                    matches.forEach(match => {
+                        // 清理链接，移除末尾的标点符号
+                        const cleanLink = match.replace(/[。，、；：""''（）【】'\s]*$/, '');
+                        if (cleanLink && !links.some(link => link.url === cleanLink)) {
+                            links.push({
+                                url: cleanLink,
+                                platform: platform,
+                                platformName: platformNames[platform]
+                            });
+                        }
+                    });
+                }
+            });
+            
+            return links;
+        }
+        
+        // 更新链接计数和预览
+        function updateLinkDetection() {
+            const input = document.getElementById('urlInput').value;
+            detectedLinks = detectVideoLinks(input);
+        }
+        
+        // 切换选项
+        function toggleOption(optionType) {
+            const checkbox = document.getElementById(optionType + 'Box');
+            const card = checkbox.closest('.option-card');
+            
+            checkbox.checked = !checkbox.checked;
+            if (checkbox.checked) {
+                card.classList.add('selected');
+            } else {
+                card.classList.remove('selected');
+            }
+            
+            updateCostPreview();
+        }
+        
+        // 更新费用预览 - 新的计费逻辑
+        function updateCostPreview() {
+            updateLinkDetection();
+            
+            const videoCount = detectedLinks.length;
+            let baseCost = videoCount * 1; // 基础提取 1 点数/视频
+            
+            if (document.getElementById('smartProcessingBox').checked) {
+                baseCost += 0.01; // 智能纠错排版 每次使用 0.01 积分
+            }
+            
+            document.querySelector('.cost-amount').textContent = baseCost + ' 点数';
+            
+            // 更新提交按钮状态
+            const submitBtn = document.getElementById('submitBtn');
+            if (videoCount > 0) {
+                submitBtn.disabled = false;
+                if (videoCount === 1) {
+                    submitBtn.innerHTML = `🚀 开始提取文案 (${videoCount}个视频)`;
+                } else {
+                    submitBtn.innerHTML = `🚀 批量提取文案 (${videoCount}个视频)`;
+                }
+            } else {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '🚀 开始提取文案';
+            }
+        }
+        
+        // 开始提取
+        function startExtraction() {
+            if (detectedLinks.length === 0) {
+                alert('请先输入视频链接');
+                return;
+            }
+            
+            const progressSection = document.getElementById('progressSection');
+            const resultSection = document.getElementById('resultSection');
+            
+            progressSection.classList.add('show');
+            resultSection.classList.remove('show');
+            
+            // 模拟提取过程
+            simulateProgress();
+        }
+        
+        // 模拟进度
+        function simulateProgress() {
+            const progressBar = document.getElementById('progressBar');
+            const progressPercentage = document.getElementById('progressPercentage');
+            const progressStatus = document.getElementById('progressStatus');
+            
+            const stages = [
+                { progress: 10, status: `正在解析 ${detectedLinks.length} 个视频链接...` },
+                { progress: 30, status: '正在提取视频字幕和文案...' },
+                { progress: 60, status: '正在进行智能纠错排版处理...' },
+                { progress: 80, status: '正在优化文案格式...' },
+                { progress: 100, status: '所有视频文案提取完成！' }
+            ];
+            
+            let currentStage = 0;
+            
+            const updateProgress = () => {
+                if (currentStage < stages.length) {
+                    const stage = stages[currentStage];
+                    progressBar.style.width = stage.progress + '%';
+                    progressPercentage.textContent = stage.progress + '%';
+                    progressStatus.textContent = stage.status;
+                    
+                    currentStage++;
+                    setTimeout(updateProgress, 1500);
+                } else {
+                    // 提取完成，显示结果
+                    setTimeout(() => {
+                        showResult();
+                    }, 1000);
+                }
+            };
+            
+            updateProgress();
+        }
+        
+        // 显示结果
+        function showResult() {
+            const progressSection = document.getElementById('progressSection');
+            const resultSection = document.getElementById('resultSection');
+            
+            progressSection.classList.remove('show');
+            resultSection.classList.add('show');
+            
+            // 模拟结果数据
+            const wordCount = detectedLinks.length * 850 + Math.floor(Math.random() * 500);
+            document.getElementById('wordCount').textContent = wordCount.toLocaleString();
+            document.getElementById('videoCount').textContent = detectedLinks.length;
+            document.getElementById('processTime').textContent = Math.floor(detectedLinks.length * 15 + Math.random() * 20);
+            
+            // 根据检测到的平台生成示例结果
+            let sampleResult = '';
+            detectedLinks.forEach((link, index) => {
+                sampleResult += `【视频${index + 1}】${link.platformName}视频文案\n`;
+                
+                switch(link.platform) {
+                    case 'douyin':
+                        sampleResult += `今天给大家分享一个超实用的生活小技巧！
+只需要简单几步，让你的生活更便捷～
+
+步骤详解：
+1. 准备必要工具和材料
+2. 按照步骤操作
+3. 注意细节处理
+4. 完成最终效果
+
+#生活技巧 #实用分享 #必学技能
+
+`;
+                        break;
+                    case 'xiaohongshu':
+                        sampleResult += `✨今日分享✨
+
+这个方法真的太好用了！
+姐妹们一定要试试～
+
+📍详细步骤：
+• 第一步：xxx
+• 第二步：xxx
+• 第三步：xxx
+
+💡小贴士：记得注意这些细节哦
+
+#好物推荐 #生活分享 #必备技能
+
+`;
+                        break;
+                    case 'bilibili':
+                        sampleResult += `大家好，今天来详细测评这个产品
+
+测试维度：
+- 功能性表现：优秀
+- 使用体验：良好
+- 性价比分析：推荐
+
+总结：
+经过全面测试，这款产品在各方面表现都不错，值得推荐给有需要的朋友。详细的使用技巧和注意事项请看完整视频。
+
+`;
+                        break;
+                    case 'kuaishou':
+                        sampleResult += `老铁们，今天分享个好东西！
+
+这个方法我用了很久，效果特别好
+简单易学，大家都能上手
+
+具体操作：
+→ 步骤一：xxx
+→ 步骤二：xxx
+→ 步骤三：xxx
+
+记得点赞关注！更多实用内容持续更新！
+
+`;
+                        break;
+                }
+                
+                if (index < detectedLinks.length - 1) {
+                    sampleResult += '\n' + '='.repeat(50) + '\n\n';
+                }
+            });
+            
+            document.getElementById('resultPreview').textContent = sampleResult;
+        }
+        
+        // 下载结果
+        function downloadResult() {
+            const format = document.querySelector('input[name="exportFormat"]:checked').value;
+            const content = document.getElementById('resultPreview').textContent;
+            const filename = `视频文案提取_${detectedLinks.length}个视频_${new Date().getTime()}.${format === 'word' ? 'docx' : 'txt'}`;
+            
+            if (format === 'txt') {
+                const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(url);
+            } else {
+                alert('Word文档下载功能需要后端支持，这里仅为演示');
+            }
+        }
+        
+        // 复制结果
+        function copyResult() {
+            const content = document.getElementById('resultPreview').textContent;
+            navigator.clipboard.writeText(content).then(() => {
+                alert('文案已复制到剪贴板！');
+            });
+        }
+        
+        // 编辑结果
+        function editResult() {
+            const preview = document.getElementById('resultPreview');
+            const isEditing = preview.contentEditable === 'true';
+            
+            if (!isEditing) {
+                preview.contentEditable = 'true';
+                preview.style.border = '2px solid #3b82f6';
+                preview.focus();
+                event.target.textContent = '💾 保存编辑';
+            } else {
+                preview.contentEditable = 'false';
+                preview.style.border = '1px solid #e5e7eb';
+                event.target.textContent = '✏️ 编辑';
+                alert('编辑已保存！');
+            }
+        }
+        
+        // 加载历史记录
+        function loadHistoryItem(id) {
+            // 更新活跃状态
+            document.querySelectorAll('.history-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+            
+            // 这里可以加载对应的历史记录数据
+            alert(`加载历史记录 ${id}`);
+        }
+        
+        // 开始新任务
+        function startNewTask() {
+            // 重置表单
+            document.getElementById('urlInput').value = '';
+            document.querySelectorAll('.option-checkbox').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            document.querySelectorAll('.option-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            document.getElementById('progressSection').classList.remove('show');
+            document.getElementById('resultSection').classList.remove('show');
+            
+            detectedLinks = [];
+            updateCostPreview();
+        }
+        
+        // 导航函数
+        function goToHome() { window.location.href = 'index.html'; }
+        function goToAiReduce() { alert('跳转到文章降AI率页面'); }
+        function goToPromptGenerator() { alert('跳转到提示词生成器页面'); }
+        function goToWorkflowStore() { alert('跳转到工作流商店页面'); }
+        function goToCourseStore() { alert('跳转到课程商店页面'); }
+        function goToAutoPublish() { alert('跳转到全平台爆款文案创作页面'); }
+        function goToAiToolbox() { alert('跳转到智能体工具箱页面'); }
+        function goToMembershipPromo() { alert('跳转到文案提取会员购买页面'); }
+        
+        // 用户中心相关函数
+        function copyId() { 
+            navigator.clipboard.writeText('253855');
+            alert('用户ID已复制到剪贴板');
+        }
+        
+        function copyToken() {
+            navigator.clipboard.writeText('sk-proj-abc123defg456hijklmn789');
+            alert('API Token已复制到剪贴板');
+        }
+        
+        function refreshToken() { alert('API Token已更新'); }
+        function goToUserCenter() { alert('跳转到个人中心'); }
+        function goToVipPurchase() { alert('跳转到会员购买页面'); }
+        function goToRecharge() { alert('跳转到个人充值页面'); }
+        function goToPricing() { alert('查看计费标准'); }
+        function goToWorkflowSystem() { alert('进入工单系统'); }
+        function goToVideoGeneration() { alert('查看生成任务'); }
+        function goToConsumptionDetails() { alert('查看消费明细'); }
+        function goToOfficialNews() { alert('查看官方动态'); }
+        function logout() { 
+            if(confirm('确认要退出登录吗？')) {
+                alert('已退出登录');
+            }
+        }
+        
+        // 用户下拉菜单的悬停延迟处理
+        let dropdownTimer;
+        
+        function showDropdown() {
+            clearTimeout(dropdownTimer);
+            const dropdown = document.querySelector('.dropdown-content');
+            if (dropdown) {
+                dropdown.style.opacity = '1';
+                dropdown.style.visibility = 'visible';
+            }
+        }
+        
+        function hideDropdownWithDelay() {
+            dropdownTimer = setTimeout(() => {
+                const dropdown = document.querySelector('.dropdown-content');
+                if (dropdown) {
+                    dropdown.style.opacity = '0';
+                    dropdown.style.visibility = 'hidden';
+                }
+            }, 300); // 300ms延迟
+        }
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 绑定输入事件，实时检测链接
+            const urlInput = document.getElementById('urlInput');
+            if (urlInput) {
+                urlInput.addEventListener('input', updateCostPreview);
+            }
+            
+            // 绑定用户头像和下拉菜单的鼠标事件
+            const userDropdown = document.querySelector('.user-dropdown');
+            const dropdownContent = document.querySelector('.dropdown-content');
+            
+            if (userDropdown && dropdownContent) {
+                userDropdown.addEventListener('mouseenter', showDropdown);
+                userDropdown.addEventListener('mouseleave', hideDropdownWithDelay);
+                dropdownContent.addEventListener('mouseenter', showDropdown);
+                dropdownContent.addEventListener('mouseleave', hideDropdownWithDelay);
+            }
+            
+            updateCostPreview();
+        });
+    </script>
+</body>
+</html>

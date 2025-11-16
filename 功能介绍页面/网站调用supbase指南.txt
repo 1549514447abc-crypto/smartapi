@@ -1,0 +1,425 @@
+🔌 网站调用Supabase完全指南
+给网站开发者的完整API调用文档
+更新时间：2025-10-30
+数据流向（双向Webhook）
+网站 → Supabase (网站数据库Webhook触发)：
+用户注册 → 网站写入用户和余额 （注册默认送1元余额）→ 网站数据库触发Webhook → 调用Supabase API同步
+用户充值 → 网站更新余额 → 网站数据库触发Webhook → 调用Supabase API同步
+申请API Key → 网站写入 → 网站数据库触发Webhook → 调用Supabase API同步
+手动调整余额 → 网站更新 → 网站数据库触发Webhook → 调用Supabase API同步
+Supabase → 网站 (Supabase数据库Webhook触发)：
+插件扣费 → Supabase更新余额 → Supabase触发Webhook → 调用网站API同步
+双向同步测试
+网站→Supabase：注册用户，Supabase能查到余额¥1
+网站→Supabase：注册用户，Supabase能查到自动生成的API Key
+网站→Supabase：充值成功，Supabase余额正确更新
+网站→Supabase：用户更新API Key，Supabase能同步显示新key
+Supabase→网站：插件扣费，Webhook触发，网站余额同步
+Supabase→网站：检查网站balance_logs有消费记录
+双向验证：充值后两边余额一致，扣费后两边余额一致
+Webhook配置测试
+Supabase Webhook配置正确，能成功调用网站接口
+网站接收端验证签名正常
+Webhook失败时有重试机制或日志记录
+一、Supabase连接信息
+环境变量：supabase的url和api key
+SUPABASE_URL=https://xgpyeoovmckpbphwaqoc.supabase.co
+SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhncHllb292bWNrcGJwaHdhcW9jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3ODI3NTYsImV4cCI6MjA2NzM1ODc1Nn0.USIqRvWF5c865h7KYa5plcr5wz0f_gnyrDvS7NqCrro
+
+​
+基础请求头
+const headers = {
+  'apikey': SUPABASE_KEY,
+  'Content-Type': 'application/json',
+  'Authorization': `Bearer ${SUPABASE_KEY}`
+}
+
+​
+二、网站需要操作的表（3张核心表）
+说明：Supabase只保留插件运行必需的表。
+表1: unified_users - 用户余额表
+完整字段列表：
+user_id             TEXT PRIMARY KEY        -- 用户ID（对应网站用户ID）
+balance             NUMERIC(10, 4)          -- 当前余额
+total_recharged     NUMERIC(10, 4)          -- 累计充值金额
+total_consumed      NUMERIC(10, 4)          -- 累计消费金额
+status              TEXT                    -- active/suspended/banned
+created_at          TIMESTAMPTZ             -- 创建时间
+updated_at          TIMESTAMPTZ             -- 更新时间
+
+​
+网站操作场景：
+用户注册 → 创建用户
+用户充值 → 更新余额
+手动调整余额 → 更新余额
+表2: unified_api_keys - API密钥表
+完整字段列表：
+api_key             TEXT PRIMARY KEY        -- API密钥（sk_{random}）
+user_id             TEXT                    -- 关联用户ID
+key_name            TEXT                    -- 密钥名称（如"默认密钥"）
+status              TEXT                    -- active/inactive
+created_at          TIMESTAMPTZ             -- 创建时间
+last_used_at        TIMESTAMPTZ             -- 最后使用时间
+total_calls         INTEGER                 -- 总调用次数
+expires_at          TIMESTAMPTZ             -- 过期时间（NULL=永不过期）
+
+​
+网站操作场景：
+用户注册 → 网站自动生成1个API Key
+用户创建额外密钥 → 创建API Key
+用户更新密钥 → 删除旧Key + 创建新Key
+用户禁用密钥 → 更新status
+注意：API key需要完全随机生成，sk开头，密钥长度30位，总长度33，
+例如：
+sk_m4zr13vd53ppxwuel1joeorljy78tw
+​
+表3: service_configs - 服务配置表（只读）
+完整字段列表：
+service_name        TEXT PRIMARY KEY        -- 服务标识
+display_name        TEXT                    -- 显示名称
+unit_price          NUMERIC(10, 4)          -- 单价
+billing_unit        TEXT                    -- per_call/per_second/per_token
+is_active           BOOLEAN                 -- 是否启用
+description         TEXT                    -- 服务描述
+created_at          TIMESTAMPTZ             -- 创建时间
+updated_at          TIMESTAMPTZ             -- 更新时间
+
+​
+网站操作场景：
+查询服务列表和价格（展示给用户）
+不需要写入，只读取
+三、完整API调用示例
+场景1: 用户注册（创建用户 + 自动生成API Key）
+步骤1：创建用户并同步余额
+// POST请求创建/更新用户
+const response = await fetch(
+  `${SUPABASE_URL}/rest/v1/unified_users`,
+  {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'resolution=merge-duplicates' // 如果存在则更新
+    },
+    body: JSON.stringify({
+      user_id: 'u_1234567890_abc123',
+      balance: 1.00,
+      total_recharged: 0,
+      total_consumed: 0,
+      status: 'active'
+    })
+  }
+)
+
+const data = await response.json()
+console.log('用户创建成功:', data)
+
+​
+步骤2：自动生成API Key
+const crypto = require('crypto')
+
+// 生成API Key
+const api_key = 'sk_u_1234567890_abc123_' + crypto.randomBytes(16).toString('hex')
+
+// POST请求创建API Key
+const response = await fetch(
+  `${SUPABASE_URL}/rest/v1/unified_api_keys`,
+  {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      api_key: api_key,
+      user_id: 'u_1234567890_abc123',
+      key_name: '默认密钥',
+      status: 'active'
+    })
+  }
+)
+
+const data = await response.json()
+console.log('API Key创建成功:', api_key)
+
+​
+场景2: 用户充值（网站计算赠金 + 更新余额）
+说明：赠金规则在网站MySQL管理，网站计算好最终余额后同步到Supabase。
+网站端计算赠金（查询自己的MySQL）
+// 网站端代码 - 查询自己的MySQL bonus_configs表
+const recharge_amount = 100 // 用户充值¥100
+
+const bonusResult = await mysql.query(
+  'SELECT bonus_amount FROM bonus_configs WHERE recharge_amount = ? AND is_active = 1',
+  [recharge_amount]
+)
+
+const bonus_amount = bonusResult.length > 0 ? bonusResult[0].bonus_amount : 0 // 15
+const actual_amount = recharge_amount + bonus_amount // 100 + 15 = 115
+
+​
+更新Supabase余额
+// 先查询当前余额
+const userResponse = await fetch(
+  `${SUPABASE_URL}/rest/v1/unified_users?user_id=eq.u_1234567890_abc123&select=balance,total_recharged`,
+  {
+    method: 'GET',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Content-Type': 'application/json'
+    }
+  }
+)
+
+const users = await userResponse.json()
+const current_balance = users[0].balance
+const current_total_recharged = users[0].total_recharged
+
+// 更新余额
+const updateResponse = await fetch(
+  `${SUPABASE_URL}/rest/v1/unified_users?user_id=eq.u_1234567890_abc123`,
+  {
+    method: 'PATCH',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation' // 返回更新后的数据
+    },
+    body: JSON.stringify({
+      balance: current_balance + actual_amount, // 加上充值金额+赠金
+      total_recharged: current_total_recharged + recharge_amount // 只计实际充值，不含赠金
+    })
+  }
+)
+
+const updatedUser = await updateResponse.json()
+console.log('余额更新成功:', updatedUser)
+
+​
+场景3: 创建额外的API Key
+const crypto = require('crypto')
+
+// 生成新的API Key
+const new_api_key = 'sk_u_1234567890_abc123_' + crypto.randomBytes(16).toString('hex')
+
+// POST请求
+const response = await fetch(
+  `${SUPABASE_URL}/rest/v1/unified_api_keys`,
+  {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      api_key: new_api_key,
+      user_id: 'u_1234567890_abc123',
+      key_name: '我的新密钥',
+      status: 'active'
+    })
+  }
+)
+
+const data = await response.json()
+console.log('新API Key创建成功:', new_api_key)
+
+​
+场景4: 更新（重新生成）API Key
+const crypto = require('crypto')
+
+const old_api_key = 'sk_u_1234567890_abc123_old...'
+const new_api_key = 'sk_u_1234567890_abc123_' + crypto.randomBytes(16).toString('hex')
+
+// 步骤1：删除旧Key
+const deleteResponse = await fetch(
+  `${SUPABASE_URL}/rest/v1/unified_api_keys?api_key=eq.${old_api_key}`,
+  {
+    method: 'DELETE',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Content-Type': 'application/json'
+    }
+  }
+)
+
+console.log('旧Key已删除')
+
+// 步骤2：插入新Key
+const insertResponse = await fetch(
+  `${SUPABASE_URL}/rest/v1/unified_api_keys`,
+  {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      api_key: new_api_key,
+      user_id: 'u_1234567890_abc123',
+      key_name: '默认密钥', // 保持原名称
+      status: 'active'
+    })
+  }
+)
+
+const data = await insertResponse.json()
+console.log('新Key已创建:', new_api_key)
+
+​
+场景5: 禁用API Key
+const response = await fetch(
+  `${SUPABASE_URL}/rest/v1/unified_api_keys?api_key=eq.sk_xxx`,
+  {
+    method: 'PATCH',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      status: 'inactive'
+    })
+  }
+)
+
+console.log('API Key已禁用')
+
+​
+场景6: 查询用户的所有API Key
+const response = await fetch(
+  `${SUPABASE_URL}/rest/v1/unified_api_keys?user_id=eq.u_1234567890_abc123&select=*`,
+  {
+    method: 'GET',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Content-Type': 'application/json'
+    }
+  }
+)
+
+const apiKeys = await response.json()
+console.log('用户的所有API Key:', apiKeys)
+
+​
+场景7: 查询所有服务和价格（展示给用户）
+const response = await fetch(
+  `${SUPABASE_URL}/rest/v1/service_configs?is_active=eq.true&select=service_name,display_name,unit_price,billing_unit,description`,
+  {
+    method: 'GET',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Content-Type': 'application/json'
+    }
+  }
+)
+
+const services = await response.json()
+console.log('所有可用服务:', services)
+
+// 返回示例：
+// [
+//   {
+//     service_name: "douyin_extract",
+//     display_name: "抖音采集",
+//     unit_price: 0.03,
+//     billing_unit: "per_call",
+//     description: "抖音视频信息采集服务"
+//   },
+//   ...
+// ]
+
+​
+场景8: 查询用户余额
+const response = await fetch(
+  `${SUPABASE_URL}/rest/v1/unified_users?user_id=eq.u_1234567890_abc123&select=balance,total_recharged,total_consumed,status`,
+  {
+    method: 'GET',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Content-Type': 'application/json'
+    }
+  }
+)
+
+const users = await response.json()
+console.log('用户信息:', users[0])
+
+// 返回示例：
+// {
+//   balance: 115.00,
+//   total_recharged: 100.00,
+//   total_consumed: 0.50,
+//   status: "active"
+// }
+
+​
+五、网站需要接收的Webhook（Supabase → 网站）
+当插件扣费后，Supabase会自动调用网站的这个接口：
+网站端接口
+// POST /api/webhook/supabase-balance-update
+app.post('/api/webhook/supabase-balance-update', async (req, res) => {
+  // 1. 验证签名
+  const webhookSecret = process.env.WEBHOOK_SECRET
+  if (req.headers.authorization !== `Bearer ${webhookSecret}`) {
+    return res.status(401).json({ error: '未授权' })
+  }
+
+  // 2. 获取数据
+  const { user_id, new_balance, old_balance, change_amount } = req.body
+
+  console.log('收到Supabase余额变动通知:', {
+    user_id,
+    new_balance,
+    old_balance,
+    change_amount
+  })
+
+  // 3. 更新本地MySQL数据库
+  try {
+    await db.query(
+      'UPDATE users SET balance = ?, updated_at = NOW() WHERE user_id = ?',
+      [new_balance, user_id]
+    )
+
+    // 4. 如果是扣费（change_amount < 0），记录消费日志
+    if (change_amount < 0) {
+      await db.query(
+        'INSERT INTO balance_logs (user_id, change_type, change_amount, balance_after, source, created_at) VALUES (?, "consume", ?, ?, "plugin", NOW())',
+        [user_id, Math.abs(change_amount), new_balance]
+      )
+    }
+
+    res.json({ success: true })
+  } catch (error) {
+    console.error('更新余额失败:', error)
+    res.status(500).json({ error: '更新失败' })
+  }
+})
+
+​
+Webhook接收的数据格式
+{
+  "user_id": "u_1234567890_abc123",
+  "new_balance": 114.97,
+  "old_balance": 115.00,
+  "change_amount": -0.03,
+  "timestamp": "2025-10-30T07:00:00Z"
+}
+​
+总结
+网站需要操作的表（按优先级）
+表名
+操作类型
+频率
+说明
+unified_users
+读写
+高
+注册、充值、查询余额
+unified_api_keys
+读写
+中
+注册、创建、更新Key
+service_configs
+只读
+低
+展示服务列表和价格

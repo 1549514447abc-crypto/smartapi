@@ -1,0 +1,155 @@
+.login-modal .ant-modal-content {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.login-modal-header {
+  text-align: center;
+  margin-bottom: 24px;
+  padding-top: 8px;
+}
+
+.login-modal-header h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.login-modal-header p {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
+}
+
+.login-tabs .ant-tabs-nav {
+  margin-bottom: 24px;
+}
+
+.login-tabs .ant-tabs-tab {
+  font-size: 16px;
+  font-weight: 500;
+  padding: 12px 24px;
+}
+
+.login-tabs .ant-tabs-tab-active {
+  color: #3b82f6;
+}
+
+.login-tabs .ant-tabs-ink-bar {
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  height: 3px;
+}
+
+.login-form-wrapper {
+  padding: 0 12px;
+}
+
+.login-button {
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6) !important;
+  border: none !important;
+  height: 48px !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  margin-top: 8px;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  transition: all 0.3s;
+}
+
+.login-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4) !important;
+}
+
+.login-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 16px;
+  font-size: 14px;
+}
+
+.login-footer a {
+  color: #3b82f6;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.login-footer a:hover {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.wechat-login-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 12px;
+}
+
+.qr-code-container {
+  padding: 20px;
+  background: #f9fafb;
+  border-radius: 12px;
+  border: 2px solid #e5e7eb;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.wechat-tips {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.wechat-tips p {
+  margin: 8px 0;
+  color: #374151;
+  font-size: 14px;
+}
+
+.wechat-follow-tip {
+  color: #10b981 !important;
+  font-weight: 500;
+  font-size: 13px !important;
+}
+
+.wechat-refresh {
+  color: #3b82f6;
+  font-size: 14px;
+}
+
+.wechat-refresh:hover {
+  color: #2563eb;
+}
+
+/* 表单样式增强 */
+.login-form-wrapper .ant-form-item-label > label {
+  font-weight: 500;
+  color: #374151;
+}
+
+.login-form-wrapper .ant-input,
+.login-form-wrapper .ant-input-password {
+  border-radius: 8px;
+  border-color: #d1d5db;
+}
+
+.login-form-wrapper .ant-input:focus,
+.login-form-wrapper .ant-input-password:focus,
+.login-form-wrapper .ant-input-focused,
+.login-form-wrapper .ant-input-password .ant-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.login-form-wrapper .ant-input-affix-wrapper {
+  border-radius: 8px;
+}
+
+.login-form-wrapper .ant-input-prefix {
+  color: #9ca3af;
+}

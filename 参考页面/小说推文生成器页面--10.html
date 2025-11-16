@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小说推文生成器 - 创作魔方Content Cube</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Helvetica, Arial, sans-serif;
+            background: #ffffff;
+            min-height: 100vh;
+            line-height: 1.6;
+            color: #1f2937;
+        }
+        
+        /* Header样式 */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #e5e7eb;
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 48px;
+        }
+        
+        .logo {
+            font-size: 22px;
+            font-weight: 600;
+            color: #1f2937;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            cursor: pointer;
+        }
+        
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 32px;
+            margin-left: 20px;
+        }
+        
+        .nav-menu li {
+            color: #374151;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+            font-size: 16px;
+            position: relative;
+            padding: 8px 0;
+        }
+        
+        .nav-menu li:hover,
+        .nav-menu li.active {
+            color: #3b82f6;
+        }
+        
+        .nav-menu li::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: 0;
+            left: 0;
+            background: #3b82f6;
+            transition: width 0.3s;
+        }
+        
+        .nav-menu li:hover::after,
+        .nav-menu li.active::after {
+            width: 100%;
+        }
+        
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .promote-button {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+        }
+        
+        .user-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.2s;
+            border: 2px solid #e5e7eb;
+        }
+        
+        .dropdown-content {
+            position: absolute;
+            right: 0;
+            top: 50px;
+            background: white;
+            min-width: 300px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            padding: 24px;
+            z-index: 1001;
+            border: 1px solid #e5e7eb;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+        }
+        
+        .user-dropdown .dropdown-content.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* 主内容区域 */
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 48px 32px;
+        }
+
+        /* 页面标题区域 */
+        .page-header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+        
+        .page-title {
+            font-size: 36px;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .page-subtitle {
+            font-size: 18px;
+            color: #6b7280;
+            max-width: 800px;
+            margin: 0 auto 32px;
+        }
+
+        .feature-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin-bottom: 48px;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid #f1f5f9;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 16px;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+        }
+
+        .feature-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .feature-desc {
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        /* 输入区域 */
+        .input-section {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            margin-bottom: 32px;
+            border: 1px solid #f1f5f9;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-icon {
+            font-size: 24px;
+        }
+
+        .input-textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: vertical;
+            outline: none;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        .input-textarea:focus {
+            border-color: #f59e0b;
+            box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1);
+        }
+
+        .input-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 12px;
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        /* 控制面板 */
+        .control-panel {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            margin-bottom: 32px;
+            border: 1px solid #f1f5f9;
+        }
+
+        .step-options {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .step-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .step-option.selected {
+            background: #fef3c7;
+            border-color: #f59e0b;
+            color: #92400e;
+        }
+
+        .step-option input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #f59e0b;
+        }
+
+        .processing-mode {
+            margin-bottom: 24px;
+        }
+
+        .mode-options {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .mode-option {
+            padding: 8px 16px;
+            background: #f1f5f9;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .mode-option.selected {
+            background: #f59e0b;
+            color: white;
+            border-color: #f59e0b;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #f8fafc;
+            color: #374151;
+            border: 2px solid #e5e7eb;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-secondary:hover {
+            border-color: #f59e0b;
+            color: #f59e0b;
+        }
+
+        .cost-display {
+            color: #f59e0b;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        /* 进度条 */
+        .progress-section {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            margin-bottom: 32px;
+            border: 1px solid #f1f5f9;
+            display: none;
+        }
+
+        .progress-section.active {
+            display: block;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #f1f5f9;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .progress-steps {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+
+        .progress-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+
+        .step-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: #6b7280;
+            margin-bottom: 8px;
+            transition: all 0.3s;
+        }
+
+        .step-circle.active {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .step-circle.completed {
+            background: #10b981;
+            color: white;
+        }
+
+        .step-label {
+            font-size: 12px;
+            color: #6b7280;
+            text-align: center;
+        }
+
+        .step-label.active {
+            color: #f59e0b;
+            font-weight: 600;
+        }
+
+        /* 结果展示区域 */
+        .results-section {
+            display: none;
+        }
+
+        .results-section.active {
+            display: block;
+        }
+
+        .result-step {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            margin-bottom: 32px;
+            border: 1px solid #f1f5f9;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .result-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .result-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 14px;
+            border-radius: 6px;
+            border: 1px solid #d1d5db;
+            background: white;
+            color: #374151;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-small:hover {
+            border-color: #f59e0b;
+            color: #f59e0b;
+        }
+
+        .result-content {
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            min-height: 120px;
+            white-space: pre-wrap;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .result-content.editable {
+            background: white;
+            border-color: #f59e0b;
+            outline: none;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f1f5f9;
+            border-radius: 50%;
+            border-top-color: #f59e0b;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 导出区域 */
+        .export-section {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid #f1f5f9;
+            display: none;
+        }
+
+        .export-section.active {
+            display: block;
+        }
+
+        .export-options {
+            display: flex;
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .export-btn {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1024px) {
+            .feature-cards {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+            
+            .step-options {
+                flex-direction: column;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 32px 16px;
+            }
+            
+            .nav-menu {
+                display: none;
+            }
+            
+            .progress-steps {
+                flex-direction: column;
+                gap: 16px;
+            }
+            
+            .progress-step {
+                flex-direction: row;
+                justify-content: flex-start;
+                text-align: left;
+            }
+            
+            .step-circle {
+                margin-right: 12px;
+                margin-bottom: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-left">
+            <div class="logo" onclick="goToHome()">创作魔方Content Cube</div>
+            <ul class="nav-menu">
+                <li onclick="goToHome()">首页</li>
+                <li onclick="goToAiReduce()">文章降AI率</li>
+                <li onclick="goToVideoExtract()">视频文案提取</li>
+                <li onclick="goToPromptGenerator()">提示词生成器</li>
+                <li onclick="goToNovelGenerator()" class="active">小说推文生成器</li>
+                <li onclick="goToWorkflowStore()">工作流商店</li>
+                <li onclick="goToCourseStore()">课程商店</li>
+                <li onclick="goToAutoPublish()">全平台爆款文案创作</li>
+                <li onclick="goToAiToolbox()">智能体工具箱</li>
+            </ul>
+        </div>
+        <div class="header-right">
+            <button class="promote-button" onclick="openPromote()">
+                <span>💰</span>
+                推广赚钱
+            </button>
+            <div class="user-dropdown">
+                <div class="user-avatar">O</div>
+                <div class="dropdown-content">
+                    <div style="text-align: center; padding-bottom: 20px; border-bottom: 1px solid #e5e7eb; margin-bottom: 20px;">
+                        <div style="color: #6b7280; font-size: 14px; margin-bottom: 8px;">ID: 253855 <button onclick="copyId()" style="border:none;background:#3b82f6;color:white;padding:4px 8px;border-radius:6px;font-size:12px;cursor:pointer;">复制</button></div>
+                        <div style="color: #dc2626; font-size: 18px; font-weight: 600; margin-bottom: 8px;">余额: ¥8.76</div>
+                        <div style="font-size:12px;color:#6b7280;margin-bottom:16px;">余额即将耗尽，前往充值</div>
+                        <button style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; width: 100%;">👑 成为会员</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主内容 -->
+    <div class="main-container">
+        <!-- 页面标题 -->
+        <div class="page-header">
+            <h1 class="page-title">📚 小说推文生成器</h1>
+            <p class="page-subtitle">一键将小说原文转换为爆款推广素材，支持文生图和图生视频提示词生成</p>
+            
+            <!-- 功能特色卡片 -->
+            <div class="feature-cards">
+                <div class="feature-card">
+                    <div class="feature-icon">✂️</div>
+                    <div class="feature-title">智能精简</div>
+                    <div class="feature-desc">AI提取小说核心情节，去除冗余描述</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">💬</div>
+                    <div class="feature-title">对话转换</div>
+                    <div class="feature-desc">将叙述文本转换为生动的对话形式</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎬</div>
+                    <div class="feature-title">提示词生成</div>
+                    <div class="feature-desc">自动生成文生图和图生视频提示词</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 输入区域 -->
+        <div class="input-section">
+            <div class="section-title">
+                <span class="section-icon">📖</span>
+                小说原文输入
+            </div>
+            <textarea 
+                class="input-textarea" 
+                id="novelInput"
+                placeholder="请粘贴您要处理的小说原文内容...&#10;&#10;支持长篇小说章节、短篇小说全文等&#10;建议输入字数：500-5000字，获得最佳处理效果"
+                oninput="updateInputInfo()"
+            ></textarea>
+            <div class="input-info">
+                <span id="charCount">0 字符</span>
+                <span>建议输入 500-5000 字符</span>
+            </div>
+        </div>
+
+        <!-- 控制面板 -->
+        <div class="control-panel">
+            <div class="section-title">
+                <span class="section-icon">⚙️</span>
+                处理选项
+            </div>
+            
+            <!-- 步骤选择 -->
+            <div class="step-options">
+                <label class="step-option selected" data-step="1">
+                    <input type="checkbox" checked onchange="toggleStep(1)">
+                    <span>步骤1：原文精简</span>
+                </label>
+                <label class="step-option selected" data-step="2">
+                    <input type="checkbox" checked onchange="toggleStep(2)">
+                    <span>步骤2：对话转换</span>
+                </label>
+                <label class="step-option selected" data-step="3">
+                    <input type="checkbox" checked onchange="toggleStep(3)">
+                    <span>步骤3：提示词生成</span>
+                </label>
+            </div>
+
+            <!-- 处理模式 -->
+            <div class="processing-mode">
+                <div style="font-weight: 600; margin-bottom: 12px;">处理模式：</div>
+                <div class="mode-options">
+                    <div class="mode-option selected" onclick="selectMode('auto')">自动处理全流程</div>
+                    <div class="mode-option" onclick="selectMode('manual')">逐步手动确认</div>
+                </div>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="action-buttons">
+                <button class="btn-primary" onclick="startProcessing()" id="startBtn">
+                    <span>🚀</span>
+                    开始处理
+                </button>
+                <button class="btn-secondary" onclick="clearAll()">清空重置</button>
+                <div class="cost-display" id="costDisplay">预计消耗：1.5点 (3个步骤)</div>
+            </div>
+        </div>
+
+        <!-- 进度展示 -->
+        <div class="progress-section" id="progressSection">
+            <div class="section-title">
+                <span class="section-icon">📊</span>
+                处理进度
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-steps" id="progressSteps">
+                <div class="progress-step">
+                    <div class="step-circle" data-step="1">1</div>
+                    <div class="step-label">原文精简</div>
+                </div>
+                <div class="progress-step">
+                    <div class="step-circle" data-step="2">2</div>
+                    <div class="step-label">对话转换</div>
+                </div>
+                <div class="progress-step">
+                    <div class="step-circle" data-step="3">3</div>
+                    <div class="step-label">提示词生成</div>
+                </div>
+            </div>
+            <div id="currentStatus" style="text-align: center; color: #6b7280;">准备开始处理...</div>
+        </div>
+
+        <!-- 结果展示区域 -->
+        <div class="results-section" id="resultsSection">
+            <!-- 步骤1结果 -->
+            <div class="result-step" id="result1" style="display: none;">
+                <div class="result-header">
+                    <div class="result-title">
+                        <span>✂️</span>
+                        步骤1：原文精简结果
+                    </div>
+                    <div class="result-actions">
+                        <button class="btn-small" onclick="editResult(1)">编辑</button>
+                        <button class="btn-small" onclick="reprocessStep(1)">重新处理</button>
+                        <button class="btn-small" onclick="copyResult(1)">复制</button>
+                    </div>
+                </div>
+                <div class="result-content" id="resultContent1" contenteditable="false"></div>
+            </div>
+
+            <!-- 步骤2结果 -->
+            <div class="result-step" id="result2" style="display: none;">
+                <div class="result-header">
+                    <div class="result-title">
+                        <span>💬</span>
+                        步骤2：对话转换结果
+                    </div>
+                    <div class="result-actions">
+                        <button class="btn-small" onclick="editResult(2)">编辑</button>
+                        <button class="btn-small" onclick="reprocessStep(2)">重新处理</button>
+                        <button class="btn-small" onclick="copyResult(2)">复制</button>
+                    </div>
+                </div>
+                <div class="result-content" id="resultContent2" contenteditable="false"></div>
+            </div>
+
+            <!-- 步骤3结果 -->
+            <div class="result-step" id="result3" style="display: none;">
+                <div class="result-header">
+                    <div class="result-title">
+                        <span>🎬</span>
+                        步骤3：提示词生成结果
+                    </div>
+                    <div class="result-actions">
+                        <button class="btn-small" onclick="editResult(3)">编辑</button>
+                        <button class="btn-small" onclick="reprocessStep(3)">重新处理</button>
+                        <button class="btn-small" onclick="copyResult(3)">复制</button>
+                    </div>
+                </div>
+                <div class="result-content" id="resultContent3" contenteditable="false"></div>
+            </div>
+        </div>
+
+        <!-- 导出区域 -->
+        <div class="export-section" id="exportSection">
+            <div class="section-title">
+                <span class="section-icon">📋</span>
+                导出结果
+            </div>
+            <p style="color: #6b7280; margin-bottom: 16px;">处理完成！选择导出格式保存您的小说推文素材：</p>
+            <div class="export-options">
+                <button class="export-btn" onclick="exportResults('txt')">
+                    <span>📄</span>
+                    导出TXT
+                </button>
+                <button class="export-btn" onclick="exportResults('word')">
+                    <span>📝</span>
+                    导出Word
+                </button>
+                <button class="export-btn" onclick="exportResults('json')">
+                    <span>💾</span>
+                    导出JSON
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let userBalance = 8.76;
+        let selectedSteps = [1, 2, 3];
+        let processingMode = 'auto';
+        let currentStep = 0;
+        let isProcessing = false;
+        let results = {
+            step1: '',
+            step2: '',
+            step3: ''
+        };
+
+        // 更新输入信息
+        function updateInputInfo() {
+            const input = document.getElementById('novelInput');
+            const charCount = document.getElementById('charCount');
+            const length = input.value.length;
+            charCount.textContent = `${length} 字符`;
+            
+            if (length > 5000) {
+                charCount.style.color = '#dc2626';
+            } else if (length < 500) {
+                charCount.style.color = '#6b7280';
+            } else {
+                charCount.style.color = '#10b981';
+            }
+        }
+
+        // 切换步骤选择
+        function toggleStep(step) {
+            const checkbox = document.querySelector(`[data-step="${step}"] input`);
+            const stepOption = document.querySelector(`[data-step="${step}"]`);
+            
+            if (checkbox.checked) {
+                if (!selectedSteps.includes(step)) {
+                    selectedSteps.push(step);
+                }
+                stepOption.classList.add('selected');
+            } else {
+                selectedSteps = selectedSteps.filter(s => s !== step);
+                stepOption.classList.remove('selected');
+            }
+            
+            selectedSteps.sort();
+            updateCostDisplay();
+        }
+
+        // 选择处理模式
+        function selectMode(mode) {
+            document.querySelectorAll('.mode-option').forEach(el => {
+                el.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+            processingMode = mode;
+        }
+
+        // 更新费用显示
+        function updateCostDisplay() {
+            const cost = selectedSteps.length * 0.5;
+            const costDisplay = document.getElementById('costDisplay');
+            costDisplay.textContent = `预计消耗：${cost}点 (${selectedSteps.length}个步骤)`;
+        }
+
+        // 开始处理
+        async function startProcessing() {
+            const input = document.getElementById('novelInput').value.trim();
+            if (!input) {
+                alert('请先输入小说原文内容！');
+                return;
+            }
+            
+            if (selectedSteps.length === 0) {
+                alert('请至少选择一个处理步骤！');
+                return;
+            }
+
+            const cost = selectedSteps.length * 0.5;
+            if (userBalance < cost) {
+                alert(`余额不足！需要 ${cost} 点，当前余额 ${userBalance.toFixed(2)} 点`);
+                return;
+            }
+
+            // 开始处理
+            isProcessing = true;
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('progressSection').classList.add('active');
+            document.getElementById('resultsSection').classList.add('active');
+            
+            // 扣费
+            userBalance -= cost;
+            updateBalanceDisplay();
+
+            // 执行选中的步骤
+            for (let i = 0; i < selectedSteps.length; i++) {
+                const step = selectedSteps[i];
+                await processStep(step, i + 1, selectedSteps.length);
+                
+                if (processingMode === 'manual' && i < selectedSteps.length - 1) {
+                    const confirmed = confirm(`步骤${step}处理完成，是否继续下一步？`);
+                    if (!confirmed) break;
+                }
+            }
+
+            // 处理完成
+            isProcessing = false;
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('exportSection').classList.add('active');
+            
+            updateStatus('所有处理步骤已完成！');
+            updateProgress(100);
+        }
+
+        // 处理单个步骤
+        async function processStep(step, currentIndex, totalSteps) {
+            updateStatus(`正在处理步骤${step}...`);
+            updateProgress((currentIndex - 1) / totalSteps * 100);
+            updateStepStatus(step, 'active');
+            
+            // 模拟处理时间
+            await sleep(2000 + Math.random() * 3000);
+            
+            let result = '';
+            const input = document.getElementById('novelInput').value;
+            
+            switch(step) {
+                case 1:
+                    result = processStep1(input);
+                    results.step1 = result;
+                    break;
+                case 2:
+                    const sourceText = results.step1 || input;
+                    result = processStep2(sourceText);
+                    results.step2 = result;
+                    break;
+                case 3:
+                    const dialogueText = results.step2 || results.step1 || input;
+                    result = processStep3(dialogueText);
+                    results.step3 = result;
+                    break;
+            }
+            
+            // 显示结果
+            document.getElementById(`result${step}`).style.display = 'block';
+            document.getElementById(`resultContent${step}`).textContent = result;
+            
+            updateStepStatus(step, 'completed');
+            updateProgress(currentIndex / totalSteps * 100);
+        }
+
+        // 步骤1：原文精简
+        function processStep1(text) {
+            return `【精简后内容】
+
+主要人物：林小雨（女主角，25岁编辑）、陈浩然（男主角，28岁律师）
+
+核心情节：
+林小雨在咖啡馆偶遇多年未见的大学同学陈浩然。两人从最初的尴尬寒暄，到渐渐敞开心扉谈论各自这些年的经历。
+
+林小雨提到自己刚结束一段失败的恋情，正在重新审视人生方向。陈浩然则坦言自己虽然事业成功，但内心一直有种空虚感，始终忘不了大学时期的那份纯真感情。
+
+两人相视而笑，仿佛回到了那个青春岁月。这次重逢让他们都意识到，有些感情是时间无法磨灭的。
+
+关键转折：陈浩然主动提出要林小雨的电话，约定下次见面，暗示着新的开始。
+
+情感内核：关于成长、遗憾与重新开始的主题，体现了都市青年对真挚感情的渴望。`;
+        }
+
+        // 步骤2：对话转换
+        function processStep2(text) {
+            return `【对话式文本】
+
+林小雨坐在咖啡馆角落，突然听到熟悉的声音：
+
+"小雨？真的是你吗？"
+
+她抬头一看，竟然是陈浩然！
+
+"浩然？天哪，这么巧！"林小雨惊喜地站起身。
+
+"是啊，好多年没见了。"陈浩然笑着坐下，"你还是一样，喜欢坐角落的位置。"
+
+"哈哈，被你记得这么清楚。"林小雨有些脸红，"你现在..."
+
+"做律师，在附近的律所工作。你呢？"
+
+"还是老本行，在出版社当编辑。"
+
+两人相视一笑，气氛逐渐轻松。
+
+"说实话，"陈浩然突然认真起来，"这些年我经常想起大学时光，想起你。"
+
+林小雨心跳加速："是吗？我也是..."
+
+"那时候我们太年轻，不懂得珍惜。"陈浩然看着她的眼睛，"现在我们都长大了，也许..."
+
+"也许什么？"林小雨轻声问道。
+
+"也许我们可以重新开始？"
+
+咖啡的香气在空气中弥漫，这句话也在两人心中回响...`;
+        }
+
+        // 步骤3：提示词生成
+        function processStep3(text) {
+            return `【文生图提示词】
+
+1. 主角特写镜头：
+"A beautiful 25-year-old Asian woman with shoulder-length black hair, sitting in a cozy corner of a coffee shop, wearing a light blue sweater, gentle smile, warm lighting, soft focus background, professional portrait photography, high quality, detailed"
+
+2. 男女主角对话场景：
+"Two young Asian people sitting across from each other at a small wooden table in a modern coffee shop, the woman has shoulder-length hair wearing a blue sweater, the man in a business suit, both smiling and talking, warm golden hour lighting streaming through large windows, romantic atmosphere, cinematic composition"
+
+3. 咖啡馆环境：
+"Cozy modern coffee shop interior, wooden tables and chairs, large windows with natural light, coffee cups on table, book shelves in background, warm and inviting atmosphere, soft bokeh effect, lifestyle photography"
+
+【图生视频提示词】
+
+1. 开场镜头：
+"Camera slowly pans across a busy coffee shop, then focuses on a young woman sitting alone at a corner table, she looks up surprised as someone approaches, natural movement, 3-5 seconds"
+
+2. 对话场景：
+"Medium shot of two people having an intimate conversation at a coffee table, gentle gestures and expressions, the woman touches her hair nervously, the man leans forward attentively, warm lighting, emotional connection visible, 8-10 seconds"
+
+3. 结尾特写：
+"Close-up of two coffee cups on a wooden table, steam rising, then camera slowly pulls back to show the two people holding hands across the table, romantic and hopeful mood, fade out, 5-7 seconds"
+
+技术参数：
+- 分辨率：1920x1080 或 9:16 竖屏
+- 帧率：24fps 或 30fps
+- 风格：现实主义，温暖色调
+- 运镜：平缓推拉，避免快速移动`;
+        }
+
+        // 工具函数
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function updateStatus(message) {
+            document.getElementById('currentStatus').textContent = message;
+        }
+
+        function updateProgress(percentage) {
+            document.getElementById('progressFill').style.width = `${percentage}%`;
+        }
+
+        function updateStepStatus(step, status) {
+            const circle = document.querySelector(`.step-circle[data-step="${step}"]`);
+            const label = circle.nextElementSibling;
+            
+            // 清除所有状态
+            circle.classList.remove('active', 'completed');
+            label.classList.remove('active');
+            
+            // 添加新状态
+            if (status === 'active') {
+                circle.classList.add('active');
+                label.classList.add('active');
+            } else if (status === 'completed') {
+                circle.classList.add('completed');
+            }
+        }
+
+        function updateBalanceDisplay() {
+            document.querySelector('.user-balance').style.color = '#dc2626';
+            // 这里应该更新实际的余额显示
+        }
+
+        // 结果操作函数
+        function editResult(step) {
+            const content = document.getElementById(`resultContent${step}`);
+            const isEditing = content.contentEditable === 'true';
+            
+            if (isEditing) {
+                content.contentEditable = 'false';
+                content.classList.remove('editable');
+                event.target.textContent = '编辑';
+            } else {
+                content.contentEditable = 'true';
+                content.classList.add('editable');
+                content.focus();
+                event.target.textContent = '保存';
+            }
+        }
+
+        function reprocessStep(step) {
+            if (confirm(`确认重新处理步骤${step}吗？将消耗0.5点。`)) {
+                if (userBalance >= 0.5) {
+                    userBalance -= 0.5;
+                    updateBalanceDisplay();
+                    processStep(step, 1, 1);
+                } else {
+                    alert('余额不足！');
+                }
+            }
+        }
+
+        function copyResult(step) {
+            const content = document.getElementById(`resultContent${step}`).textContent;
+            navigator.clipboard.writeText(content).then(() => {
+                alert('内容已复制到剪贴板！');
+            });
+        }
+
+        function clearAll() {
+            if (confirm('确认清空所有内容吗？')) {
+                document.getElementById('novelInput').value = '';
+                document.getElementById('progressSection').classList.remove('active');
+                document.getElementById('resultsSection').classList.remove('active');
+                document.getElementById('exportSection').classList.remove('active');
+                
+                // 隐藏所有结果
+                for (let i = 1; i <= 3; i++) {
+                    document.getElementById(`result${i}`).style.display = 'none';
+                    document.getElementById(`resultContent${i}`).textContent = '';
+                }
+                
+                // 重置进度
+                updateProgress(0);
+                updateStatus('准备开始处理...');
+                
+                // 重置步骤状态
+                document.querySelectorAll('.step-circle').forEach(circle => {
+                    circle.classList.remove('active', 'completed');
+                });
+                document.querySelectorAll('.step-label').forEach(label => {
+                    label.classList.remove('active');
+                });
+                
+                updateInputInfo();
+            }
+        }
+
+        // 导出功能
+        function exportResults(format) {
+            let content = '';
+            let htmlContent = '';
+            
+            // 构建内容
+            if (results.step1) {
+                content += `步骤1：原文精简\n${results.step1}\n\n`;
+                htmlContent += `<h2>步骤1：原文精简</h2><p>${results.step1.replace(/\n/g, '<br>')}</p><br>`;
+            }
+            if (results.step2) {
+                content += `步骤2：对话转换\n${results.step2}\n\n`;
+                htmlContent += `<h2>步骤2：对话转换</h2><p>${results.step2.replace(/\n/g, '<br>')}</p><br>`;
+            }
+            if (results.step3) {
+                content += `步骤3：画面/视频提示词生成\n${results.step3}\n\n`;
+                htmlContent += `<h2>步骤3：画面/视频提示词生成</h2><p>${results.step3.replace(/\n/g, '<br>')}</p><br>`;
+            }
+            
+            if (format === 'txt') {
+                const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = '小说推文生成结果.txt';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } else if (format === 'word') {
+                // 创建Word文档（使用RTF格式）
+                const rtfContent = `{\\rtf1\\ansi\\deff0 {\\fonttbl {\\f0 Times New Roman;}}
+                \\f0\\fs24 ${content.replace(/\n/g, '\\par ')}}`;
+                
+                // 或者使用HTML格式的Word文档
+                const wordContent = `
+                    <html xmlns:o="urn:schemas-microsoft-com:office:office" 
+                          xmlns:w="urn:schemas-microsoft-com:office:word" 
+                          xmlns="http://www.w3.org/TR/REC-html40">
+                    <head>
+                        <meta charset="utf-8">
+                        <title>小说推文生成结果</title>
+                        <!--[if gte mso 9]>
+                        <xml>
+                            <w:WordDocument>
+                                <w:View>Print</w:View>
+                                <w:Zoom>90</w:Zoom>
+                                <w:DoNotPromptForConvert/>
+                                <w:DoNotShowRevisions/>
+                                <w:DoNotPrintRevisions/>
+                                <w:DoNotShowComments/>
+                                <w:DoNotShowInsertionsAndDeletions/>
+                                <w:DoNotShowPropertyChanges/>
+                                <w:DoNotShowMarkupAreaPropertyChanges/>
+                                <w:DoNotShowInkAnnotations/>
+                                <w:DoNotShowCrossRefs/>
+                                <w:DoNotShowFieldCodes/>
+                            </w:WordDocument>
+                        </xml>
+                        <![endif]-->
+                        <style>
+                            body { font-family: "Microsoft YaHei", Arial, sans-serif; line-height: 1.6; margin: 40px; }
+                            h1 { color: #d97706; border-bottom: 2px solid #d97706; padding-bottom: 10px; }
+                            h2 { color: #374151; margin-top: 30px; margin-bottom: 15px; }
+                            p { margin-bottom: 12px; text-align: justify; }
+                        </style>
+                    </head>
+                    <body>
+                        <h1>📚 小说推文生成结果</h1>
+                        <p><strong>生成时间：</strong>${new Date().toLocaleString('zh-CN')}</p>
+                        <hr>
+                        ${htmlContent}
+                        <hr>
+                        <p style="text-align: center; color: #6b7280; font-size: 12px;">
+                            本文档由创作魔方Content Cube小说推文生成器生成
+                        </p>
+                    </body>
+                    </html>
+                `;
+                
+                const blob = new Blob(['\ufeff', wordContent], { type: 'application/msword;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = '小说推文生成结果.doc';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+            
+            // 显示导出成功提示
+            const formatName = format === 'txt' ? 'TXT文本' : 'Word文档';
+            alert(`${formatName}导出成功！文件已保存到下载目录。`);
+        }
+
+        // 导航函数
+        function goToHome() { alert('返回首页'); }
+        function goToAiReduce() { alert('进入文章降AI率工具'); }
+        function goToVideoExtract() { alert('进入视频文案提取工具'); }
+        function goToPromptGenerator() { alert('进入提示词生成器'); }
+        function goToNovelGenerator() { window.location.reload(); }
+        function goToWorkflowStore() { alert('进入工作流商店'); }
+        function goToCourseStore() { alert('进入课程商店'); }
+        function goToAutoPublish() { alert('进入全平台爆款文案创作'); }
+        function goToAiToolbox() { alert('进入智能体工具箱'); }
+        
+        function openPromote() { alert('开启推广赚钱计划'); }
+        function copyId() { 
+            navigator.clipboard.writeText('253855');
+            alert('用户ID已复制到剪贴板');
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            updateInputInfo();
+            updateCostDisplay();
+        });
+    </script>
+</body>
+</html>

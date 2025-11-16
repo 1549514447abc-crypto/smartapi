@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>插件管理 - 创作魔方Content Cube</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Helvetica, Arial, sans-serif;
+            background: #f8fafc;
+            min-height: 100vh;
+            line-height: 1.6;
+            color: #1f2937;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #e5e7eb;
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 48px;
+        }
+        
+        .logo {
+            font-size: 22px;
+            font-weight: 600;
+            color: #1f2937;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            cursor: pointer;
+        }
+        
+        .admin-badge {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .user-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.2s;
+            border: 2px solid #e5e7eb;
+        }
+
+        /* 主体内容区域 */
+        .main-container {
+            display: flex;
+            height: calc(100vh - 80px);
+            overflow: hidden;
+        }
+
+        /* 左侧插件列表 */
+        .plugins-sidebar {
+            width: 400px;
+            background: white;
+            border-right: 1px solid #e5e7eb;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 24px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .sidebar-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 16px;
+        }
+
+        .sidebar-actions {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 8px 12px 8px 36px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .plugins-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .plugin-item {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .plugin-item:hover {
+            background: #f3f4f6;
+            border-color: #3b82f6;
+        }
+
+        .plugin-item.active {
+            background: #eff6ff;
+            border-color: #3b82f6;
+        }
+
+        .plugin-item-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .plugin-item-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .plugin-item-info {
+            flex: 1;
+        }
+
+        .plugin-item-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 2px;
+        }
+
+        .plugin-item-category {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .plugin-item-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .plugin-item-price {
+            font-size: 14px;
+            font-weight: 600;
+            color: #059669;
+        }
+
+        .plugin-item-price.paid {
+            color: #dc2626;
+        }
+
+        .plugin-status {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .plugin-status.online {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .plugin-status.offline {
+            background: #fef2f2;
+            color: #991b1b;
+        }
+
+        .plugin-item-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-sm {
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #d1d5db;
+        }
+
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+
+        .btn-danger {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+
+        .btn-danger:hover {
+            background: #fee2e2;
+        }
+
+        .btn-success {
+            background: #f0fdf4;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+
+        .btn-success:hover {
+            background: #dcfce7;
+        }
+
+        /* 右侧编辑区域 */
+        .edit-area {
+            flex: 1;
+            background: white;
+            overflow-y: auto;
+        }
+
+        .edit-header {
+            padding: 24px 32px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .edit-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .edit-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .edit-content {
+            padding: 32px;
+        }
+
+        .form-section {
+            margin-bottom: 32px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-icon {
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 6px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .price-input-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .price-input {
+            flex: 1;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .checkbox {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        /* 图片上传区域 */
+        .upload-area {
+            border: 2px dashed #d1d5db;
+            border-radius: 8px;
+            padding: 24px;
+            text-align: center;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            border-color: #3b82f6;
+            background: #f8fafc;
+        }
+
+        .upload-area.dragover {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+
+        .upload-icon {
+            font-size: 32px;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+
+        .upload-text {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .upload-hint {
+            color: #9ca3af;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        .uploaded-images {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .uploaded-image {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 8px;
+            background: #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6b7280;
+            font-size: 12px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .image-delete {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 20px;
+            height: 20px;
+            background: rgba(239, 68, 68, 0.9);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 功能特性列表 */
+        .features-list {
+            space: 12px;
+        }
+
+        .feature-item {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .feature-input {
+            flex: 1;
+        }
+
+        .feature-delete {
+            padding: 6px;
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .add-feature {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #f0fdf4;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .add-feature:hover {
+            background: #dcfce7;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1024px) {
+            .main-container {
+                flex-direction: column;
+                height: auto;
+            }
+            
+            .plugins-sidebar {
+                width: 100%;
+                height: 300px;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header-left {
+                gap: 20px;
+            }
+            
+            .edit-content {
+                padding: 20px;
+            }
+            
+            .sidebar-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <div class="header">
+        <div class="header-left">
+            <div class="logo" onclick="goToHome()">创作魔方Content Cube</div>
+            <div class="admin-badge">管理员</div>
+        </div>
+        <div class="header-right">
+            <div class="user-dropdown">
+                <div class="user-avatar">A</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主体内容 -->
+    <div class="main-container">
+        <!-- 左侧插件列表 -->
+        <div class="plugins-sidebar">
+            <div class="sidebar-header">
+                <h2 class="sidebar-title">插件管理</h2>
+                <div class="sidebar-actions">
+                    <button class="btn btn-primary" onclick="createNewPlugin()">
+                        ➕ 新增插件
+                    </button>
+                </div>
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" class="search-input" placeholder="搜索插件..." oninput="searchPlugins(this.value)">
+                </div>
+            </div>
+            
+            <div class="plugins-list" id="pluginsList">
+                <!-- 插件列表项 -->
+                <div class="plugin-item active" onclick="editPlugin('flux')">
+                    <div class="plugin-item-header">
+                        <div class="plugin-item-icon" style="background: linear-gradient(135deg, #8b5cf6, #a855f7);">🎨</div>
+                        <div class="plugin-item-info">
+                            <div class="plugin-item-name">Flux大模型</div>
+                            <div class="plugin-item-category">文生图工具</div>
+                        </div>
+                    </div>
+                    <div class="plugin-item-meta">
+                        <div class="plugin-item-price paid">¥0.8/次</div>
+                        <div class="plugin-status online">已上架</div>
+                    </div>
+                    <div class="plugin-item-actions">
+                        <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); editPlugin('flux')">编辑</button>
+                        <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); deletePlugin('flux')">删除</button>
+                        <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); togglePluginStatus('flux')">下架</button>
+                    </div>
+                </div>
+
+                <div class="plugin-item" onclick="editPlugin('heygen')">
+                    <div class="plugin-item-header">
+                        <div class="plugin-item-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">👨‍💼</div>
+                        <div class="plugin-item-info">
+                            <div class="plugin-item-name">HeyGen AI Avatar</div>
+                            <div class="plugin-item-category">数字人</div>
+                        </div>
+                    </div>
+                    <div class="plugin-item-meta">
+                        <div class="plugin-item-price paid">¥5.0/分钟</div>
+                        <div class="plugin-status offline">已下架</div>
+                    </div>
+                    <div class="plugin-item-actions">
+                        <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); editPlugin('heygen')">编辑</button>
+                        <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); deletePlugin('heygen')">删除</button>
+                        <button class="btn btn-sm btn-success" onclick="event.stopPropagation(); togglePluginStatus('heygen')">上架</button>
+                    </div>
+                </div>
+
+                <div class="plugin-item" onclick="editPlugin('fish-audio')">
+                    <div class="plugin-item-header">
+                        <div class="plugin-item-icon" style="background: linear-gradient(135deg, #0ea5e9, #0284c7);">🐟</div>
+                        <div class="plugin-item-info">
+                            <div class="plugin-item-name">Fish Audio</div>
+                            <div class="plugin-item-category">语音合成</div>
+                        </div>
+                    </div>
+                    <div class="plugin-item-meta">
+                        <div class="plugin-item-price paid">¥0.6/分钟</div>
+                        <div class="plugin-status online">已上架</div>
+                    </div>
+                    <div class="plugin-item-actions">
+                        <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); editPlugin('fish-audio')">编辑</button>
+                        <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); deletePlugin('fish-audio')">删除</button>
+                        <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); togglePluginStatus('fish-audio')">下架</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧编辑区域 -->
+        <div class="edit-area">
+            <div class="edit-header">
+                <h2 class="edit-title" id="editTitle">编辑插件 - Flux大模型</h2>
+                <div class="edit-actions">
+                    <button class="btn btn-secondary" onclick="cancelEdit()">取消</button>
+                    <button class="btn btn-primary" onclick="savePlugin()">保存并发布</button>
+                </div>
+            </div>
+
+            <div class="edit-content">
+                <!-- 基本信息 -->
+                <div class="form-section">
+                    <h3 class="section-title">
+                        <div class="section-icon">ℹ️</div>
+                        基本信息
+                    </h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">插件名称</label>
+                            <input type="text" class="form-input" id="pluginName" value="Flux大模型" placeholder="请输入插件名称">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">插件分类</label>
+                            <select class="form-select" id="pluginCategory">
+                                <option value="ai-image" selected>文生图工具</option>
+                                <option value="video-gen">视频生成</option>
+                                <option value="image-to-video">图生视频</option>
+                                <option value="voice-synthesis">语音合成</option>
+                                <option value="digital-human">数字人</option>
+                                <option value="pdf-tools">PDF工具</option>
+                                <option value="video-edit">视频剪辑</option>
+                                <option value="llm-api">大模型接口</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">价格设置</label>
+                            <div class="price-input-group">
+                                <input type="number" class="form-input price-input" id="pluginPrice" value="0.8" placeholder="0.00" step="0.01">
+                                <span>元/次</span>
+                                <div class="checkbox-group">
+                                    <input type="checkbox" class="checkbox" id="isFree" onchange="toggleFreePlugin()">
+                                    <label for="isFree">免费</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">提供商</label>
+                            <input type="text" class="form-input" id="pluginProvider" value="官方插件" placeholder="请输入提供商">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">简短描述</label>
+                        <textarea class="form-input form-textarea" id="pluginDescription" placeholder="请输入插件的简短描述...">最新AI绘画大模型，支持超高质量图像生成，细节处理能力极强</textarea>
+                    </div>
+                </div>
+
+                <!-- 图片管理 -->
+                <div class="form-section">
+                    <h3 class="section-title">
+                        <div class="section-icon">🖼️</div>
+                        图片管理
+                    </h3>
+                    <div class="form-group">
+                        <label class="form-label">插件图标</label>
+                        <div class="upload-area" onclick="uploadIcon()">
+                            <div class="upload-icon">📤</div>
+                            <div class="upload-text">点击上传插件图标</div>
+                            <div class="upload-hint">建议尺寸 120x120px，支持 PNG、JPG 格式</div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">演示图片</label>
+                        <div class="upload-area" onclick="uploadDemoImages()">
+                            <div class="upload-icon">🖼️</div>
+                            <div class="upload-text">点击上传演示图片</div>
+                            <div class="upload-hint">支持多张图片，建议尺寸 800x600px</div>
+                        </div>
+                        <div class="uploaded-images" id="demoImages">
+                            <div class="uploaded-image">
+                                风景画示例
+                                <button class="image-delete" onclick="removeImage(this)">×</button>
+                            </div>
+                            <div class="uploaded-image">
+                                人物肖像示例
+                                <button class="image-delete" onclick="removeImage(this)">×</button>
+                            </div>
+                            <div class="uploaded-image">
+                                抽象艺术示例
+                                <button class="image-delete" onclick="removeImage(this)">×</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 详细信息 -->
+                <div class="form-section">
+                    <h3 class="section-title">
+                        <div class="section-icon">📋</div>
+                        详细信息
+                    </h3>
+                    <div class="form-group">
+                        <label class="form-label">详细描述</label>
+                        <textarea class="form-input form-textarea" id="pluginDetailDescription" style="min-height: 120px;" placeholder="请输入插件的详细描述...">最新AI绘画大模型，支持超高质量图像生成，细节处理能力极强，是创作者的得力助手。支持多种艺术风格，从写实到抽象，从古典到现代，满足各种创作需求。</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">使用文档链接</label>
+                        <input type="url" class="form-input" id="documentUrl" value="https://feishu.cn/docx/flux-usage-guide" placeholder="请输入文档链接">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">功能特性</label>
+                        <div class="features-list" id="featuresList">
+                            <div class="feature-item">
+                                <input type="text" class="form-input feature-input" value="超高质量图像生成" placeholder="请输入功能特性">
+                                <button class="feature-delete" onclick="removeFeature(this)">🗑️</button>
+                            </div>
+                            <div class="feature-item">
+                                <input type="text" class="form-input feature-input" value="支持1024x1024分辨率" placeholder="请输入功能特性">
+                                <button class="feature-delete" onclick="removeFeature(this)">🗑️</button>
+                            </div>
+                            <div class="feature-item">
+                                <input type="text" class="form-input feature-input" value="多种艺术风格切换" placeholder="请输入功能特性">
+                                <button class="feature-delete" onclick="removeFeature(this)">🗑️</button>
+                            </div>
+                        </div>
+                        <button class="add-feature" onclick="addFeature()">
+                            ➕ 添加功能特性
+                        </button>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">适用场景（用逗号分隔）</label>
+                        <input type="text" class="form-input" id="usageScenarios" value="平面设计,概念艺术,产品原型,广告创意,游戏美术" placeholder="请输入适用场景，用逗号分隔">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPlugin = 'flux';
+        let isNewPlugin = false;
+
+        // 创建新插件
+        function createNewPlugin() {
+            isNewPlugin = true;
+            currentPlugin = null;
+            document.getElementById('editTitle').textContent = '新增插件';
+            
+            // 清空表单
+            document.getElementById('pluginName').value = '';
+            document.getElementById('pluginCategory').value = 'ai-image';
+            document.getElementById('pluginPrice').value = '';
+            document.getElementById('pluginProvider').value = '官方插件';
+            document.getElementById('pluginDescription').value = '';
+            document.getElementById('pluginDetailDescription').value = '';
+            document.getElementById('documentUrl').value = '';
+            document.getElementById('usageScenarios').value = '';
+            document.getElementById('demoImages').innerHTML = '';
+            document.getElementById('featuresList').innerHTML = '<button class="add-feature" onclick="addFeature()">➕ 添加功能特性</button>';
+            
+            // 清除选中状态
+            document.querySelectorAll('.plugin-item').forEach(item => {
+                item.classList.remove('active');
+            });
+        }
+
+        // 编辑插件
+        function editPlugin(pluginId) {
+            isNewPlugin = false;
+            currentPlugin = pluginId;
+            document.getElementById('editTitle').textContent = `编辑插件 - ${getPluginName(pluginId)}`;
+            
+            // 更新选中状态
+            document.querySelectorAll('.plugin-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+            
+            // 加载插件数据（实际应用中从数据库获取）
+            loadPluginData(pluginId);
+        }
+
+        // 获取插件名称
+        function getPluginName(pluginId) {
+            const names = {
+                'flux': 'Flux大模型',
+                'heygen': 'HeyGen AI Avatar',
+                'fish-audio': 'Fish Audio'
+            };
+            return names[pluginId] || '未知插件';
+        }
+
+        // 加载插件数据
+        function loadPluginData(pluginId) {
+            // 模拟数据，实际应用中从API获取
+            const mockData = {
+                'flux': {
+                    name: 'Flux大模型',
+                    category: 'ai-image',
+                    price: '0.8',
+                    provider: '官方插件',
+                    description: '最新AI绘画大模型，支持超高质量图像生成，细节处理能力极强',
+                    detailDescription: '最新AI绘画大模型，支持超高质量图像生成，细节处理能力极强，是创作者的得力助手。支持多种艺术风格，从写实到抽象，从古典到现代，满足各种创作需求。',
+                    documentUrl: 'https://feishu.cn/docx/flux-usage-guide',
+                    usageScenarios: '平面设计,概念艺术,产品原型,广告创意,游戏美术',
+                    features: ['超高质量图像生成', '支持1024x1024分辨率', '多种艺术风格切换']
+                }
+            };
+            
+            const data = mockData[pluginId];
+            if (data) {
+                document.getElementById('pluginName').value = data.name;
+                document.getElementById('pluginCategory').value = data.category;
+                document.getElementById('pluginPrice').value = data.price;
+                document.getElementById('pluginProvider').value = data.provider;
+                document.getElementById('pluginDescription').value = data.description;
+                document.getElementById('pluginDetailDescription').value = data.detailDescription;
+                document.getElementById('documentUrl').value = data.documentUrl;
+                document.getElementById('usageScenarios').value = data.usageScenarios;
+                
+                // 加载功能特性
+                const featuresList = document.getElementById('featuresList');
+                featuresList.innerHTML = '';
+                data.features.forEach(feature => {
+                    addFeature(feature);
+                });
+                featuresList.innerHTML += '<button class="add-feature" onclick="addFeature()">➕ 添加功能特性</button>';
+            }
+        }
+
+        // 删除插件
+        function deletePlugin(pluginId) {
+            if (confirm(`确认要删除 "${getPluginName(pluginId)}" 插件吗？此操作不可恢复。`)) {
+                alert(`插件 "${getPluginName(pluginId)}" 已删除`);
+                // 实际应用中调用API删除
+            }
+        }
+
+        // 切换插件状态
+        function togglePluginStatus(pluginId) {
+            const pluginItem = event.target.closest('.plugin-item');
+            const statusElement = pluginItem.querySelector('.plugin-status');
+            const buttonElement = event.target;
+            
+            if (statusElement.classList.contains('online')) {
+                statusElement.classList.remove('online');
+                statusElement.classList.add('offline');
+                statusElement.textContent = '已下架';
+                buttonElement.textContent = '上架';
+                buttonElement.classList.remove('btn-secondary');
+                buttonElement.classList.add('btn-success');
+                alert(`插件 "${getPluginName(pluginId)}" 已下架`);
+            } else {
+                statusElement.classList.remove('offline');
+                statusElement.classList.add('online');
+                statusElement.textContent = '已上架';
+                buttonElement.textContent = '下架';
+                buttonElement.classList.remove('btn-success');
+                buttonElement.classList.add('btn-secondary');
+                alert(`插件 "${getPluginName(pluginId)}" 已上架`);
+            }
+        }
+
+        // 搜索插件
+        function searchPlugins(query) {
+            const pluginItems = document.querySelectorAll('.plugin-item');
+            pluginItems.forEach(item => {
+                const name = item.querySelector('.plugin-item-name').textContent.toLowerCase();
+                const category = item.querySelector('.plugin-item-category').textContent.toLowerCase();
+                if (name.includes(query.toLowerCase()) || category.includes(query.toLowerCase())) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        // 切换免费状态
+        function toggleFreePlugin() {
+            const checkbox = document.getElementById('isFree');
+            const priceInput = document.getElementById('pluginPrice');
+            
+            if (checkbox.checked) {
+                priceInput.disabled = true;
+                priceInput.value = '0';
+            } else {
+                priceInput.disabled = false;
+            }
+        }
+
+        // 上传图标
+        function uploadIcon() {
+            alert('打开文件选择器上传插件图标');
+            // 实际应用中实现文件上传逻辑
+        }
+
+        // 上传演示图片
+        function uploadDemoImages() {
+            alert('打开文件选择器上传演示图片');
+            // 实际应用中实现文件上传逻辑
+        }
+
+        // 移除图片
+        function removeImage(button) {
+            if (confirm('确认要删除这张图片吗？')) {
+                button.parentElement.remove();
+            }
+        }
+
+        // 添加功能特性
+        function addFeature(featureText = '') {
+            const featuresList = document.getElementById('featuresList');
+            const addButton = featuresList.querySelector('.add-feature');
+            
+            const featureItem = document.createElement('div');
+            featureItem.className = 'feature-item';
+            featureItem.innerHTML = `
+                <input type="text" class="form-input feature-input" value="${featureText}" placeholder="请输入功能特性">
+                <button class="feature-delete" onclick="removeFeature(this)">🗑️</button>
+            `;
+            
+            featuresList.insertBefore(featureItem, addButton);
+        }
+
+        // 删除功能特性
+        function removeFeature(button) {
+            button.parentElement.remove();
+        }
+
+        // 保存插件
+        function savePlugin() {
+            const pluginData = {
+                name: document.getElementById('pluginName').value,
+                category: document.getElementById('pluginCategory').value,
+                price: document.getElementById('pluginPrice').value,
+                provider: document.getElementById('pluginProvider').value,
+                description: document.getElementById('pluginDescription').value,
+                detailDescription: document.getElementById('pluginDetailDescription').value,
+                documentUrl: document.getElementById('documentUrl').value,
+                usageScenarios: document.getElementById('usageScenarios').value,
+                isFree: document.getElementById('isFree').checked
+            };
+            
+            // 收集功能特性
+            const features = [];
+            document.querySelectorAll('.feature-input').forEach(input => {
+                if (input.value.trim()) {
+                    features.push(input.value.trim());
+                }
+            });
+            pluginData.features = features;
+            
+            // 验证必填字段
+            if (!pluginData.name || !pluginData.description) {
+                alert('请填写插件名称和描述');
+                return;
+            }
+            
+            // 模拟保存
+            console.log('保存插件数据:', pluginData);
+            alert(isNewPlugin ? '插件创建成功！' : '插件更新成功！');
+            
+            // 实际应用中调用API保存数据
+        }
+
+        // 取消编辑
+        function cancelEdit() {
+            if (confirm('确认要取消编辑吗？未保存的更改将丢失。')) {
+                if (isNewPlugin) {
+                    createNewPlugin();
+                } else {
+                    loadPluginData(currentPlugin);
+                }
+            }
+        }
+
+        // 导航功能
+        function goToHome() {
+            window.location.href = 'index.html';
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 页面加载后的初始化工作
+            console.log('插件管理页面已加载');
+        });
+    </script>
+</body>
+</html>
