@@ -9,7 +9,7 @@ export const Header = () => {
   const location = useLocation();
   const { user, logout } = useAuthStore();
   const [dropdownVisible, setDropdownVisible] = useState(false);
-  let dropdownTimer: NodeJS.Timeout;
+  let dropdownTimer: number;
 
   const showDropdown = () => {
     clearTimeout(dropdownTimer);

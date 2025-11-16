@@ -6,7 +6,7 @@ import type {
   UpdateWorkflowData,
   WorkflowStatistics
 } from '../types/workflow';
-import type { ApiResponse, ListResponse } from '../types/common';
+import type { ApiResponse } from '../types/common';
 
 export const workflowApi = {
   // 获取工作流列表

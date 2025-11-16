@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, Button, Spin, message, Result } from 'antd';
+import { Card, Button, message, Result } from 'antd';
 import { CheckCircleOutlined, CopyOutlined } from '@ant-design/icons';
 import { api } from '../../api/request';
 import './Payment.css';

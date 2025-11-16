@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Layout } from 'antd';
 import { useAuthStore } from './store/useAuthStore';
-import { Header } from './components/Layout/Header';
+import { Header } from './components/layout/Header';
 
 const { Content } = Layout;
 
