@@ -45,8 +45,9 @@ echo "✓ 前端构建完成"
 echo ""
 echo "[2/6] 上传后端代码..."
 cd ../backend
-rsync -avz --exclude 'node_modules' --exclude '.env' --exclude 'dist' \
-  ./ $SERVER_USER@$SERVER_IP:$SERVER_PATH/
+# 使用 tar 打包排除不需要的文件，然后通过 SSH 解包
+tar czf - --exclude='node_modules' --exclude='.env' --exclude='dist' . | \
+  ssh $SERVER_USER@$SERVER_IP "cd $SERVER_PATH && tar xzf -"
 
 echo "✓ 后端代码上传完成"
 
