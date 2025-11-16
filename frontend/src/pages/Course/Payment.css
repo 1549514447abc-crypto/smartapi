@@ -1,0 +1,310 @@
+.payment-container {
+  min-height: 100vh;
+  background: #f5f7fa;
+  padding: 40px 20px;
+}
+
+.payment-content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.payment-card {
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* Payment Preview (Before Order Creation) */
+.payment-preview h1 {
+  font-size: 28px;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 32px;
+  color: #333;
+}
+
+.course-summary {
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.summary-item:last-child {
+  border-bottom: none;
+}
+
+.summary-item.highlight {
+  background: #fff7e6;
+  margin: 12px -12px -12px;
+  padding: 16px 12px;
+  border-radius: 0 0 8px 8px;
+}
+
+.summary-item .label {
+  font-size: 16px;
+  color: #666;
+}
+
+.summary-item .value {
+  font-size: 16px;
+  color: #333;
+  font-weight: 500;
+}
+
+.summary-item .value.price {
+  font-size: 32px;
+  font-weight: bold;
+  color: #ff4d4f;
+}
+
+.payment-notice {
+  background: #e6f7ff;
+  border: 1px solid #91d5ff;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.payment-notice h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #0050b3;
+}
+
+.payment-notice ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.payment-notice li {
+  font-size: 14px;
+  line-height: 2;
+  color: #0050b3;
+}
+
+.btn-create-order {
+  height: 50px;
+  font-size: 18px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+}
+
+.btn-create-order:hover {
+  background: linear-gradient(135deg, #7b92f5 0%, #8a5db5 100%) !important;
+}
+
+/* Order Info (After Order Creation) */
+.order-info {
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 32px;
+}
+
+.order-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.order-item:last-child {
+  border-bottom: none;
+}
+
+.order-item.highlight-order {
+  background: #fff7e6;
+  margin: 12px -12px 12px;
+  padding: 16px 12px;
+  border-radius: 8px;
+  border: 2px solid #ffa940;
+}
+
+.order-item .label {
+  font-size: 16px;
+  color: #666;
+  min-width: 100px;
+}
+
+.order-item .value {
+  flex: 1;
+  font-size: 16px;
+  color: #333;
+  font-weight: 500;
+}
+
+.order-item .value.order-no {
+  font-family: 'Courier New', monospace;
+  font-size: 18px;
+  color: #ff4d4f;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+.order-item .value.price {
+  font-size: 24px;
+  font-weight: bold;
+  color: #ff4d4f;
+}
+
+/* WeChat Section */
+.wechat-section {
+  text-align: center;
+  padding: 24px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.wechat-section h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 24px;
+  color: #333;
+}
+
+.wechat-qr {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.wechat-qr img {
+  width: 280px;
+  height: 280px;
+  border: 4px solid #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.qr-placeholder {
+  width: 280px;
+  height: 280px;
+  border: 2px dashed #d9d9d9;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #fafafa;
+  color: #999;
+}
+
+.wechat-tips {
+  background: #e6f7ff;
+  border: 1px solid #91d5ff;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.tip-title {
+  font-size: 14px;
+  color: #0050b3;
+  margin-bottom: 8px;
+}
+
+.tip-order {
+  font-size: 20px;
+  font-weight: bold;
+  font-family: 'Courier New', monospace;
+  color: #ff4d4f;
+  margin-bottom: 8px;
+  letter-spacing: 1px;
+}
+
+.tip-desc {
+  font-size: 14px;
+  color: #0050b3;
+  margin: 0;
+}
+
+/* Actions */
+.payment-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.payment-actions .ant-btn {
+  height: 44px;
+  padding: 0 32px;
+  font-size: 16px;
+}
+
+/* Result Component Override */
+.payment-card .ant-result {
+  padding: 24px 32px;
+}
+
+.payment-card .ant-result-title {
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.payment-card .ant-result-subtitle {
+  font-size: 16px;
+  color: #666;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .payment-preview h1 {
+    font-size: 22px;
+  }
+
+  .summary-item .value.price {
+    font-size: 24px;
+  }
+
+  .btn-create-order {
+    height: 44px;
+    font-size: 16px;
+  }
+
+  .wechat-qr img,
+  .qr-placeholder {
+    width: 220px;
+    height: 220px;
+  }
+
+  .wechat-section h3 {
+    font-size: 18px;
+  }
+
+  .tip-order {
+    font-size: 16px;
+  }
+
+  .payment-actions {
+    flex-direction: column;
+  }
+
+  .payment-actions .ant-btn {
+    width: 100%;
+  }
+
+  .order-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .order-item .label {
+    min-width: auto;
+  }
+
+  .order-item .value.order-no {
+    font-size: 14px;
+  }
+}

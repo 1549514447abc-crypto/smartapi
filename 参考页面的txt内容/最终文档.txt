@@ -1,0 +1,1389 @@
+# 双数据库同步文档
+
+# 🔷 SaaS平台双数据库同步系统完整技术文档
+
+---
+
+## 一、系统架构概述
+
+### 1.1 整体架构图
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                      用户端                              │
+│  ┌──────────────┐              ┌──────────────┐        │
+│  │  网站前端     │              │  插件调用     │        │
+│  │  (用户注册)   │              │  (Coze/Dify)  │        │
+│  │  (充值会员)   │              │  (API Key)    │        │
+│  └──────────────┘              └──────────────┘        │
+└─────────────────────────────────────────────────────────┘
+        ↓                                  ↓
+┌─────────────────────┐          ┌─────────────────────┐
+│  服务器数据库        │   双向    │  Supabase数据库      │
+│  (MySQL/PostgreSQL) │  ⟺      │  (PostgreSQL)       │
+│  (开发团队管理)      │   同步    │  (你自己管理)        │
+│                     │          │                     │
+│  • users            │          │  • users            │
+│  • api_keys         │          │  • api_keys         │
+│  • balance_logs     │          │  • service_configs  │
+│  • recharge_records │          │                     │
+│  • service_configs  │          │                     │
+└─────────────────────┘          └─────────────────────┘
+
+```
+
+### 1.2 核心原则
+
+- **服务器数据库**：主数据库，存储所有历史记录
+- **Supabase数据库**：插件专用，存储实时状态，用于快速验证
+- **双向同步**：任何一方余额变动，必须同步到另一方
+- **强一致性**：同步失败则操作失败（充值/扣费回滚）
+
+### 1.3 数据流向
+
+| 场景 | 流向 | 负责人 |
+| --- | --- | --- |
+| 用户注册 | 服务器 → Supabase | 开发团队 |
+| 充值 | 服务器 → Supabase | 开发团队 |
+| 插件扣费 | Supabase → 服务器 | 你 |
+| 生成Key | 服务器 → Supabase | 开发团队 |
+
+---
+
+## 二、数据库设计
+
+### 2.1 服务器SQL数据库（开发团队负责）
+
+### **表1：users（用户表）**
+
+```sql
+CREATE TABLE users (
+  user_id VARCHAR(50) PRIMARY KEY,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  username VARCHAR(100) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  balance DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT '账户余额',
+  total_recharged DECIMAL(10,2) DEFAULT 0 COMMENT '累计充值',
+  total_consumed DECIMAL(10,2) DEFAULT 0 COMMENT '累计消费',
+  workflow_member_status VARCHAR(20) COMMENT '工作流会员状态',
+  workflow_member_expire DATETIME COMMENT '工作流会员到期时间',
+  ai_content_member_status VARCHAR(20) COMMENT '降AI率会员状态',
+  ai_content_member_expire DATETIME COMMENT '降AI率会员到期时间',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_email (email),
+  INDEX idx_balance (balance),
+  INDEX idx_updated (updated_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+```
+
+### **表2：api_keys（API密钥表）**
+
+```sql
+CREATE TABLE api_keys (
+  api_key VARCHAR(100) PRIMARY KEY,
+  user_id VARCHAR(50) NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'active' COMMENT 'active/disabled',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  last_used_at DATETIME,
+  FOREIGN KEY (user_id) REFERENCES users(user_id),
+  INDEX idx_user_id (user_id),
+  INDEX idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+```
+
+### **表3：balance_logs（余额变动日志表）**
+
+```sql
+CREATE TABLE balance_logs (
+  log_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  user_id VARCHAR(50) NOT NULL,
+  change_type VARCHAR(20) NOT NULL COMMENT 'recharge/consume/adjust',
+  change_amount DECIMAL(10,2) NOT NULL COMMENT '变动金额，正数=增加，负数=减少',
+  balance_before DECIMAL(10,2) NOT NULL COMMENT '变动前余额',
+  balance_after DECIMAL(10,2) NOT NULL COMMENT '变动后余额',
+  source VARCHAR(50) NOT NULL COMMENT 'web/plugin/admin',
+  service_name VARCHAR(50) COMMENT '服务名称',
+  description TEXT COMMENT '描述信息',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  metadata JSON COMMENT '额外信息',
+  INDEX idx_user_id (user_id),
+  INDEX idx_created (created_at),
+  INDEX idx_source (source)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+```
+
+### **表4：recharge_records（充值记录表）**
+
+```sql
+CREATE TABLE recharge_records (
+  record_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  user_id VARCHAR(50) NOT NULL,
+  order_no VARCHAR(100) NOT NULL UNIQUE,
+  amount_paid DECIMAL(10,2) NOT NULL COMMENT '实付金额',
+  amount_received DECIMAL(10,2) NOT NULL COMMENT '到账金额',
+  bonus_amount DECIMAL(10,2) DEFAULT 0 COMMENT '赠送金额',
+  payment_method VARCHAR(50) COMMENT 'alipay/wechat/stripe',
+  status VARCHAR(20) NOT NULL DEFAULT 'success' COMMENT 'success/pending/failed',
+  balance_before DECIMAL(10,2) NOT NULL,
+  balance_after DECIMAL(10,2) NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  completed_at DATETIME,
+  INDEX idx_user_id (user_id),
+  INDEX idx_order_no (order_no),
+  INDEX idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+```
+
+### **表5：service_configs（服务定价配置表）**
+
+```sql
+CREATE TABLE service_configs (
+  service_name VARCHAR(50) PRIMARY KEY,
+  display_name VARCHAR(100) NOT NULL COMMENT '显示名称',
+  unit_price DECIMAL(10,4) NOT NULL COMMENT '单价（元）',
+  billing_unit VARCHAR(20) NOT NULL COMMENT 'per_call/per_second/per_token',
+  requires_membership VARCHAR(20) COMMENT '需要的会员类型',
+  is_active BOOLEAN DEFAULT TRUE,
+  description TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 初始化服务配置数据
+INSERT INTO service_configs (service_name, display_name, unit_price, billing_unit, requires_membership) VALUES
+('douyin_extract', '抖音提取', 0.0300, 'per_call', NULL),
+('xiaohongshu_extract', '小红书提取', 0.3000, 'per_call', NULL),
+('video_extract', '短视频文案提取', 0.0100, 'per_second', NULL),
+('dify_chat', 'Dify对话', 0.0030, 'per_token', NULL),
+('ai_content_reduce', '文章降AI率', 0.0030, 'per_token', 'ai_content');
+
+```
+
+---
+
+### 2.2 Supabase数据库（你负责）
+
+### **表1：users（用户信息表）**
+
+```sql
+CREATE TABLE users (
+  user_id TEXT PRIMARY KEY,
+  email TEXT,
+  username TEXT,
+  balance NUMERIC(10,2) NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 创建索引
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_balance ON users(balance);
+CREATE INDEX idx_users_updated ON users(updated_at);
+
+-- 自动更新updated_at
+CREATE OR REPLACE FUNCTION update_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER users_updated_at
+BEFORE UPDATE ON users
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at();
+
+```
+
+### **表2：api_keys（API密钥表）**
+
+```sql
+CREATE TABLE api_keys (
+  api_key TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(user_id),
+  status TEXT NOT NULL DEFAULT 'active',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  last_used_at TIMESTAMPTZ
+);
+
+-- 创建索引
+CREATE INDEX idx_api_keys_user ON api_keys(user_id);
+CREATE INDEX idx_api_keys_status ON api_keys(status);
+CREATE INDEX idx_api_keys_last_used ON api_keys(last_used_at);
+
+```
+
+### **表3：service_configs（服务配置表）**
+
+```sql
+CREATE TABLE service_configs (
+  service_name TEXT PRIMARY KEY,
+  display_name TEXT NOT NULL,
+  unit_price NUMERIC(10,4) NOT NULL,
+  billing_unit TEXT NOT NULL,
+  is_active BOOLEAN DEFAULT TRUE,
+  description TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 自动更新updated_at
+CREATE TRIGGER service_configs_updated_at
+BEFORE UPDATE ON service_configs
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at();
+
+-- 初始化服务配置
+INSERT INTO service_configs (service_name, display_name, unit_price, billing_unit) VALUES
+('douyin_extract', '抖音提取', 0.0300, 'per_call'),
+('xiaohongshu_extract', '小红书提取', 0.3000, 'per_call'),
+('video_extract', '短视频文案提取', 0.0100, 'per_second'),
+('dify_chat', 'Dify对话', 0.0030, 'per_token');
+
+```
+
+---
+
+## 三、数据同步机制
+
+### 3.1 Webhook监听配置（Supabase → 服务器）
+
+### **在Supabase后台配置：**
+
+1. 进入：`Database` → `Webhooks` → `Create a new hook`
+2. 配置内容：
+
+```
+Name: balance_update_webhook
+
+Table: users
+
+Events: ☑ UPDATE
+
+Conditions:
+balance != old.balance
+
+HTTP Request:
+  Method: POST
+  URL: https://你的服务器域名.com/api/webhook/balance-update
+
+Headers:
+  Authorization: Bearer {WEBHOOK_SECRET}
+  Content-Type: application/json
+
+Payload:
+{
+  "user_id": "{{ record.user_id }}",
+  "email": "{{ record.email }}",
+  "username": "{{ record.username }}",
+  "new_balance": {{ record.balance }},
+  "old_balance": {{ old_record.balance }},
+  "change_amount": {{ record.balance - old_record.balance }},
+  "timestamp": "{{ record.updated_at }}"
+}
+
+```
+
+### 3.2 同步流程图
+
+```
+【场景1：插件扣费 → Supabase → 服务器】
+
+用户调用插件（带api_key）
+    ↓
+插件代码查询Supabase
+    ↓
+验证API Key ✓
+检查余额充足 ✓
+    ↓
+UPDATE users SET balance = balance - 0.03
+    ↓
+【Webhook自动触发】
+    ↓
+POST https://服务器.com/api/webhook/balance-update
+Body: {user_id, new_balance, change_amount}
+    ↓
+服务器接收 → 更新users表 → 插入balance_logs
+    ↓
+完成
+
+【场景2：用户充值 → 服务器 → Supabase】
+
+用户在网站充值100元
+    ↓
+服务器：
+  1. 计算到账115元（含赠送）
+  2. UPDATE users SET balance = balance + 115
+  3. INSERT INTO recharge_records
+    ↓
+开发团队调用Supabase API
+    ↓
+POST https://supabase.co/rest/v1/users
+Body: {user_id, balance: 115.50}
+    ↓
+Supabase更新成功
+    ↓
+完成
+
+```
+
+---
+
+## 四、API接口设计
+
+### 4.1 服务器提供的接口（开发团队开发）
+
+### **接口1：接收Supabase余额更新（核心）**
+
+```
+POST /api/webhook/balance-update
+
+请求头：
+  Authorization: Bearer {WEBHOOK_SECRET}
+  Content-Type: application/json
+
+请求体：
+{
+  "user_id": "12345",
+  "email": "user@example.com",
+  "username": "张三",
+  "new_balance": 114.97,
+  "old_balance": 115.00,
+  "change_amount": -0.03,
+  "timestamp": "2025-10-27T10:30:00Z"
+}
+
+返回：
+{
+  "success": true,
+  "log_id": 123456
+}
+
+错误返回：
+{
+  "success": false,
+  "error": "错误信息"
+}
+
+```
+
+---
+
+### 4.2 Supabase提供的接口（标准REST API）
+
+### **接口1：同步用户信息**
+
+```
+POST https://{project_id}.supabase.co/rest/v1/users
+
+请求头：
+  apikey: {SUPABASE_ANON_KEY}
+  Content-Type: application/json
+  Prefer: resolution=merge-duplicates
+
+请求体：
+{
+  "user_id": "12345",
+  "email": "user@example.com",
+  "username": "张三",
+  "balance": 115.50
+}
+
+```
+
+### **接口2：同步API Key**
+
+```
+POST https://{project_id}.supabase.co/rest/v1/api_keys
+
+请求头：
+  apikey: {SUPABASE_ANON_KEY}
+  Content-Type: application/json
+
+请求体：
+{
+  "api_key": "sk_12345_abc",
+  "user_id": "12345",
+  "status": "active"
+}
+
+```
+
+### **接口3：更新服务配置**
+
+```
+POST https://{project_id}.supabase.co/rest/v1/service_configs
+
+请求头：
+  apikey: {SUPABASE_ANON_KEY}
+  Content-Type: application/json
+  Prefer: resolution=merge-duplicates
+
+请求体：
+{
+  "service_name": "douyin_extract",
+  "display_name": "抖音提取",
+  "unit_price": 0.03,
+  "billing_unit": "per_call",
+  "is_active": true
+}
+
+```
+
+---
+
+## 五、开发分工
+
+### 5.1 开发团队工作清单
+
+### **数据库部分：**
+
+- ✅ 创建5张表：users, api_keys, balance_logs, recharge_records, service_configs
+- ✅ 初始化service_configs表数据
+- ✅ 设置必要的索引和外键
+
+### **功能开发：**
+
+**1. 用户注册功能**
+
+```python
+def user_register(email, username, password):
+    # 1. 创建用户
+    user_id = generate_user_id()
+    password_hash = hash_password(password)
+
+    # 2. 写入服务器数据库
+    db.execute("""
+        INSERT INTO users (user_id, email, username, password_hash, balance)
+        VALUES (?, ?, ?, ?, 0)
+    """, user_id, email, username, password_hash)
+
+    # 3. 同步到Supabase
+    sync_user_to_supabase(user_id, email, username, 0)
+
+    return user_id
+
+```
+
+**2. 生成API Key功能**
+
+```python
+def generate_api_key(user_id):
+    # 1. 生成随机key
+    api_key = f"sk_{user_id}_{generate_random_string(32)}"
+
+    # 2. 写入服务器数据库
+    db.execute("""
+        INSERT INTO api_keys (api_key, user_id, status)
+        VALUES (?, ?, 'active')
+    """, api_key, user_id)
+
+    # 3. 同步到Supabase
+    sync_api_key_to_supabase(api_key, user_id)
+
+    return api_key
+
+```
+
+**3. 充值功能**
+
+```python
+def handle_recharge(user_id, amount_paid, order_no):
+    # 1. 计算赠送金额
+    bonus = calculate_bonus(amount_paid)
+    total = amount_paid + bonus
+
+    # 2. 获取充值前余额
+    balance_before = db.execute(
+        "SELECT balance FROM users WHERE user_id = ?", user_id
+    )[0]['balance']
+
+    # 3. 更新服务器余额
+    db.execute("""
+        UPDATE users
+        SET balance = balance + ?,
+            total_recharged = total_recharged + ?
+        WHERE user_id = ?
+    """, total, amount_paid, user_id)
+
+    balance_after = balance_before + total
+
+    # 4. 插入充值记录
+    db.execute("""
+        INSERT INTO recharge_records
+        (user_id, order_no, amount_paid, amount_received,
+         bonus_amount, balance_before, balance_after)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, user_id, order_no, amount_paid, total,
+        bonus, balance_before, balance_after)
+
+    # 5. 插入余额日志
+    db.execute("""
+        INSERT INTO balance_logs
+        (user_id, change_type, change_amount, balance_before,
+         balance_after, source, description)
+        VALUES (?, 'recharge', ?, ?, ?, 'web', ?)
+    """, user_id, total, balance_before, balance_after, f"充值订单:{order_no}")
+
+    # 6. 同步到Supabase
+    sync_balance_to_supabase(user_id, balance_after)
+
+    return balance_after
+
+```
+
+**4. 接收Webhook（核心）**
+
+```python
+@app.route('/api/webhook/balance-update', methods=['POST'])
+def receive_balance_update():
+    # 1. 验证请求来源
+    auth_header = request.headers.get('Authorization')
+    if auth_header != f"Bearer {WEBHOOK_SECRET}":
+        return jsonify({"success": False, "error": "未授权"}), 401
+
+    # 2. 获取数据
+    data = request.json
+    user_id = data['user_id']
+    new_balance = data['new_balance']
+    change_amount = data['change_amount']
+
+    # 3. 更新服务器余额
+    db.execute("""
+        UPDATE users
+        SET balance = ?
+        WHERE user_id = ?
+    """, new_balance, user_id)
+
+    # 4. 插入余额日志
+    balance_before = new_balance - change_amount
+    log_id = db.execute("""
+        INSERT INTO balance_logs
+        (user_id, change_type, change_amount, balance_before,
+         balance_after, source, description)
+        VALUES (?, 'consume', ?, ?, ?, 'plugin', '插件扣费')
+        RETURNING log_id
+    """, user_id, change_amount, balance_before, new_balance)
+
+    # 5. 返回成功
+    return jsonify({"success": True, "log_id": log_id}), 200
+
+```
+
+**5. Supabase同步函数**
+
+```python
+import requests
+
+SUPABASE_URL = "https://xxx.supabase.co"
+SUPABASE_KEY = "your_anon_key"
+
+def sync_user_to_supabase(user_id, email, username, balance):
+    url = f"{SUPABASE_URL}/rest/v1/users"
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates"
+    }
+    data = {
+        "user_id": user_id,
+        "email": email,
+        "username": username,
+        "balance": float(balance)
+    }
+    response = requests.post(url, headers=headers, json=data, timeout=10)
+    return response.status_code == 201
+
+def sync_balance_to_supabase(user_id, balance):
+    url = f"{SUPABASE_URL}/rest/v1/users"
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates"
+    }
+    data = {
+        "user_id": user_id,
+        "balance": float(balance)
+    }
+    response = requests.post(url, headers=headers, json=data, timeout=10)
+    return response.status_code == 201
+
+def sync_api_key_to_supabase(api_key, user_id):
+    url = f"{SUPABASE_URL}/rest/v1/api_keys"
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Content-Type": "application/json"
+    }
+    data = {
+        "api_key": api_key,
+        "user_id": user_id,
+        "status": "active"
+    }
+    response = requests.post(url, headers=headers, json=data, timeout=10)
+    return response.status_code == 201
+
+```
+
+---
+
+### 5.2 你的工作清单
+
+### **Supabase配置：**
+
+- ✅ 创建3张表：users, api_keys, service_configs
+- ✅ 设置Database Webhook监听users表余额变动
+- ✅ 配置Row Level Security（可选）
+
+### **插件开发：**
+
+**1. 通用扣费函数**
+
+```jsx
+// deduct_balance.js
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+)
+
+export async function deductBalance(api_key, service_name, quantity = 1) {
+  try {
+    // 1. 验证API Key并获取用户信息
+    const { data: keyData, error: keyError } = await supabase
+      .from('api_keys')
+      .select('user_id, status')
+      .eq('api_key', api_key)
+      .single()
+
+    if (keyError || !keyData || keyData.status !== 'active') {
+      return { success: false, error: '无效的API Key' }
+    }
+
+    const user_id = keyData.user_id
+
+    // 2. 获取用户完整信息
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('user_id, email, username, balance')
+      .eq('user_id', user_id)
+      .single()
+
+    if (userError || !userData) {
+      return { success: false, error: '用户不存在' }
+    }
+
+    // 3. 获取服务价格
+    const { data: serviceData, error: serviceError } = await supabase
+      .from('service_configs')
+      .select('unit_price, billing_unit, is_active, display_name')
+      .eq('service_name', service_name)
+      .single()
+
+    if (serviceError || !serviceData || !serviceData.is_active) {
+      return { success: false, error: '服务不可用' }
+    }
+
+    const cost = serviceData.unit_price * quantity
+
+    // 4. 检查余额
+    if (userData.balance < cost) {
+      return {
+        success: false,
+        error: '余额不足',
+        current_balance: userData.balance,
+        required: cost
+      }
+    }
+
+    // 5. 扣费
+    const new_balance = userData.balance - cost
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({
+        balance: new_balance,
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', user_id)
+
+    if (updateError) {
+      return { success: false, error: '扣费失败: ' + updateError.message }
+    }
+
+    // 6. 更新API Key最后使用时间
+    await supabase
+      .from('api_keys')
+      .update({ last_used_at: new Date().toISOString() })
+      .eq('api_key', api_key)
+
+    // 7. 返回成功（Webhook会自动通知服务器）
+    return {
+      success: true,
+      cost: cost,
+      balance_before: userData.balance,
+      balance_after: new_balance,
+      user_info: {
+        username: userData.username,
+        email: userData.email
+      }
+    }
+
+  } catch (error) {
+    console.error('扣费错误:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+```
+
+**2. 抖音提取插件示例**
+
+```jsx
+import { deductBalance } from './deduct_balance.js'
+
+export async function douyinExtract(api_key, video_url) {
+  // 1. 先扣费
+  const deductResult = await deductBalance(api_key, 'douyin_extract', 1)
+
+  if (!deductResult.success) {
+    return {
+      success: false,
+      error: deductResult.error
+    }
+  }
+
+  // 2. 扣费成功，执行实际功能
+  try {
+    const videoData = await fetchDouyinVideoData(video_url)
+
+    return {
+      success: true,
+      data: {
+        title: videoData.title,
+        author: videoData.author,
+        description: videoData.description,
+        video_url: videoData.video_url
+      },
+      cost: deductResult.cost,
+      remaining_balance: deductResult.balance_after,
+      user: deductResult.user_info.username
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: '提取失败：' + error.message,
+      balance_refunded: false // 简化处理，不退款
+    }
+  }
+}
+
+async function fetchDouyinVideoData(video_url) {
+  // 你的抖音提取逻辑
+  // ...
+}
+
+```
+
+**3. Dify对话插件示例**
+
+```jsx
+import { deductBalance } from './deduct_balance.js'
+
+export async function difyChat(api_key, prompt, conversation_id = null) {
+  // 1. 预检查余额
+  const { data: keyData } = await supabase
+    .from('api_keys')
+    .select('user_id')
+    .eq('api_key', api_key)
+    .single()
+
+  if (!keyData) {
+    return { success: false, error: '无效的API Key' }
+  }
+
+  const { data: userData } = await supabase
+    .from('users')
+    .select('balance')
+    .eq('user_id', keyData.user_id)
+    .single()
+
+  if (!userData || userData.balance < 0.01) {
+    return { success: false, error: '余额不足，请先充值' }
+  }
+
+  // 2. 调用Dify API
+  try {
+    const difyResult = await callDifyAPI({
+      inputs: { prompt },
+      conversation_id: conversation_id
+    })
+
+    const token_count = difyResult.metadata.usage.total_tokens
+
+    // 3. 根据实际token扣费（成本×3倍）
+    const deductResult = await deductBalance(api_key, 'dify_chat', token_count)
+
+    if (!deductResult.success) {
+      return {
+        success: false,
+        error: '扣费失败: ' + deductResult.error,
+        dify_response: difyResult.answer // 已经得到回答，但扣费失败
+      }
+    }
+
+    return {
+      success: true,
+      answer: difyResult.answer,
+      conversation_id: difyResult.conversation_id,
+      tokens_used: token_count,
+      cost: deductResult.cost,
+      remaining_balance: deductResult.balance_after
+    }
+
+  } catch (error) {
+    return {
+      success: false,
+      error: 'Dify调用失败: ' + error.message
+    }
+  }
+}
+
+async function callDifyAPI(params) {
+  // 调用Dify API
+  const response = await fetch('https://api.dify.ai/v1/chat-messages', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer ' + process.env.DIFY_API_KEY,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(params)
+  })
+  return await response.json()
+}
+```
+
+---
+
+---
+
+### 6.3 联调测试步骤
+
+### **测试1：用户注册流程**
+
+```
+1. 在网站注册用户
+2. 检查服务器users表是否创建
+3. 检查Supabase users表是否同步
+4. 验证user_id、email、username一致
+
+```
+
+### **测试2：生成API Key流程**
+
+```
+1. 用户点击生成API Key
+2. 检查服务器api_keys表
+3. 检查Supabase api_keys表
+4. 用Key调用插件，验证可用
+
+```
+
+### **测试3：充值流程**
+
+```
+1. 用户充值100元（到账115元）
+2. 检查服务器users.balance = 115
+3. 检查Supabase users.balance = 115
+4. 检查服务器recharge_records有记录
+5. 检查服务器balance_logs有记录
+
+```
+
+### **测试4：插件扣费流程**
+
+```
+1. 调用抖音提取插件（0.03元）
+2. 检查Supabase users.balance = 114.97
+3. 等待1-2秒，检查服务器users.balance = 114.97
+4. 检查服务器balance_logs有插件扣费记录
+5. 检查Webhook日志显示成功
+
+```
+
+### **测试5：并发测试**
+
+```
+1. 同时发起10个插件调用
+2. 检查最终余额是否正确
+3. 检查是否有重复扣费
+4. 检查balance_logs记录数量
+
+```
+
+### **测试6：异常测试**
+
+```
+1. 余额不足时调用插件 → 应返回"余额不足"
+2. 无效API Key → 应返回"无效Key"
+3. 服务器临时关闭 → 插件扣费成功，Webhook失败（查看日志）
+4. Supabase同步失败 → 充值应回滚
+
+```
+
+---
+
+## 七、代码示例
+
+### 7.1 充值赠送计算逻辑
+
+```python
+def calculate_bonus(amount_paid):
+    """
+    充值赠送计算
+    10元：不赠送
+    50元：赠送10%
+    100元：赠送15%
+    300元：赠送20%
+    500元：赠送25%
+    1000元：赠送40%
+    """
+    bonus_rules = [
+        (1000, 0.40),
+        (500, 0.25),
+        (300, 0.20),
+        (100, 0.15),
+        (50, 0.10),
+        (10, 0.00)
+    ]
+
+    for threshold, rate in bonus_rules:
+        if amount_paid >= threshold:
+            bonus = amount_paid * rate
+            return bonus
+
+    return 0
+
+```
+
+### 7.2 API Key生成逻辑
+
+```python
+import secrets
+import string
+
+def generate_random_string(length=32):
+    """生成随机字符串"""
+    alphabet = string.ascii_letters + string.digits
+    return ''.join(secrets.choice(alphabet) for _ in range(length))
+
+def generate_api_key(user_id):
+    """生成API Key"""
+    random_part = generate_random_string(32)
+    return f"sk_{user_id}_{random_part}"
+
+```
+
+### 7.3 Webhook签名验证（可选，增强安全性）
+
+```python
+import hmac
+import hashlib
+
+def verify_webhook_signature(payload, signature, secret):
+    """验证Webhook签名"""
+    expected_signature = hmac.new(
+        secret.encode(),
+        payload.encode(),
+        hashlib.sha256
+    ).hexdigest()
+
+    return hmac.compare_digest(signature, expected_signature)
+
+@app.route('/api/webhook/balance-update', methods=['POST'])
+def receive_balance_update():
+    # 获取签名
+    signature = request.headers.get('X-Webhook-Signature')
+    payload = request.get_data(as_text=True)
+
+    # 验证签名
+    if not verify_webhook_signature(payload, signature, WEBHOOK_SECRET):
+        return jsonify({"error": "签名验证失败"}), 401
+
+    # 处理逻辑
+    # ...
+
+```
+
+---
+
+## 八、测试清单
+
+### 8.1 功能测试
+
+| 测试项 | 测试内容 | 预期结果 |
+| --- | --- | --- |
+| 用户注册 | 注册新用户 | 两边数据库都有记录 |
+| 生成Key | 生成API Key | 两边api_keys表都有 |
+| 充值100元 | 充值到账115元 | 两边余额都是115 |
+| 插件扣费 | 调用抖音提取 | 两边余额都-0.03 |
+| 余额不足 | 余额0时调用插件 | 返回"余额不足" |
+| 无效Key | 用错误Key调用 | 返回"无效Key" |
+| Webhook | Supabase扣费 | 服务器收到通知 |
+
+### 8.2 性能测试
+
+| 测试项 | 目标 | 测试方法 |
+| --- | --- | --- |
+| 插件响应时间 | <500ms | 单次调用计时 |
+| 并发扣费 | 10并发不出错 | 同时发10个请求 |
+| Webhook延迟 | <2秒 | 记录触发到接收时间 |
+| 数据库查询 | <100ms | 慢查询日志 |
+
+### 8.3 安全测试
+
+| 测试项 | 测试方法 | 预期结果 |
+| --- | --- | --- |
+| SQL注入 | 恶意输入测试 | 被过滤 |
+| API Key泄露 | 用别人Key调用 | 正常扣对方余额（设计如此） |
+| Webhook伪造 | 不带密钥请求 | 返回401 |
+| 余额篡改 | 直接改数据库 | 对账发现不一致 |
+
+---
+
+## 九、常见问题
+
+### 9.1 Webhook失败怎么办？
+
+**问题：** Supabase扣费成功，但服务器没收到通知
+
+**解决方案：**
+
+### **方案1：查看Webhook日志**
+
+```
+Supabase后台 → Database → Webhooks → 点击webhook名称 → Logs
+查看失败原因（超时/服务器500等）
+
+```
+
+### **方案2：手动重试脚本**
+
+```python
+# 定时任务，每5分钟运行一次
+def sync_recent_balance_changes():
+    # 从Supabase查询最近更新的用户
+    supabase_users = fetch_from_supabase("""
+        SELECT user_id, balance, updated_at
+        FROM users
+        WHERE updated_at > NOW() - INTERVAL '10 minutes'
+    """)
+
+    # 对比服务器余额，不一致则同步
+    for user in supabase_users:
+        server_balance = db.execute(
+            "SELECT balance FROM users WHERE user_id = ?",
+            user['user_id']
+        )[0]['balance']
+
+        if server_balance != user['balance']:
+            # 同步
+            db.execute("""
+                UPDATE users SET balance = ?
+                WHERE user_id = ?
+            """, user['balance'], user['user_id'])
+
+            print(f"已同步用户 {user['user_id']} 余额")
+
+```
+
+---
+
+### 9.2 充值同步失败怎么办？
+
+**问题：** 服务器充值成功，但Supabase没更新
+
+**解决方案：**
+
+### **方案1：重试机制**
+
+```python
+def sync_balance_to_supabase_with_retry(user_id, balance, max_retries=3):
+    for attempt in range(max_retries):
+        try:
+            result = sync_balance_to_supabase(user_id, balance)
+            if result:
+                return True
+            time.sleep(1)  # 等待1秒后重试
+        except Exception as e:
+            print(f"同步失败（第{attempt+1}次）: {e}")
+            if attempt == max_retries - 1:
+                # 记录失败日志，人工处理
+                log_sync_failure(user_id, balance)
+                return False
+    return False
+
+```
+
+### **方案2：手动同步按钮**
+
+```
+在后台管理界面提供"同步余额到Supabase"按钮
+管理员可以手动触发同步
+
+```
+
+---
+
+### 9.3 数据不一致怎么办？
+
+**问题：** 两边数据库余额不一致
+
+**解决方案：**
+
+### **定时对账脚本（每天运行）**
+
+```python
+def daily_balance_check():
+    # 从服务器获取所有用户余额
+    server_users = db.execute("SELECT user_id, balance FROM users")
+
+    # 从Supabase获取所有用户余额
+    supabase_users = fetch_from_supabase("SELECT user_id, balance FROM users")
+
+    # 对比
+    differences = []
+    for server_user in server_users:
+        supabase_user = next(
+            (u for u in supabase_users if u['user_id'] == server_user['user_id']),
+            None
+        )
+
+        if not supabase_user:
+            differences.append({
+                'user_id': server_user['user_id'],
+                'issue': 'Supabase缺失用户'
+            })
+        elif server_user['balance'] != supabase_user['balance']:
+            differences.append({
+                'user_id': server_user['user_id'],
+                'server_balance': server_user['balance'],
+                'supabase_balance': supabase_user['balance'],
+                'diff': server_user['balance'] - supabase_user['balance']
+            })
+
+    # 以服务器为准，修复Supabase
+    for diff in differences:
+        if 'server_balance' in diff:
+            sync_balance_to_supabase(diff['user_id'], diff['server_balance'])
+            print(f"已修复用户 {diff['user_id']} 余额")
+
+    # 发送报告
+    if differences:
+        send_alert_email("余额对账报告", differences)
+
+```
+
+---
+
+### 9.4 如何处理退款？
+
+**场景：** 用户反馈插件提取失败，要求退款
+
+**解决方案：**
+
+```python
+def refund_balance(user_id, amount, reason):
+    # 1. 获取当前余额
+    balance_before = db.execute(
+        "SELECT balance FROM users WHERE user_id = ?", user_id
+    )[0]['balance']
+
+    # 2. 更新服务器余额
+    db.execute("""
+        UPDATE users
+        SET balance = balance + ?
+        WHERE user_id = ?
+    """, amount, user_id)
+
+    balance_after = balance_before + amount
+
+    # 3. 插入日志
+    db.execute("""
+        INSERT INTO balance_logs
+        (user_id, change_type, change_amount, balance_before,
+         balance_after, source, description)
+        VALUES (?, 'adjust', ?, ?, ?, 'admin', ?)
+    """, user_id, amount, balance_before, balance_after, f"退款:{reason}")
+
+    # 4. 同步到Supabase
+    sync_balance_to_supabase(user_id, balance_after)
+
+    return balance_after
+
+```
+
+---
+
+### 9.5 如何查看用户消费记录？
+
+```python
+@app.route('/api/user/<user_id>/logs', methods=['GET'])
+def get_user_logs(user_id):
+    # 查询balance_logs
+    logs = db.execute("""
+        SELECT
+            change_type,
+            change_amount,
+            balance_before,
+            balance_after,
+            source,
+            description,
+            created_at
+        FROM balance_logs
+        WHERE user_id = ?
+        ORDER BY created_at DESC
+        LIMIT 100
+    """, user_id)
+
+    return jsonify({
+        "user_id": user_id,
+        "logs": logs
+    })
+
+```
+
+---
+
+## 十、部署配置
+
+### 10.1 环境变量配置
+
+### **开发团队需要配置：**
+
+```bash
+# .env文件
+SUPABASE_URL=https://xxxxx.supabase.co
+SUPABASE_KEY=你的anon_key
+WEBHOOK_SECRET=随机生成的密钥（建议64位）
+
+```
+
+### **你需要配置：**
+
+```bash
+# .env文件
+SUPABASE_URL=https://xxxxx.supabase.co
+SUPABASE_SERVICE_KEY=你的service_role_key
+SERVER_WEBHOOK_URL=https://你的服务器.com/api/webhook/balance-update
+SERVER_WEBHOOK_SECRET=与开发团队约定的密钥
+
+```
+
+---
+
+### 10.2 安全建议
+
+1. **使用HTTPS**：所有API调用必须使用HTTPS
+2. **密钥管理**：密钥存在环境变量，不要提交到代码仓库
+3. **Webhook验证**：严格验证Webhook来源
+4. **API限流**：防止恶意高频调用
+5. **日志监控**：记录所有关键操作，定期审计
+
+---
+
+## 十一、交付清单
+
+### 11.1 开发团队交付物
+
+- ✅ 服务器数据库建表脚本
+- ✅ 用户注册功能（含Supabase同步）
+- ✅ API Key生成功能（含Supabase同步）
+- ✅ 充值功能（含Supabase同步）
+- ✅ Webhook接收接口
+- ✅ 测试文档和测试数据
+- ✅ API文档
+
+### 11.2 你的交付物
+
+- ✅ Supabase数据库配置
+- ✅ Database Webhook配置
+- ✅ 通用扣费函数
+- ✅ 各插件改造完成
+- ✅ 插件使用文档
+
+---
+
+## 十二、联系方式
+
+### 技术对接人
+
+**开发团队：**
+
+- 联系人：[开发负责人姓名]
+- 邮箱：[邮箱]
+- 微信/电话：[联系方式]
+
+**你：**
+
+- 联系人：[你的名字]
+- 邮箱：[邮箱]
+- 微信/电话：[联系方式]
+
+### 问题反馈
+
+- 技术问题：通过邮件或即时通讯工具
+- 紧急问题：直接电话联系
+- Bug报告：使用统一的Bug追踪系统
+
+---
+
+## 附录
+
+### A. 充值档位建议
+
+| 充值金额 | 到账金额 | 赠送比例 | 适用场景 |
+| --- | --- | --- | --- |
+| ¥10 | ¥10 | 0% | 试用 |
+| ¥50 | ¥55 | 10% | 轻度使用 |
+| ¥100 | ¥115 | 15% | 推荐⭐ |
+| ¥300 | ¥360 | 20% | 高频使用 |
+| ¥500 | ¥625 | 25% | 重度使用 |
+| ¥1000 | ¥1400 | 40% | 企业用户 |
+
+### B. 服务定价参考
+
+| 服务名称 | 单价 | 计费单位 | 说明 |
+| --- | --- | --- | --- |
+| 抖音提取 | ¥0.03 | 按次 | 每次调用 |
+| 小红书提取 | ¥0.30 | 按次 | 每次调用 |
+| 短视频文案提取 | ¥0.01 | 按秒 | 视频时长 |
+| Dify对话 | ¥0.003 | 按token | 实际成本×3 |
+| 文章降AI率 | ¥0.003 | 按token | 需99元/月会员 |
+
+### C. 技术栈
+
+**服务器端：**
+
+- 语言：Python/Node.js/PHP（根据实际）
+- 数据库：MySQL/PostgreSQL
+- Web框架：Flask/Express/Laravel
+
+**Supabase：**
+
+- 数据库：PostgreSQL
+- 开发语言：JavaScript/TypeScript
+- 运行环境：Deno/Node.js
+
+---
+
+**文档版本：** v1.0
+
+**最后更新：** 2025-10-27
+
+**文档状态：** 最终版

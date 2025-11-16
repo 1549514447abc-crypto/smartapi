@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>创作魔方 Content Cube - 推广返佣计划</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            min-height: 100vh;
+            color: #1e293b;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            padding: 20px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(45deg, #0ea5e9, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .back-button {
+            background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .back-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(14, 165, 233, 0.3);
+        }
+        
+        .hero {
+            text-align: center;
+            padding: 80px 30px 60px;
+            color: #1e293b;
+        }
+        
+        .hero h1 {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            line-height: 1.2;
+        }
+        
+        .hero-subtitle {
+            font-size: 24px;
+            margin-bottom: 20px;
+            opacity: 0.95;
+            font-weight: 600;
+            color: #0ea5e9;
+        }
+        
+        .hero-description {
+            font-size: 18px;
+            margin-bottom: 40px;
+            opacity: 0.9;
+            line-height: 1.6;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .commission-highlight {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+        
+        .commission-step {
+            text-align: center;
+            position: relative;
+        }
+        
+        .step-number {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #0ea5e9, #3b82f6);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0 auto 15px;
+        }
+        
+        .step-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #f59e0b;
+            margin-bottom: 5px;
+        }
+        
+        .step-desc {
+            font-size: 14px;
+            color: #64748b;
+            max-width: 120px;
+        }
+        
+        .commission-step:not(:last-child)::after {
+            content: '→';
+            position: absolute;
+            right: -30px;
+            top: 25px;
+            font-size: 24px;
+            color: #0ea5e9;
+            font-weight: bold;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 30px 60px;
+        }
+        
+        .plan-section {
+            background: white;
+            border-radius: 20px;
+            padding: 60px 50px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            margin: -40px 0 60px;
+            position: relative;
+        }
+        
+        .section-title {
+            text-align: center;
+            font-size: 32px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 20px;
+        }
+        
+        .section-subtitle {
+            text-align: center;
+            font-size: 18px;
+            color: #64748b;
+            margin-bottom: 50px;
+        }
+        
+        .commission-tiers {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .tier-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #fff 100%);
+            border-radius: 20px;
+            padding: 40px 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            transition: all 0.3s;
+            position: relative;
+            border: 2px solid transparent;
+            text-align: center;
+        }
+        
+        .tier-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+        }
+        
+        .tier-card.recommended {
+            border-color: #f59e0b;
+            background: linear-gradient(135deg, #fefbf0 0%, #fff 100%);
+        }
+        
+        .tier-badge {
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .tier-percentage {
+            font-size: 48px;
+            font-weight: 700;
+            color: #0ea5e9;
+            margin-bottom: 10px;
+        }
+        
+        .tier-card.recommended .tier-percentage {
+            color: #f59e0b;
+        }
+        
+        .tier-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #1e293b;
+        }
+        
+        .tier-condition {
+            background: #f1f5f9;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #475569;
+        }
+        
+        .tier-features {
+            list-style: none;
+            text-align: left;
+        }
+        
+        .tier-features li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+            color: #475569;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .tier-features li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #10b981;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        
+        .long-term-section {
+            background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
+            color: white;
+            border-radius: 20px;
+            padding: 50px;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+        
+        .long-term-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+        
+        .long-term-desc {
+            font-size: 18px;
+            margin-bottom: 30px;
+            opacity: 0.95;
+            line-height: 1.6;
+        }
+        
+        .income-example {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .example-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        
+        .example-calculation {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            text-align: center;
+        }
+        
+        .calc-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        .calc-number {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .calc-label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+        
+        .benefits-section {
+            background: linear-gradient(135deg, #f8fafc 0%, #fff 100%);
+            border-radius: 20px;
+            padding: 50px;
+            margin-bottom: 40px;
+        }
+        
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+        
+        .benefit-item {
+            text-align: center;
+            padding: 30px 20px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            transition: transform 0.3s;
+        }
+        
+        .benefit-item:hover {
+            transform: translateY(-5px);
+        }
+        
+        .benefit-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 20px;
+            background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+        }
+        
+        .benefit-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #1e293b;
+        }
+        
+        .benefit-desc {
+            color: #64748b;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .contact-section {
+            background: linear-gradient(135deg, #1e293b 0%, #475569 100%);
+            color: white;
+            border-radius: 20px;
+            padding: 50px;
+            text-align: center;
+        }
+        
+        .contact-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+        
+        .contact-subtitle {
+            font-size: 18px;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+        
+        .contact-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .contact-button {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .contact-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        .start-button {
+            background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+            color: white;
+            border: none;
+            padding: 18px 40px;
+            border-radius: 30px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 40px;
+            box-shadow: 0 10px 30px rgba(245, 158, 11, 0.3);
+        }
+        
+        .start-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(245, 158, 11, 0.4);
+        }
+        
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 36px;
+            }
+            
+            .hero-subtitle {
+                font-size: 20px;
+            }
+            
+            .commission-highlight {
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            .commission-step:not(:last-child)::after {
+                content: '↓';
+                position: static;
+                display: block;
+                margin: 10px 0;
+            }
+            
+            .plan-section {
+                padding: 40px 20px;
+                margin: -20px 10px 40px;
+            }
+            
+            .section-title {
+                font-size: 24px;
+            }
+            
+            .commission-tiers {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .benefits-section, .contact-section, .long-term-section {
+                padding: 30px 20px;
+            }
+            
+            .benefits-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .example-calculation {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="logo">创作魔方 Content Cube · 推广返佣</div>
+            <button class="back-button" onclick="window.close()">返回首页</button>
+        </div>
+    </div>
+
+    <div class="hero">
+        <h1>0成本0投入，打造长期被动收益！</h1>
+        <p class="hero-subtitle">0成本启动，享受30%-50%高额返佣</p>
+        <p class="hero-description">
+            0成本0投入，不用你会用只要你会推！<br>
+            别人学技术，你直接卖工具赚钱，打造真正的长期被动收益！
+        </p>
+        
+        <div class="commission-highlight">
+            <div class="commission-step">
+                <div class="step-number">30%</div>
+                <div class="step-title">新手佣金</div>
+                <div class="step-desc">立即开始</div>
+            </div>
+            <div class="commission-step">
+                <div class="step-number">40%</div>
+                <div class="step-title">进阶佣金</div>
+                <div class="step-desc">推广10人达成</div>
+            </div>
+            <div class="commission-step">
+                <div class="step-number">50%</div>
+                <div class="step-title">高级佣金</div>
+                <div class="step-desc">推广20人达成</div>
+            </div>
+        </div>
+        
+        <p style="text-align: center; font-size: 16px; color: #f59e0b; font-weight: 600; margin-bottom: 10px;">注册即可享受30%推广佣金</p>
+        <button class="start-button" onclick="contactService()">🚀 立即开始赚钱</button>
+    </div>
+
+    <div class="container">
+        <div class="plan-section">
+            <h2 class="section-title">💰 阶梯式佣金体系</h2>
+            <p class="section-subtitle">推广越多，佣金越高，收益无上限</p>
+            
+            <div class="commission-tiers">
+                <div class="tier-card">
+                    <div class="tier-percentage">30%</div>
+                    <h3 class="tier-title">新手佣金</h3>
+                    <div class="tier-condition">达成条件：立即获得</div>
+                    
+                    <ul class="tier-features">
+                        <li>免费获得专属推广链接</li>
+                        <li>每推广1个付费用户获得30%佣金</li>
+                        <li>享受用户第一个月会员费返佣</li>
+                        <li>用户消费30天后自动结算，秒到账</li>
+                        <li>0成本启动，人人可参与</li>
+                    </ul>
+                </div>
+                
+                <div class="tier-card recommended">
+                    <div class="tier-badge">🔥 热门</div>
+                    <div class="tier-percentage">40%</div>
+                    <h3 class="tier-title">进阶佣金</h3>
+                    <div class="tier-condition">达成条件：累计推广10个付费用户</div>
+                    
+                    <ul class="tier-features">
+                        <li>佣金提升至40%，收入大幅增长</li>
+                        <li>享受所有新推广用户40%返佣</li>
+                        <li>推广数据实时查看</li>
+                        <li>月度业绩排行榜展示</li>
+                        <li>专属推广策略指导</li>
+                    </ul>
+                </div>
+                
+                <div class="tier-card">
+                    <div class="tier-percentage">50%</div>
+                    <h3 class="tier-title">高级佣金</h3>
+                    <div class="tier-condition">达成条件：累计推广20个付费用户</div>
+                    
+                    <ul class="tier-features">
+                        <li>最高50%佣金率，收益最大化</li>
+                        <li>享受所有新推广用户50%返佣</li>
+                        <li>VIP推广者专属标识</li>
+                        <li>月度收益分析报告</li>
+                        <li>推广策略深度定制服务</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="long-term-section">
+            <h2 class="long-term-title">🎯 长期被动收入机制</h2>
+            <p class="long-term-desc">
+                0成本0投入，上手即赚！只要当月推广的付费用户金额超过3000元，就能延长享受上个月推广用户的返佣时间！<br>
+                持续达标，让老客户为你创造源源不断的长期被动收益，不用你会用，只要你会推！
+            </p>
+            
+            <div class="income-example">
+                <h3 class="example-title">💡 收益案例展示</h3>
+                <div class="example-calculation">
+                    <div class="calc-item">
+                        <div class="calc-number">第1月</div>
+                        <div class="calc-label">推广10人，获得30%佣金</div>
+                    </div>
+                    <div class="calc-item">
+                        <div class="calc-number">第2月</div>
+                        <div class="calc-label">推广达标3000元，享受上月+本月双重返佣</div>
+                    </div>
+                    <div class="calc-item">
+                        <div class="calc-number">第3月</div>
+                        <div class="calc-label">继续达标，三个月用户都有返佣</div>
+                    </div>
+                    <div class="calc-item">
+                        <div class="calc-number">长期收益</div>
+                        <div class="calc-label">用户续费=你的长期被动收益</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="benefits-section">
+            <h2 class="section-title">🌟 为什么选择创作魔方推广</h2>
+            
+            <div class="benefits-grid">
+                <div class="benefit-item">
+                    <div class="benefit-icon">🚀</div>
+                    <h4 class="benefit-title">踩在AI风口上赚钱</h4>
+                    <p class="benefit-desc">现在推广=踩在风口上赚钱，错过这波要等下个时代！AI工具市场正在爆发</p>
+                </div>
+                
+                <div class="benefit-item">
+                    <div class="benefit-icon">💡</div>
+                    <h4 class="benefit-title">不用你会用，只要你会推</h4>
+                    <p class="benefit-desc">零学习成本，人人都能推！不需要懂技术，会分享就能赚钱</p>
+                </div>
+                
+                <div class="benefit-item">
+                    <div class="benefit-icon">💰</div>
+                    <h4 class="benefit-title">别人学技术，你直接卖工具赚钱</h4>
+                    <p class="benefit-desc">聪明人都在做工具生意，别人苦学AI技术，你轻松推广AI工具赚佣金</p>
+                </div>
+                
+                <div class="benefit-item">
+                    <div class="benefit-icon">🎯</div>
+                    <h4 class="benefit-title">0成本0投入，上手即赚</h4>
+                    <p class="benefit-desc">适合所有人兼职创业，无需投资无需囤货，分享链接就有收入</p>
+                </div>
+                
+                <div class="benefit-item">
+                    <div class="benefit-icon">⚡</div>
+                    <h4 class="benefit-title">刚需产品，用户主动买单</h4>
+                    <p class="benefit-desc">AI工具是真实需求，用户试用后主动付费，推广转化率超高</p>
+                </div>
+                
+                <div class="benefit-item">
+                    <div class="benefit-icon">🏆</div>
+                    <h4 class="benefit-title">一次推广，长期被动收益</h4>
+                    <p class="benefit-desc">用户续费=你的持续收入，推得越多赚得越多，打造真正的被动收入流</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="contact-section">
+            <h2 class="contact-title">🔥 别人学技术，你直接卖工具赚钱！</h2>
+            <p class="contact-subtitle">现在推广=踩在风口上赚钱，错过这波要等下个时代！联系客服获取专属推广链接，开始你的0成本创业之旅！</p>
+            
+            <div class="contact-buttons">
+                <button class="contact-button" onclick="contactWechat()">添加客服微信咨询</button>
+                <button class="contact-button" onclick="getStarted()">立即获取推广链接</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function contactService() {
+            alert('🎉 踩在AI风口上赚钱！\n\n立即注册，0成本获取推广链接：\n微信：contentcube2024\n\n不用你会用，只要你会推！打造真正的长期被动收益！');
+        }
+        
+        function registerNow() {
+            alert('🚀 立即注册，0成本获取推广链接！\n\n注册步骤：\n1. 添加客服微信：contentcube2024\n2. 完成简单注册流程\n3. 立即获得专属推广链接\n4. 开始分享赚钱！\n\n别人学技术，你直接卖工具赚钱！');
+        }
+        
+        function contactWechat() {
+            alert('📱 添加客服微信：contentcube2024\n\n零学习成本，人人都能推！0成本0投入，打造长期被动收益！');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,275 @@
+.preview-container {
+  min-height: 100vh;
+  background: #f5f7fa;
+  padding: 20px;
+}
+
+.preview-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+}
+
+/* Header */
+.preview-header {
+  text-align: center;
+  padding: 40px 20px;
+  background: white;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.preview-header h1 {
+  font-size: 32px;
+  font-weight: bold;
+  margin-bottom: 12px;
+  color: #333;
+}
+
+.preview-header p {
+  font-size: 16px;
+  color: #666;
+  margin: 0;
+}
+
+/* Content Layout */
+.preview-content {
+  display: grid;
+  grid-template-columns: 350px 1fr;
+  gap: 20px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+/* Sidebar */
+.preview-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.lesson-list-card {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.lesson-list-card .ant-card-head {
+  background: #fafafa;
+  font-weight: 600;
+}
+
+.lesson-list-card .ant-card-body {
+  padding: 0;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.lesson-item {
+  cursor: pointer;
+  padding: 16px !important;
+  border-bottom: 1px solid #f0f0f0;
+  transition: all 0.3s;
+}
+
+.lesson-item:hover {
+  background: #f5f7fa;
+}
+
+.lesson-item.active {
+  background: #e6f7ff;
+  border-left: 4px solid #1890ff;
+}
+
+.lesson-item:last-child {
+  border-bottom: none;
+}
+
+.lesson-item-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+}
+
+.lesson-icon {
+  font-size: 24px;
+  color: #1890ff;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.lesson-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.lesson-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.lesson-duration {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #999;
+}
+
+/* Purchase Prompt */
+.purchase-prompt {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 24px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.purchase-prompt h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: white;
+}
+
+.purchase-prompt p {
+  font-size: 14px;
+  margin-bottom: 20px;
+  opacity: 0.95;
+}
+
+.purchase-prompt .ant-btn-primary {
+  background: #ffd700;
+  border: none;
+  color: #333;
+  font-weight: 600;
+  height: 44px;
+}
+
+.purchase-prompt .ant-btn-primary:hover {
+  background: #ffed4e !important;
+  color: #333 !important;
+}
+
+/* Main Video Area */
+.preview-main {
+  min-height: 600px;
+}
+
+.video-card {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.video-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.video-wrapper {
+  position: relative;
+  width: 100%;
+  padding-top: 56.25%; /* 16:9 Aspect Ratio */
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.video-player {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  outline: none;
+}
+
+.video-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  font-size: 14px;
+  color: #666;
+}
+
+.no-video {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  color: #999;
+}
+
+.no-video p {
+  margin-top: 16px;
+  font-size: 16px;
+}
+
+/* Scrollbar Styling */
+.lesson-list-card .ant-card-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.lesson-list-card .ant-card-body::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.lesson-list-card .ant-card-body::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+
+.lesson-list-card .ant-card-body::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .preview-content {
+    grid-template-columns: 1fr;
+  }
+
+  .preview-sidebar {
+    order: 2;
+  }
+
+  .preview-main {
+    order: 1;
+  }
+
+  .lesson-list-card .ant-card-body {
+    max-height: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .preview-header h1 {
+    font-size: 24px;
+  }
+
+  .preview-header p {
+    font-size: 14px;
+  }
+
+  .video-title {
+    font-size: 18px;
+  }
+
+  .purchase-prompt {
+    padding: 20px;
+  }
+
+  .purchase-prompt h3 {
+    font-size: 16px;
+  }
+}

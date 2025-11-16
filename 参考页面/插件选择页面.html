@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flux大模型 - 插件详情 - 创作魔方Content Cube</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Helvetica, Arial, sans-serif;
+            background: #f8fafc;
+            min-height: 100vh;
+            line-height: 1.6;
+            color: #1f2937;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #e5e7eb;
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 48px;
+        }
+        
+        .logo {
+            font-size: 22px;
+            font-weight: 600;
+            color: #1f2937;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            cursor: pointer;
+        }
+        
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 32px;
+            margin-left: 20px;
+        }
+        
+        .nav-menu li {
+            color: #374151;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+            font-size: 16px;
+            position: relative;
+            padding: 8px 0;
+        }
+        
+        .nav-menu li:hover {
+            color: #3b82f6;
+        }
+        
+        .nav-menu li::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: 0;
+            left: 0;
+            background: #3b82f6;
+            transition: width 0.3s;
+        }
+        
+        .nav-menu li:hover::after {
+            width: 100%;
+        }
+        
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .promote-button {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+        }
+        
+        .promote-button:hover {
+            background: linear-gradient(135deg, #059669, #047857);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+            transform: translateY(-1px);
+        }
+        
+        .user-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.2s;
+            border: 2px solid #e5e7eb;
+        }
+        
+        .user-avatar:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            border-color: #3b82f6;
+        }
+        
+        .dropdown-content {
+            position: absolute;
+            right: 0;
+            top: 50px;
+            background: white;
+            min-width: 300px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border-radius: 12px;
+            padding: 24px;
+            z-index: 1001;
+            border: 1px solid #e5e7eb;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+        }
+        
+        .user-dropdown .dropdown-content.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .user-info-header {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e5e7eb;
+            margin-bottom: 20px;
+        }
+        
+        .user-id {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        .user-balance {
+            color: #dc2626;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .vip-button {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.2s;
+        }
+        
+        .api-token-section {
+            margin-bottom: 20px;
+        }
+        
+        .api-token-title {
+            color: #374151;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+        
+        .token-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: #f9fafb;
+            font-family: 'SF Mono', 'Monaco', monospace;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+        
+        .menu-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 16px 12px;
+            border-radius: 8px;
+            background: #f9fafb;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .menu-item:hover {
+            background: #f3f4f6;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+        }
+        
+        .menu-icon {
+            width: 32px;
+            height: 32px;
+            background: #3b82f6;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        .menu-text {
+            font-size: 12px;
+            color: #374151;
+            font-weight: 500;
+        }
+
+        /* 主体内容区域 */
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 32px;
+        }
+
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 32px;
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .breadcrumb a {
+            color: #3b82f6;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .breadcrumb a:hover {
+            color: #1d4ed8;
+        }
+
+        .breadcrumb-separator {
+            color: #d1d5db;
+        }
+
+        /* 插件头部信息 */
+        .plugin-header {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 32px;
+        }
+
+        .plugin-hero {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+            margin-bottom: 32px;
+        }
+
+        .plugin-icon-large {
+            width: 120px;
+            height: 120px;
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            color: white;
+            background: linear-gradient(135deg, #8b5cf6, #a855f7);
+            flex-shrink: 0;
+        }
+
+        .plugin-info {
+            flex: 1;
+        }
+
+        .plugin-title {
+            font-size: 36px;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .plugin-provider {
+            font-size: 16px;
+            color: #6b7280;
+            margin-bottom: 16px;
+        }
+
+        .plugin-description {
+            font-size: 18px;
+            color: #4b5563;
+            line-height: 1.7;
+            margin-bottom: 24px;
+        }
+
+        .plugin-stats {
+            display: flex;
+            gap: 32px;
+            align-items: center;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 16px;
+            color: #374151;
+            font-weight: 500;
+        }
+
+        .stat-icon {
+            font-size: 20px;
+        }
+
+        .price-tag {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 16px;
+            font-weight: 600;
+            margin-left: auto;
+        }
+
+        /* API Key管理区域 */
+        .api-section {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 32px;
+        }
+
+        .section-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .title-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 16px;
+        }
+
+        .api-key-container {
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .api-key-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 12px;
+        }
+
+        .api-key-input-group {
+            display: flex;
+            gap: 12px;
+        }
+
+        .api-key-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: white;
+            font-family: 'SF Mono', 'Monaco', monospace;
+            font-size: 14px;
+            color: #1f2937;
+        }
+
+        .api-key-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #d1d5db;
+        }
+
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+
+        .btn-docs {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            font-size: 16px;
+            padding: 14px 28px;
+        }
+
+        .btn-docs:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+        }
+
+        /* 演示图片区域 */
+        .demo-section {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 32px;
+        }
+
+        .image-carousel {
+            position: relative;
+            margin-bottom: 24px;
+        }
+
+        .carousel-main {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #f1f5f9;
+            aspect-ratio: 16/9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .carousel-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .carousel-image:hover {
+            transform: scale(1.02);
+        }
+
+        .carousel-placeholder {
+            color: #6b7280;
+            font-size: 18px;
+            text-align: center;
+        }
+
+        .carousel-controls {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .carousel-controls:hover {
+            background: rgba(0, 0, 0, 0.7);
+        }
+
+        .carousel-prev {
+            left: 16px;
+        }
+
+        .carousel-next {
+            right: 16px;
+        }
+
+        .carousel-thumbnails {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .thumbnail {
+            width: 80px;
+            height: 60px;
+            border-radius: 8px;
+            background: #f1f5f9;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6b7280;
+            font-size: 12px;
+        }
+
+        .thumbnail.active {
+            border-color: #3b82f6;
+        }
+
+        .thumbnail:hover {
+            border-color: #8b5cf6;
+        }
+
+        /* 详细信息区域 */
+        .details-section {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 32px;
+            margin-bottom: 32px;
+        }
+
+        .feature-card {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 24px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .feature-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .feature-icon {
+            font-size: 20px;
+        }
+
+        .feature-list {
+            list-style: none;
+        }
+
+        .feature-list li {
+            margin-bottom: 8px;
+            color: #4b5563;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .feature-list li::before {
+            content: "✓";
+            color: #10b981;
+            font-weight: bold;
+        }
+
+        .usage-scenarios {
+            background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+            border-radius: 12px;
+            padding: 24px;
+            margin-top: 24px;
+        }
+
+        .scenario-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 16px;
+        }
+
+        .scenario-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .scenario-tag {
+            background: white;
+            color: #374151;
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 14px;
+            font-weight: 500;
+            border: 1px solid #e5e7eb;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 20px;
+            }
+
+            .plugin-hero {
+                flex-direction: column;
+                text-align: center;
+                gap: 24px;
+            }
+
+            .plugin-icon-large {
+                width: 100px;
+                height: 100px;
+                font-size: 40px;
+            }
+
+            .plugin-title {
+                font-size: 28px;
+            }
+
+            .plugin-stats {
+                flex-direction: column;
+                gap: 16px;
+                align-items: center;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .header-left {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .nav-menu {
+                flex-wrap: wrap;
+                gap: 20px;
+                margin-left: 0;
+            }
+            
+            .nav-menu li {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <div class="header">
+        <div class="header-left">
+            <div class="logo" onclick="goToHome()">创作魔方Content Cube</div>
+            <ul class="nav-menu">
+                <li onclick="goToHome()">首页</li>
+                <li onclick="goToAiReduce()">文章降AI率</li>
+                <li onclick="goToVideoExtract()">视频文案提取</li>
+                <li onclick="goToPromptGenerator()">提示词生成器</li>
+                <li onclick="goToPluginMarket()">插件市场</li>
+                <li onclick="goToWorkflowStore()">工作流商店</li>
+                <li onclick="goToCourseStore()">课程商店</li>
+                <li onclick="goToAutoPublish()">全平台爆款文案创作</li>
+                <li onclick="goToAiToolbox()">智能体工具箱</li>
+            </ul>
+        </div>
+        <div class="header-right">
+            <button class="promote-button" onclick="openPromote()">
+                <span>💰</span>
+                推广赚钱
+            </button>
+            <div class="user-dropdown">
+                <div class="user-avatar">O</div>
+                <div class="dropdown-content">
+                    <div class="user-info-header">
+                        <div class="user-id">ID: 253855 <button onclick="copyId()" style="border:none;background:#3b82f6;color:white;padding:4px 8px;border-radius:6px;font-size:12px;cursor:pointer;">复制</button></div>
+                        <div class="user-balance">余额: ¥8.76</div>
+                        <div style="font-size:12px;color:#6b7280;margin-bottom:16px;">余额即将耗尽，前往充值</div>
+                        <button class="vip-button">👑 成为会员</button>
+                    </div>
+                    
+                    <div class="api-token-section">
+                        <div class="api-token-title">API Token （插件密钥）</div>
+                        <input type="password" class="token-input" value="sk-proj-abc123defg456hijklmn789" readonly>
+                        <div style="display:flex;gap:8px;margin-top:12px;">
+                            <button onclick="copyToken()" style="flex:1;background:#3b82f6;color:white;border:none;padding:8px;border-radius:6px;cursor:pointer;font-size:12px;">📋 复制</button>
+                            <button onclick="refreshToken()" style="flex:1;background:#6b7280;color:white;border:none;padding:8px;border-radius:6px;cursor:pointer;font-size:12px;">🔄 更新</button>
+                        </div>
+                    </div>
+                    
+                    <div class="menu-grid">
+                        <div class="menu-item" onclick="goToUserCenter()">
+                            <div class="menu-icon">👤</div>
+                            <div class="menu-text">个人中心</div>
+                        </div>
+                        <div class="menu-item" onclick="goToVipPurchase()">
+                            <div class="menu-icon">👑</div>
+                            <div class="menu-text">会员购买</div>
+                        </div>
+                        <div class="menu-item" onclick="goToRecharge()">
+                            <div class="menu-icon">💳</div>
+                            <div class="menu-text">个人充值</div>
+                        </div>
+                        <div class="menu-item" onclick="goToPricing()">
+                            <div class="menu-icon">📖</div>
+                            <div class="menu-text">计费标准</div>
+                        </div>
+                        <div class="menu-item" onclick="goToWorkflowSystem()">
+                            <div class="menu-icon">⚙️</div>
+                            <div class="menu-text">工单系统</div>
+                        </div>
+                        <div class="menu-item" onclick="goToVideoGeneration()">
+                            <div class="menu-icon">📹</div>
+                            <div class="menu-text">查看生成任务</div>
+                        </div>
+                        <div class="menu-item" onclick="goToConsumptionDetails()">
+                            <div class="menu-icon">🕒</div>
+                            <div class="menu-text">消费明细</div>
+                        </div>
+                        <div class="menu-item" onclick="goToOfficialNews()">
+                            <div class="menu-icon">📘</div>
+                            <div class="menu-text">官方动态 <span style="background:#dc2626;color:white;border-radius:10px;font-size:10px;padding:2px 4px;margin-left:2px;">新</span></div>
+                        </div>
+                        <div class="menu-item" onclick="logout()">
+                            <div class="menu-icon">🚪</div>
+                            <div class="menu-text">退出登录</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主体内容 -->
+    <div class="main-container">
+        <!-- 面包屑导航 -->
+        <div class="breadcrumb">
+            <a href="#" onclick="goToHome()">首页</a>
+            <span class="breadcrumb-separator">›</span>
+            <a href="#" onclick="goToPluginMarket()">插件市场</a>
+            <span class="breadcrumb-separator">›</span>
+            <span>Flux大模型</span>
+        </div>
+
+        <!-- 插件头部信息 -->
+        <div class="plugin-header">
+            <div class="plugin-hero">
+                <div class="plugin-icon-large">🎨</div>
+                <div class="plugin-info">
+                    <h1 class="plugin-title">Flux大模型</h1>
+                    <div class="plugin-provider">官方插件 • 文生图工具</div>
+                    <div class="plugin-description">
+                        最新AI绘画大模型，支持超高质量图像生成，细节处理能力极强，是创作者的得力助手。支持多种艺术风格，从写实到抽象，从古典到现代，满足各种创作需求。
+                    </div>
+                    <div class="plugin-stats">
+                        <div class="stat-item">
+                            <span class="stat-icon">⭐</span>
+                            <span>4.9分 (1,289 评价)</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon">📦</span>
+                            <span>15.2k 次使用</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon">🔥</span>
+                            <span>本月热门</span>
+                        </div>
+                        <div class="price-tag">¥0.8/次</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- API Key管理区域 -->
+        <div class="api-section">
+            <h2 class="section-title">
+                <div class="title-icon">🔑</div>
+                API密钥管理
+            </h2>
+            <div class="api-key-container">
+                <div class="api-key-label">插件专用API密钥</div>
+                <div class="api-key-input-group">
+                    <input type="text" class="api-key-input" id="pluginApiKey" value="flux-sk-proj-abc123defg456hijklmn789xyz" readonly>
+                    <button class="btn btn-secondary" onclick="copyApiKey()">
+                        📋 复制
+                    </button>
+                    <button class="btn btn-primary" onclick="regenerateApiKey()">
+                        🔄 重新生成
+                    </button>
+                </div>
+                <div style="margin-top: 12px; font-size: 14px; color: #6b7280;">
+                    此密钥专门用于Flux大模型插件，请妥善保管。每次重新生成后，之前的密钥将失效。
+                </div>
+            </div>
+            <div class="action-buttons">
+                <button class="btn btn-docs" onclick="openDocumentation()">
+                    📖 查看使用文档
+                </button>
+            </div>
+        </div>
+
+        <!-- 演示图片区域 -->
+        <div class="demo-section">
+            <h2 class="section-title">
+                <div class="title-icon">🖼️</div>
+                使用演示
+            </h2>
+            <div class="image-carousel">
+                <div class="carousel-main">
+                    <div class="carousel-placeholder">
+                        点击下方缩略图查看演示图片<br>
+                        <small>展示Flux大模型的各种生成效果</small>
+                    </div>
+                    <button class="carousel-controls carousel-prev" onclick="prevImage()">‹</button>
+                    <button class="carousel-controls carousel-next" onclick="nextImage()">›</button>
+                </div>
+                <div class="carousel-thumbnails">
+                    <div class="thumbnail active" onclick="showImage(0)">风景画</div>
+                    <div class="thumbnail" onclick="showImage(1)">人物肖像</div>
+                    <div class="thumbnail" onclick="showImage(2)">抽象艺术</div>
+                    <div class="thumbnail" onclick="showImage(3)">产品设计</div>
+                    <div class="thumbnail" onclick="showImage(4)">建筑效果</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 详细信息区域 -->
+        <div class="details-section">
+            <h2 class="section-title">
+                <div class="title-icon">📋</div>
+                功能特性
+            </h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <h3 class="feature-title">
+                        <span class="feature-icon">🎨</span>
+                        核心功能
+                    </h3>
+                    <ul class="feature-list">
+                        <li>超高质量图像生成</li>
+                        <li>支持1024x1024分辨率</li>
+                        <li>多种艺术风格切换</li>
+                        <li>智能提示词优化</li>
+                        <li>批量生成支持</li>
+                    </ul>
+                </div>
+                
+                <div class="feature-card">
+                    <h3 class="feature-title">
+                        <span class="feature-icon">⚡</span>
+                        性能优势
+                    </h3>
+                    <ul class="feature-list">
+                        <li>生成速度快，平均15秒</li>
+                        <li>细节处理能力强</li>
+                        <li>色彩还原度高</li>
+                        <li>构图合理自然</li>
+                        <li>风格一致性好</li>
+                    </ul>
+                </div>
+                
+                <div class="feature-card">
+                    <h3 class="feature-title">
+                        <span class="feature-icon">🔧</span>
+                        技术规格
+                    </h3>
+                    <ul class="feature-list">
+                        <li>支持中英文提示词</li>
+                        <li>最大输入长度500字符</li>
+                        <li>支持负面提示词</li>
+                        <li>可调节生成步数</li>
+                        <li>多种采样器选择</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="usage-scenarios">
+                <h3 class="scenario-title">适用场景</h3>
+                <div class="scenario-tags">
+                    <span class="scenario-tag">平面设计</span>
+                    <span class="scenario-tag">概念艺术</span>
+                    <span class="scenario-tag">产品原型</span>
+                    <span class="scenario-tag">广告创意</span>
+                    <span class="scenario-tag">游戏美术</span>
+                    <span class="scenario-tag">插画创作</span>
+                    <span class="scenario-tag">建筑设计</span>
+                    <span class="scenario-tag">时尚设计</span>
+                    <span class="scenario-tag">内容创作</span>
+                    <span class="scenario-tag">社交媒体</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let dropdownTimer;
+        let currentImageIndex = 0;
+        const demoImages = [
+            { name: '风景画', description: '生成的自然风景图片' },
+            { name: '人物肖像', description: '高质量人物肖像生成' },
+            { name: '抽象艺术', description: '创意抽象艺术作品' },
+            { name: '产品设计', description: '产品概念设计图' },
+            { name: '建筑效果', description: '建筑设计效果图' }
+        ];
+
+        // 用户下拉菜单处理
+        function showDropdown() {
+            clearTimeout(dropdownTimer);
+            const dropdown = document.querySelector('.dropdown-content');
+            if (dropdown) {
+                dropdown.classList.add('show');
+            }
+        }
+        
+        function hideDropdownWithDelay() {
+            dropdownTimer = setTimeout(() => {
+                const dropdown = document.querySelector('.dropdown-content');
+                if (dropdown) {
+                    dropdown.classList.remove('show');
+                }
+            }, 300);
+        }
+
+        // API Key管理功能
+        function copyApiKey() {
+            const apiKeyInput = document.getElementById('pluginApiKey');
+            apiKeyInput.select();
+            document.execCommand('copy');
+            alert('API密钥已复制到剪贴板');
+        }
+
+        function regenerateApiKey() {
+            if (confirm('确认要重新生成API密钥吗？原密钥将失效。')) {
+                const newKey = 'flux-sk-proj-' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+                document.getElementById('pluginApiKey').value = newKey;
+                alert('API密钥已重新生成');
+            }
+        }
+
+        function openDocumentation() {
+            alert('正在打开Flux大模型使用文档...\n\n文档将包含：\n• 接口调用方法\n• 参数说明\n• 示例代码\n• 最佳实践');
+        }
+
+        // 图片轮播功能
+        function showImage(index) {
+            currentImageIndex = index;
+            const thumbnails = document.querySelectorAll('.thumbnail');
+            const placeholder = document.querySelector('.carousel-placeholder');
+            
+            // 更新缩略图状态
+            thumbnails.forEach((thumb, i) => {
+                thumb.classList.toggle('active', i === index);
+            });
+            
+            // 更新主图显示
+            placeholder.innerHTML = `
+                <div style="text-align: center; color: #4b5563;">
+                    <div style="font-size: 24px; margin-bottom: 8px;">🎨</div>
+                    <div style="font-size: 18px; font-weight: 600; margin-bottom: 4px;">${demoImages[index].name}</div>
+                    <div style="font-size: 14px;">${demoImages[index].description}</div>
+                    <div style="margin-top: 12px; font-size: 12px; color: #6b7280;">点击查看大图</div>
+                </div>
+            `;
+            
+            placeholder.style.cursor = 'pointer';
+            placeholder.onclick = () => {
+                alert(`查看${demoImages[index].name}大图\n\n${demoImages[index].description}\n\n实际使用中这里会显示真实的演示图片`);
+            };
+        }
+
+        function prevImage() {
+            currentImageIndex = (currentImageIndex - 1 + demoImages.length) % demoImages.length;
+            showImage(currentImageIndex);
+        }
+
+        function nextImage() {
+            currentImageIndex = (currentImageIndex + 1) % demoImages.length;
+            showImage(currentImageIndex);
+        }
+
+        // 导航功能
+        function goToHome() { 
+            window.location.href = 'index.html';
+        }
+        function goToPluginMarket() { 
+            window.location.href = 'plugin-market.html';
+        }
+        function goToAiReduce() { alert('进入文章降AI率工具'); }
+        function goToVideoExtract() { alert('进入视频文案提取工具'); }
+        function goToPromptGenerator() { alert('进入提示词生成器'); }
+        function goToWorkflowStore() { alert('进入工作流商店'); }
+        function goToCourseStore() { alert('进入课程商店'); }
+        function goToAutoPublish() { alert('进入全平台爆款文案创作'); }
+        function goToAiToolbox() { alert('进入智能体工具箱'); }
+        
+        function openPromote() { alert('开启推广赚钱计划'); }
+        
+        function copyId() { 
+            navigator.clipboard.writeText('253855');
+            alert('用户ID已复制到剪贴板');
+        }
+        
+        function copyToken() {
+            navigator.clipboard.writeText('sk-proj-abc123defg456hijklmn789');
+            alert('API Token已复制到剪贴板');
+        }
+        
+        function refreshToken() { alert('API Token已更新'); }
+        function goToUserCenter() { alert('跳转到个人中心'); }
+        function goToVipPurchase() { alert('跳转到会员购买页面'); }
+        function goToRecharge() { alert('跳转到个人充值页面'); }
+        function goToPricing() { alert('查看计费标准'); }
+        function goToWorkflowSystem() { alert('进入工单系统'); }
+        function goToVideoGeneration() { alert('查看生成任务'); }
+        function goToConsumptionDetails() { alert('查看消费明细'); }
+        function goToOfficialNews() { alert('查看官方动态'); }
+        function logout() { 
+            if(confirm('确认要退出登录吗？')) {
+                alert('已退出登录');
+            }
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            const userDropdown = document.querySelector('.user-dropdown');
+            const dropdownContent = document.querySelector('.dropdown-content');
+            
+            if (userDropdown && dropdownContent) {
+                userDropdown.addEventListener('mouseenter', showDropdown);
+                userDropdown.addEventListener('mouseleave', hideDropdownWithDelay);
+                dropdownContent.addEventListener('mouseenter', showDropdown);
+                dropdownContent.addEventListener('mouseleave', hideDropdownWithDelay);
+            }
+
+            // 初始化第一张图片
+            showImage(0);
+        });
+    </script>
+</body>
+</html>

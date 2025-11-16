@@ -1,0 +1,1437 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能体工具箱 - 创作魔方Content Cube</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Helvetica, Arial, sans-serif;
+            background: #ffffff;
+            min-height: 100vh;
+            line-height: 1.6;
+            color: #1f2937;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #e5e7eb;
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 48px;
+        }
+        
+        .logo {
+            font-size: 22px;
+            font-weight: 600;
+            color: #1f2937;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 32px;
+            margin-left: 20px;
+        }
+        
+        .nav-menu li {
+            color: #374151;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+            font-size: 16px;
+            position: relative;
+            padding: 8px 0;
+        }
+        
+        .nav-menu li:hover,
+        .nav-menu li.active {
+            color: #3b82f6;
+        }
+        
+        .nav-menu li::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: 0;
+            left: 0;
+            background: #3b82f6;
+            transition: width 0.3s;
+        }
+        
+        .nav-menu li:hover::after,
+        .nav-menu li.active::after {
+            width: 100%;
+        }
+        
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .promote-button {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+        }
+        
+        .promote-button:hover {
+            background: linear-gradient(135deg, #059669, #047857);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+            transform: translateY(-1px);
+        }
+        
+        .user-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.2s;
+            border: 2px solid #e5e7eb;
+        }
+        
+        .user-avatar:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            border-color: #3b82f6;
+        }
+        
+        .dropdown-content {
+            position: absolute;
+            right: 0;
+            top: 50px;
+            background: white;
+            min-width: 300px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border-radius: 12px;
+            padding: 24px;
+            z-index: 1001;
+            border: 1px solid #e5e7eb;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+        }
+        
+        .user-dropdown .dropdown-content.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .user-info-header {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e5e7eb;
+            margin-bottom: 20px;
+        }
+        
+        .user-id {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        .user-balance {
+            color: #dc2626;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .vip-button {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.2s;
+        }
+        
+        .vip-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        
+        .api-token-section {
+            margin-bottom: 20px;
+        }
+        
+        .api-token-title {
+            color: #374151;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+        
+        .token-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: #f9fafb;
+            font-family: 'SF Mono', 'Monaco', monospace;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        
+        .token-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+        
+        .menu-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 16px 12px;
+            border-radius: 8px;
+            background: #f9fafb;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .menu-item:hover {
+            background: #f3f4f6;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+        }
+        
+        .menu-icon {
+            width: 32px;
+            height: 32px;
+            background: #3b82f6;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        .menu-text {
+            font-size: 12px;
+            color: #374151;
+            font-weight: 500;
+        }
+
+        /* 面包屑导航 */
+        .breadcrumb {
+            background: #f8fafc;
+            padding: 16px 32px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .breadcrumb-nav {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #6b7280;
+        }
+        
+        .breadcrumb-nav a {
+            color: #3b82f6;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        
+        .breadcrumb-nav a:hover {
+            color: #1d4ed8;
+        }
+        
+        .breadcrumb-separator {
+            color: #9ca3af;
+        }
+
+        /* 主要内容区域 */
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 32px;
+        }
+
+        /* 页面标题区域 */
+        .page-header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+        
+        .page-title {
+            font-size: 36px;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .page-subtitle {
+            font-size: 18px;
+            color: #6b7280;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        /* 搜索和筛选区域 */
+        .search-filter-section {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            margin-bottom: 32px;
+            border: 1px solid #f1f5f9;
+        }
+        
+        .search-bar {
+            position: relative;
+            margin-bottom: 24px;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 16px 24px 16px 52px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 16px;
+            background: #fafbfc;
+            transition: all 0.3s;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6b7280;
+            font-size: 20px;
+        }
+
+        /* 分类标签 */
+        .category-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        
+        .category-tag {
+            padding: 8px 20px;
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 50px;
+            color: #475569;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .category-tag:hover,
+        .category-tag.active {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        /* 快捷操作区 */
+        .quick-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        
+        .view-options {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .view-toggle {
+            display: flex;
+            background: #f1f5f9;
+            border-radius: 8px;
+            padding: 4px;
+        }
+        
+        .view-btn {
+            padding: 8px 12px;
+            border: none;
+            background: transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            color: #64748b;
+            transition: all 0.2s;
+        }
+        
+        .view-btn.active {
+            background: white;
+            color: #3b82f6;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .sort-dropdown {
+            padding: 8px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: white;
+            color: #374151;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        /* 热门推荐区域 */
+        .featured-section {
+            margin-bottom: 48px;
+        }
+        
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+        
+        .section-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .section-icon {
+            font-size: 28px;
+        }
+        
+        .see-all-btn {
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+        
+        .see-all-btn:hover {
+            color: #1d4ed8;
+        }
+
+        /* 智能体网格 */
+        .ai-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 24px;
+            margin-bottom: 48px;
+        }
+        
+        .ai-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid #f1f5f9;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .ai-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+            border-color: #3b82f6;
+        }
+        
+        .ai-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            transform: scaleX(0);
+            transition: transform 0.3s;
+        }
+        
+        .ai-card:hover::before {
+            transform: scaleX(1);
+        }
+        
+        .ai-card-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        
+        .ai-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: white;
+            flex-shrink: 0;
+        }
+        
+        .ai-meta {
+            flex: 1;
+            margin-left: 16px;
+        }
+        
+        .ai-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
+            line-height: 1.3;
+        }
+        
+        .ai-category {
+            font-size: 12px;
+            padding: 4px 10px;
+            background: #f0f9ff;
+            color: #0369a1;
+            border-radius: 20px;
+            display: inline-block;
+        }
+        
+        .favorite-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #d1d5db;
+            transition: all 0.2s;
+            padding: 4px;
+        }
+        
+        .favorite-btn:hover,
+        .favorite-btn.active {
+            color: #ef4444;
+            transform: scale(1.1);
+        }
+        
+        .ai-description {
+            color: #6b7280;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 16px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .ai-stats {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            font-size: 12px;
+            color: #9ca3af;
+        }
+        
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .ai-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .btn-secondary {
+            flex: 1;
+            padding: 10px 16px;
+            border: 1px solid #d1d5db;
+            background: white;
+            color: #374151;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-secondary:hover {
+            border-color: #3b82f6;
+            color: #3b82f6;
+        }
+        
+        .btn-primary {
+            flex: 2;
+            padding: 10px 16px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+
+        /* 热门标签 */
+        .hot-tag {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 12px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        /* 分页 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 48px;
+        }
+        
+        .pagination-btn {
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            background: white;
+            color: #374151;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+        
+        .pagination-btn:hover {
+            border-color: #3b82f6;
+            color: #3b82f6;
+        }
+        
+        .pagination-btn.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+        
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1024px) {
+            .ai-grid {
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                gap: 20px;
+            }
+            
+            .main-container {
+                padding: 24px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .header-left {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .nav-menu {
+                flex-wrap: wrap;
+                gap: 20px;
+                margin-left: 0;
+            }
+            
+            .ai-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .main-container {
+                padding: 16px;
+            }
+            
+            .search-filter-section {
+                padding: 24px 20px;
+            }
+            
+            .quick-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .category-tags {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 保持原有的header结构 -->
+    <div class="header">
+        <div class="header-left">
+            <div class="logo">创作魔方Content Cube</div>
+            <ul class="nav-menu">
+                <li onclick="goToHome()">首页</li>
+                <li onclick="goToAiReduce()">文章降AI率</li>
+                <li onclick="goToVideoExtract()">视频文案提取</li>
+                <li onclick="goToPromptGenerator()">提示词生成器</li>
+                <li onclick="goToWorkflowStore()">工作流商店</li>
+                <li onclick="goToCourseStore()">课程商店</li>
+                <li onclick="goToAutoPublish()">全平台爆款文案创作</li>
+                <li onclick="goToAiToolbox()" class="active">智能体工具箱</li>
+            </ul>
+        </div>
+        <div class="header-right">
+            <button class="promote-button" onclick="openPromote()">
+                <span>💰</span>
+                推广赚钱
+            </button>
+            <div class="user-dropdown">
+                <div class="user-avatar">O</div>
+                <div class="dropdown-content">
+                    <div class="user-info-header">
+                        <div class="user-id">ID: 253855 <button onclick="copyId()" style="border:none;background:#3b82f6;color:white;padding:4px 8px;border-radius:6px;font-size:12px;cursor:pointer;">复制</button></div>
+                        <div class="user-balance">余额: ¥8.76</div>
+                        <div style="font-size:12px;color:#6b7280;margin-bottom:16px;">余额即将耗尽，前往充值</div>
+                        <button class="vip-button">👑 成为会员</button>
+                    </div>
+                    
+                    <div class="api-token-section">
+                        <div class="api-token-title">API Token （插件密钥）</div>
+                        <input type="password" class="token-input" value="sk-proj-abc123defg456hijklmn789" readonly>
+                        <div style="display:flex;gap:8px;margin-top:12px;">
+                            <button onclick="copyToken()" style="flex:1;background:#3b82f6;color:white;border:none;padding:8px;border-radius:6px;cursor:pointer;font-size:12px;">📋 复制</button>
+                            <button onclick="refreshToken()" style="flex:1;background:#6b7280;color:white;border:none;padding:8px;border-radius:6px;cursor:pointer;font-size:12px;">🔄 更新</button>
+                        </div>
+                    </div>
+                    
+                    <div class="menu-grid">
+                        <div class="menu-item" onclick="goToUserCenter()">
+                            <div class="menu-icon">👤</div>
+                            <div class="menu-text">个人中心</div>
+                        </div>
+                        <div class="menu-item" onclick="goToVipPurchase()">
+                            <div class="menu-icon">👑</div>
+                            <div class="menu-text">会员购买</div>
+                        </div>
+                        <div class="menu-item" onclick="goToRecharge()">
+                            <div class="menu-icon">💳</div>
+                            <div class="menu-text">个人充值</div>
+                        </div>
+                        <div class="menu-item" onclick="goToPricing()">
+                            <div class="menu-icon">📖</div>
+                            <div class="menu-text">计费标准</div>
+                        </div>
+                        <div class="menu-item" onclick="goToWorkflowSystem()">
+                            <div class="menu-icon">⚙️</div>
+                            <div class="menu-text">工单系统</div>
+                        </div>
+                        <div class="menu-item" onclick="goToVideoGeneration()">
+                            <div class="menu-icon">📹</div>
+                            <div class="menu-text">查看生成任务</div>
+                        </div>
+                        <div class="menu-item" onclick="goToConsumptionDetails()">
+                            <div class="menu-icon">🕒</div>
+                            <div class="menu-text">消费明细</div>
+                        </div>
+                        <div class="menu-item" onclick="goToOfficialNews()">
+                            <div class="menu-icon">📘</div>
+                            <div class="menu-text">官方动态 <span style="background:#dc2626;color:white;border-radius:10px;font-size:10px;padding:2px 4px;margin-left:2px;">新</span></div>
+                        </div>
+                        <div class="menu-item" onclick="logout()">
+                            <div class="menu-icon">🚪</div>
+                            <div class="menu-text">退出登录</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 面包屑导航 -->
+    <div class="breadcrumb">
+        <div class="breadcrumb-nav">
+            <a href="javascript:goToHome()">首页</a>
+            <span class="breadcrumb-separator">›</span>
+            <span>智能体工具箱</span>
+        </div>
+    </div>
+
+    <!-- 主要内容 -->
+    <div class="main-container">
+        <!-- 页面标题 -->
+        <div class="page-header">
+            <h1 class="page-title">🤖 智能体工具箱</h1>
+            <p class="page-subtitle">汇聚180万+专业智能体，涵盖自媒体、电商、教育、企业等各个垂直领域，让AI助您高效创作</p>
+        </div>
+
+        <!-- 搜索和筛选区域 -->
+        <div class="search-filter-section">
+            <div class="search-bar">
+                <span class="search-icon">🔍</span>
+                <input type="text" class="search-input" placeholder="搜索智能体名称、功能描述或关键词..." id="searchInput">
+            </div>
+            
+            <div class="category-tags" id="categoryTags">
+                <div class="category-tag active" data-category="all">全部分类</div>
+                <div class="category-tag" data-category="media-planning">自媒体选题</div>
+                <div class="category-tag" data-category="content-creation">内容创作</div>
+                <div class="category-tag" data-category="copywriting">文案采集</div>
+                <div class="category-tag" data-category="video-generation">视频生成</div>
+                <div class="category-tag" data-category="ecommerce">电商文案</div>
+                <div class="category-tag" data-category="education">教育培训</div>
+                <div class="category-tag" data-category="marketing">企业营销</div>
+                <div class="category-tag" data-category="novel">小说创作</div>
+                <div class="category-tag" data-category="news">新闻资讯</div>
+                <div class="category-tag" data-category="lifestyle">生活服务</div>
+            </div>
+            
+            <div class="quick-actions">
+                <div class="view-options">
+                    <div class="view-toggle">
+                        <button class="view-btn active" data-view="grid">🔲 网格</button>
+                        <button class="view-btn" data-view="list">📋 列表</button>
+                    </div>
+                    <select class="sort-dropdown" id="sortSelect">
+                        <option value="hot">最热门</option>
+                        <option value="recent">最新发布</option>
+                        <option value="usage">使用次数</option>
+                        <option value="rating">用户评分</option>
+                    </select>
+                </div>
+                
+                <div style="display:flex;align-items:center;gap:16px;color:#6b7280;font-size:14px;">
+                    <span id="resultCount">显示 1-12 项，共 180万+ 项结果</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 热门推荐区域 -->
+        <div class="featured-section">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <span class="section-icon">🔥</span>
+                    热门推荐
+                </h2>
+                <a href="javascript:void(0)" class="see-all-btn">查看全部 →</a>
+            </div>
+            
+            <div class="ai-grid" id="featuredGrid">
+                <!-- 热门智能体卡片 -->
+                <div class="ai-card">
+                    <div class="hot-tag">HOT</div>
+                    <div class="ai-card-header">
+                        <div style="display:flex;align-items:center;">
+                            <div class="ai-icon" style="background: linear-gradient(135deg, #ff6b6b, #ee5a24);">📝</div>
+                            <div class="ai-meta">
+                                <h3 class="ai-name">爆款标题生成器</h3>
+                                <span class="ai-category">自媒体选题</span>
+                            </div>
+                        </div>
+                        <button class="favorite-btn" onclick="toggleFavorite(this)">♡</button>
+                    </div>
+                    <p class="ai-description">基于千万级爆款数据训练，一键生成10万+阅读量标题，支持微信公众号、头条、知乎等平台</p>
+                    <div class="ai-stats">
+                        <span class="stat-item">📊 使用 89.2万次</span>
+                        <span class="stat-item">⭐ 评分 4.9</span>
+                        <span class="stat-item">👥 收藏 12.5万</span>
+                    </div>
+                    <div class="ai-actions">
+                        <button class="btn-secondary" onclick="previewAi('爆款标题生成器')">预览</button>
+                        <button class="btn-primary" onclick="useAi('爆款标题生成器')">立即使用</button>
+                    </div>
+                </div>
+
+                <div class="ai-card">
+                    <div class="ai-card-header">
+                        <div style="display:flex;align-items:center;">
+                            <div class="ai-icon" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);">🎬</div>
+                            <div class="ai-meta">
+                                <h3 class="ai-name">短视频脚本创作师</h3>
+                                <span class="ai-category">视频生成</span>
+                            </div>
+                        </div>
+                        <button class="favorite-btn" onclick="toggleFavorite(this)">♡</button>
+                    </div>
+                    <p class="ai-description">专业短视频编剧，生成抖音、快手爆款脚本，包含镜头语言、台词、配乐建议</p>
+                    <div class="ai-stats">
+                        <span class="stat-item">📊 使用 67.8万次</span>
+                        <span class="stat-item">⭐ 评分 4.8</span>
+                        <span class="stat-item">👥 收藏 8.9万</span>
+                    </div>
+                    <div class="ai-actions">
+                        <button class="btn-secondary" onclick="previewAi('短视频脚本创作师')">预览</button>
+                        <button class="btn-primary" onclick="useAi('短视频脚本创作师')">立即使用</button>
+                    </div>
+                </div>
+
+                <div class="ai-card">
+                    <div class="ai-card-header">
+                        <div style="display:flex;align-items:center;">
+                            <div class="ai-icon" style="background: linear-gradient(135deg, #10b981, #059669);">🛒</div>
+                            <div class="ai-meta">
+                                <h3 class="ai-name">电商详情页文案</h3>
+                                <span class="ai-category">电商文案</span>
+                            </div>
+                        </div>
+                        <button class="favorite-btn" onclick="toggleFavorite(this)">♡</button>
+                    </div>
+                    <p class="ai-description">电商转化专家，生成高转化率商品详情页，包含卖点提炼、痛点分析、购买理由</p>
+                    <div class="ai-stats">
+                        <span class="stat-item">📊 使用 45.3万次</span>
+                        <span class="stat-item">⭐ 评分 4.7</span>
+                        <span class="stat-item">👥 收藏 6.2万</span>
+                    </div>
+                    <div class="ai-actions">
+                        <button class="btn-secondary" onclick="previewAi('电商详情页文案')">预览</button>
+                        <button class="btn-primary" onclick="useAi('电商详情页文案')">立即使用</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 全部智能体区域 -->
+        <div class="all-ai-section">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <span class="section-icon">🤖</span>
+                    全部智能体
+                </h2>
+            </div>
+            
+            <div class="ai-grid" id="allAiGrid">
+                <!-- 更多智能体卡片将通过JS动态生成 -->
+            </div>
+        </div>
+
+        <!-- 分页 -->
+        <div class="pagination" id="pagination">
+            <button class="pagination-btn" onclick="changePage('prev')" id="prevBtn">← 上一页</button>
+            <button class="pagination-btn active">1</button>
+            <button class="pagination-btn">2</button>
+            <button class="pagination-btn">3</button>
+            <span style="margin:0 8px;">...</span>
+            <button class="pagination-btn">158</button>
+            <button class="pagination-btn" onclick="changePage('next')" id="nextBtn">下一页 →</button>
+        </div>
+    </div>
+
+    <script>
+        // 智能体数据
+        const aiAgents = [
+            // 自媒体选题类
+            {
+                name: '热点追踪分析师',
+                category: 'media-planning',
+                description: '实时监控全网热点，智能分析趋势走向，为自媒体提供第一手选题素材',
+                icon: '📈',
+                color: 'linear-gradient(135deg, #ff6b6b, #ee5a24)',
+                usage: '32.1万',
+                rating: '4.6',
+                favorites: '4.8万',
+                isHot: true
+            },
+            {
+                name: '赛道选择顾问',
+                category: 'media-planning',
+                description: '基于市场数据分析，为创作者推荐最具潜力的内容赛道和变现方向',
+                icon: '🎯',
+                color: 'linear-gradient(135deg, #a855f7, #9333ea)',
+                usage: '28.9万',
+                rating: '4.8',
+                favorites: '3.7万'
+            },
+            {
+                name: '竞品分析专家',
+                category: 'media-planning',
+                description: '深度分析同行账号内容策略、数据表现，助您精准定位内容方向',
+                icon: '🔍',
+                color: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                usage: '19.6万',
+                rating: '4.5',
+                favorites: '2.9万'
+            },
+
+            // 内容创作类
+            {
+                name: '小红书种草文案',
+                category: 'content-creation',
+                description: '专业小红书运营，生成高转化种草笔记，包含标题、正文、标签优化',
+                icon: '📋',
+                color: 'linear-gradient(135deg, #ec4899, #be185d)',
+                usage: '156.7万',
+                rating: '4.9',
+                favorites: '23.1万',
+                isHot: true
+            },
+            {
+                name: 'B站视频文案',
+                category: 'content-creation',
+                description: 'B站UP主必备，生成符合平台调性的视频文案、标题、封面文字',
+                icon: '📺',
+                color: 'linear-gradient(135deg, #06b6d4, #0891b2)',
+                usage: '89.3万',
+                rating: '4.7',
+                favorites: '12.4万'
+            },
+            {
+                name: '公众号推文助手',
+                category: 'content-creation',
+                description: '微信公众号专业写手，生成10万+阅读量推文，支持多种文体风格',
+                icon: '📄',
+                color: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                usage: '234.5万',
+                rating: '4.8',
+                favorites: '31.2万'
+            },
+
+            // 文案采集类
+            {
+                name: '爆款文案收集器',
+                category: 'copywriting',
+                description: '自动收集全网爆款文案，按行业分类整理，为您提供创作灵感来源',
+                icon: '📚',
+                color: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                usage: '67.8万',
+                rating: '4.6',
+                favorites: '9.1万'
+            },
+            {
+                name: '同行内容分析',
+                category: 'copywriting',
+                description: '深度分析竞争对手内容策略，提取优质文案模板和创作技巧',
+                icon: '🔬',
+                color: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+                usage: '43.2万',
+                rating: '4.4',
+                favorites: '5.8万'
+            },
+            {
+                name: '素材库管理员',
+                category: 'copywriting',
+                description: '智能整理和分类文案素材，支持标签搜索，快速找到所需内容',
+                icon: '🗂️',
+                color: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+                usage: '31.7万',
+                rating: '4.3',
+                favorites: '4.2万'
+            },
+
+            // 视频生成类
+            {
+                name: 'AI口播视频生成',
+                category: 'video-generation',
+                description: '文字转视频神器，一键生成真人口播视频，支持多种虚拟主播形象',
+                icon: '🎥',
+                color: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                usage: '198.4万',
+                rating: '4.8',
+                favorites: '28.7万',
+                isHot: true
+            },
+            {
+                name: '动画解说制作师',
+                category: 'video-generation',
+                description: '专业动画视频制作，支持角色动画、场景切换、配音合成',
+                icon: '🎨',
+                color: 'linear-gradient(135deg, #14b8a6, #0f766e)',
+                usage: '76.5万',
+                rating: '4.6',
+                favorites: '11.3万'
+            },
+            {
+                name: '混剪视频助手',
+                category: 'video-generation',
+                description: '智能视频剪辑，自动匹配素材、音乐、转场效果，快速生成混剪作品',
+                icon: '✂️',
+                color: 'linear-gradient(135deg, #f97316, #ea580c)',
+                usage: '54.9万',
+                rating: '4.5',
+                favorites: '7.8万'
+            },
+
+            // 电商文案类
+            {
+                name: '直播带货话术',
+                category: 'ecommerce',
+                description: '直播间销售专家，生成高转化带货话术，包含开场、介绍、催单、逼单',
+                icon: '📢',
+                color: 'linear-gradient(135deg, #84cc16, #65a30d)',
+                usage: '187.3万',
+                rating: '4.9',
+                favorites: '25.6万',
+                isHot: true
+            },
+            {
+                name: '产品卖点提炼师',
+                category: 'ecommerce',
+                description: '深度挖掘产品核心卖点，生成打动用户的产品描述和营销文案',
+                icon: '💎',
+                color: 'linear-gradient(135deg, #06b6d4, #0891b2)',
+                usage: '92.7万',
+                rating: '4.7',
+                favorites: '13.5万'
+            },
+            {
+                name: '客服回复模板',
+                category: 'ecommerce',
+                description: '电商客服必备，提供标准化回复模板，提升客户满意度和转化率',
+                icon: '💬',
+                color: 'linear-gradient(135deg, #10b981, #059669)',
+                usage: '68.1万',
+                rating: '4.4',
+                favorites: '8.9万'
+            }
+        ];
+
+        let currentPage = 1;
+        let currentCategory = 'all';
+        let filteredAgents = [...aiAgents];
+
+        // 初始化页面
+        function initPage() {
+            renderAllAi();
+            bindEvents();
+        }
+
+        // 绑定事件
+        function bindEvents() {
+            // 搜索输入
+            document.getElementById('searchInput').addEventListener('input', function(e) {
+                searchAgents(e.target.value);
+            });
+
+            // 分类筛选
+            document.querySelectorAll('.category-tag').forEach(tag => {
+                tag.addEventListener('click', function() {
+                    document.querySelectorAll('.category-tag').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    currentCategory = this.dataset.category;
+                    filterByCategory();
+                });
+            });
+
+            // 排序
+            document.getElementById('sortSelect').addEventListener('change', function(e) {
+                sortAgents(e.target.value);
+            });
+
+            // 用户下拉菜单事件
+            const userDropdown = document.querySelector('.user-dropdown');
+            const dropdownContent = document.querySelector('.dropdown-content');
+            
+            if (userDropdown && dropdownContent) {
+                userDropdown.addEventListener('mouseenter', showDropdown);
+                userDropdown.addEventListener('mouseleave', hideDropdownWithDelay);
+                dropdownContent.addEventListener('mouseenter', showDropdown);
+                dropdownContent.addEventListener('mouseleave', hideDropdownWithDelay);
+            }
+        }
+
+        // 渲染所有智能体
+        function renderAllAi() {
+            const grid = document.getElementById('allAiGrid');
+            grid.innerHTML = '';
+
+            const startIndex = (currentPage - 1) * 12;
+            const endIndex = startIndex + 12;
+            const pageAgents = filteredAgents.slice(startIndex, endIndex);
+
+            pageAgents.forEach(agent => {
+                const card = createAiCard(agent);
+                grid.appendChild(card);
+            });
+
+            updateResultCount();
+            updatePagination();
+        }
+
+        // 创建智能体卡片
+        function createAiCard(agent) {
+            const card = document.createElement('div');
+            card.className = 'ai-card';
+            card.innerHTML = `
+                ${agent.isHot ? '<div class="hot-tag">HOT</div>' : ''}
+                <div class="ai-card-header">
+                    <div style="display:flex;align-items:center;">
+                        <div class="ai-icon" style="background: ${agent.color};">${agent.icon}</div>
+                        <div class="ai-meta">
+                            <h3 class="ai-name">${agent.name}</h3>
+                            <span class="ai-category">${getCategoryName(agent.category)}</span>
+                        </div>
+                    </div>
+                    <button class="favorite-btn" onclick="toggleFavorite(this)">♡</button>
+                </div>
+                <p class="ai-description">${agent.description}</p>
+                <div class="ai-stats">
+                    <span class="stat-item">📊 使用 ${agent.usage}次</span>
+                    <span class="stat-item">⭐ 评分 ${agent.rating}</span>
+                    <span class="stat-item">👥 收藏 ${agent.favorites}</span>
+                </div>
+                <div class="ai-actions">
+                    <button class="btn-secondary" onclick="previewAi('${agent.name}')">预览</button>
+                    <button class="btn-primary" onclick="useAi('${agent.name}')">立即使用</button>
+                </div>
+            `;
+            return card;
+        }
+
+        // 获取分类名称
+        function getCategoryName(category) {
+            const categoryNames = {
+                'media-planning': '自媒体选题',
+                'content-creation': '内容创作',
+                'copywriting': '文案采集',
+                'video-generation': '视频生成',
+                'ecommerce': '电商文案',
+                'education': '教育培训',
+                'marketing': '企业营销',
+                'novel': '小说创作',
+                'news': '新闻资讯',
+                'lifestyle': '生活服务'
+            };
+            return categoryNames[category] || category;
+        }
+
+        // 搜索智能体
+        function searchAgents(keyword) {
+            if (!keyword.trim()) {
+                filteredAgents = [...aiAgents];
+            } else {
+                filteredAgents = aiAgents.filter(agent => 
+                    agent.name.toLowerCase().includes(keyword.toLowerCase()) ||
+                    agent.description.toLowerCase().includes(keyword.toLowerCase())
+                );
+            }
+            currentPage = 1;
+            renderAllAi();
+        }
+
+        // 按分类筛选
+        function filterByCategory() {
+            if (currentCategory === 'all') {
+                filteredAgents = [...aiAgents];
+            } else {
+                filteredAgents = aiAgents.filter(agent => agent.category === currentCategory);
+            }
+            currentPage = 1;
+            renderAllAi();
+        }
+
+        // 排序智能体
+        function sortAgents(sortType) {
+            switch(sortType) {
+                case 'hot':
+                    filteredAgents.sort((a, b) => parseFloat(b.usage) - parseFloat(a.usage));
+                    break;
+                case 'rating':
+                    filteredAgents.sort((a, b) => parseFloat(b.rating) - parseFloat(a.rating));
+                    break;
+                case 'usage':
+                    filteredAgents.sort((a, b) => parseFloat(b.usage) - parseFloat(a.usage));
+                    break;
+                default:
+                    // 保持原有顺序
+                    break;
+            }
+            renderAllAi();
+        }
+
+        // 更新结果计数
+        function updateResultCount() {
+            const startIndex = (currentPage - 1) * 12 + 1;
+            const endIndex = Math.min(currentPage * 12, filteredAgents.length);
+            const total = filteredAgents.length;
+            document.getElementById('resultCount').textContent = `显示 ${startIndex}-${endIndex} 项，共 ${total} 项结果`;
+        }
+
+        // 更新分页
+        function updatePagination() {
+            // 这里可以添加更复杂的分页逻辑
+            const totalPages = Math.ceil(filteredAgents.length / 12);
+            document.getElementById('prevBtn').disabled = currentPage === 1;
+            document.getElementById('nextBtn').disabled = currentPage === totalPages;
+        }
+
+        // 切换收藏
+        function toggleFavorite(btn) {
+            btn.classList.toggle('active');
+            btn.textContent = btn.classList.contains('active') ? '♥' : '♡';
+        }
+
+        // 预览智能体
+        function previewAi(name) {
+            alert(`正在预览智能体：${name}\n\n这里将显示智能体的详细介绍、使用示例和功能演示。`);
+        }
+
+        // 使用智能体
+        function useAi(name) {
+            alert(`正在启动智能体：${name}\n\n即将跳转到智能体工作台...`);
+        }
+
+        // 分页相关函数
+        function changePage(direction) {
+            if (direction === 'prev' && currentPage > 1) {
+                currentPage--;
+            } else if (direction === 'next') {
+                const totalPages = Math.ceil(filteredAgents.length / 12);
+                if (currentPage < totalPages) {
+                    currentPage++;
+                }
+            }
+            renderAllAi();
+        }
+
+        // 用户下拉菜单相关函数
+        let dropdownTimer;
+        
+        function showDropdown() {
+            clearTimeout(dropdownTimer);
+            const dropdown = document.querySelector('.dropdown-content');
+            if (dropdown) {
+                dropdown.classList.add('show');
+            }
+        }
+        
+        function hideDropdownWithDelay() {
+            dropdownTimer = setTimeout(() => {
+                const dropdown = document.querySelector('.dropdown-content');
+                if (dropdown) {
+                    dropdown.classList.remove('show');
+                }
+            }, 300);
+        }
+
+        // 导航函数（保持与首页一致）
+        function goToHome() { window.location.href = '/'; }
+        function goToAiReduce() { alert('进入文章降AI率工具'); }
+        function goToVideoExtract() { alert('进入视频文案提取工具'); }
+        function goToPromptGenerator() { alert('进入提示词生成器'); }
+        function goToWorkflowStore() { alert('进入工作流商店'); }
+        function goToCourseStore() { alert('进入课程商店'); }
+        function goToAutoPublish() { alert('进入全平台爆款文案创作'); }
+        function goToAiToolbox() { window.location.reload(); }
+        
+        function openPromote() { alert('开启推广赚钱计划'); }
+        
+        function copyId() { 
+            navigator.clipboard.writeText('253855');
+            alert('用户ID已复制到剪贴板');
+        }
+        
+        function copyToken() {
+            navigator.clipboard.writeText('sk-proj-abc123defg456hijklmn789');
+            alert('API Token已复制到剪贴板');
+        }
+        
+        function refreshToken() { alert('API Token已更新'); }
+        function goToUserCenter() { alert('跳转到个人中心'); }
+        function goToVipPurchase() { alert('跳转到会员购买页面'); }
+        function goToRecharge() { alert('跳转到个人充值页面'); }
+        function goToPricing() { alert('查看计费标准'); }
+        function goToWorkflowSystem() { alert('进入工单系统'); }
+        function goToVideoGeneration() { alert('查看生成任务'); }
+        function goToConsumptionDetails() { alert('查看消费明细'); }
+        function goToOfficialNews() { alert('查看官方动态'); }
+        function logout() { 
+            if(confirm('确认要退出登录吗？')) {
+                alert('已退出登录');
+            }
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', initPage);
+    </script>
+</body>
+</html>

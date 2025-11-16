@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据概览 - 创作魔方管理后台</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .back-btn {
+            padding: 8px 16px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        
+        .back-btn:hover {
+            background: #5a6fd8;
+        }
+        
+        .page-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .refresh-btn {
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .main-container {
+            display: flex;
+            margin-top: 70px;
+            min-height: calc(100vh - 70px);
+        }
+        
+        .sidebar {
+            width: 250px;
+            background: white;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            padding: 30px 0;
+        }
+        
+        .sidebar-menu {
+            list-style: none;
+        }
+        
+        .sidebar-menu li {
+            margin-bottom: 5px;
+        }
+        
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            padding: 15px 30px;
+            color: #666;
+            text-decoration: none;
+            transition: all 0.3s;
+            font-size: 15px;
+            cursor: pointer;
+        }
+        
+        .sidebar-menu a:hover {
+            background: #f8f9fa;
+            color: #667eea;
+        }
+        
+        .sidebar-menu a.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .sidebar-menu a i {
+            margin-right: 12px;
+            font-size: 18px;
+            width: 20px;
+        }
+        
+        .content {
+            flex: 1;
+            padding: 30px 40px;
+            background: #f5f7fa;
+        }
+        
+        .stats-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        }
+        
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .stat-title {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: white;
+        }
+        
+        .users .stat-icon { background: #667eea; }
+        .revenue .stat-icon { background: #28a745; }
+        .points .stat-icon { background: #ffc107; }
+        .growth .stat-icon { background: #17a2b8; }
+        
+        .stat-number {
+            font-size: 32px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .stat-change {
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .stat-change.positive {
+            color: #28a745;
+        }
+        
+        .stat-change.negative {
+            color: #dc3545;
+        }
+        
+        .chart-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            margin-bottom: 30px;
+        }
+        
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        
+        .chart-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .chart-filters {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .filter-btn {
+            padding: 6px 12px;
+            border: 1px solid #e9ecef;
+            background: white;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .filter-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .chart-placeholder {
+            height: 300px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 16px;
+        }
+        
+        .activity-feed {
+            margin-bottom: 40px;
+        }
+        
+        .activity-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        
+        .activity-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        
+        .activity-list {
+            list-style: none;
+        }
+        
+        .activity-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #f8f9fa;
+        }
+        
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+        
+        .activity-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #667eea;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .activity-content {
+            flex: 1;
+        }
+        
+        .activity-text {
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .activity-time {
+            color: #999;
+            font-size: 12px;
+        }
+        
+        .activity-amount {
+            color: #28a745;
+            font-weight: 600;
+        }
+        
+        .transaction-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .transaction-table th,
+        .transaction-table td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #f8f9fa;
+        }
+        
+        .transaction-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .transaction-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .status-success {
+            color: #28a745;
+            background: rgba(40, 167, 69, 0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        .status-pending {
+            color: #ffc107;
+            background: rgba(255, 193, 7, 0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        .status-failed {
+            color: #dc3545;
+            background: rgba(220, 53, 69, 0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        .member-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .member-free {
+            background: #e9ecef;
+            color: #6c757d;
+        }
+        
+        .member-basic {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .member-pro {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .member-premium {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .data-table {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            margin-bottom: 30px;
+        }
+        
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        
+        .table-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .search-box {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .search-input {
+            padding: 8px 15px;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 14px;
+            width: 250px;
+        }
+        
+        .filter-select {
+            padding: 8px 15px;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-outline {
+            background: white;
+            border: 1px solid #e9ecef;
+            color: #666;
+        }
+        
+        .btn-sm {
+            padding: 4px 8px;
+            font-size: 12px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .action-btns {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-top: 20px;
+        }
+        
+        .page-btn {
+            padding: 8px 12px;
+            border: 1px solid #e9ecef;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .page-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .tabs-header {
+            background: white;
+            border-radius: 12px 12px 0 0;
+            padding: 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            margin-bottom: 0;
+        }
+        
+        .tabs-nav {
+            display: flex;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .tab-btn {
+            padding: 15px 25px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 14px;
+            color: #666;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .tab-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+        
+        .tab-content {
+            background: white;
+            border-radius: 0 0 12px 12px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #667eea;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                order: 2;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .stats-overview {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+            }
+            
+            .tabs-nav {
+                flex-wrap: wrap;
+            }
+            
+            .tab-btn {
+                flex: 1;
+                min-width: 120px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <a href="/" class="back-btn">← 返回首页</a>
+            <h1 class="page-title">数据概览</h1>
+        </div>
+        <div class="header-right">
+            <button class="refresh-btn" onclick="refreshData()">🔄 刷新数据</button>
+            <span id="lastUpdate">最后更新：刚刚</span>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <nav class="sidebar">
+            <ul class="sidebar-menu">
+                <li><a class="active" onclick="switchTab('dashboard')">
+                    <i>📊</i> 实时仪表盘
+                </a></li>
+                <li><a onclick="switchTab('recharge')">
+                    <i>💰</i> 用户充值流水
+                </a></li>
+                <li><a onclick="switchTab('points')">
+                    <i>🎯</i> 积分消费流水
+                </a></li>
+                <li><a onclick="switchTab('users')">
+                    <i>👥</i> 用户数据
+                </a></li>
+            </ul>
+        </nav>
+
+        <main class="content">
+            <div id="dashboard-content">
+                <div class="stats-overview">
+                    <div class="stat-card users">
+                        <div class="stat-header">
+                            <span class="stat-title">总用户数</span>
+                            <div class="stat-icon">👥</div>
+                        </div>
+                        <div class="stat-number">1,234</div>
+                        <div class="stat-change positive">
+                            ↗ +12.5% 本周
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card revenue">
+                        <div class="stat-header">
+                            <span class="stat-title">充值总额</span>
+                            <div class="stat-icon">💰</div>
+                        </div>
+                        <div class="stat-number">¥45,678</div>
+                        <div class="stat-change positive">
+                            ↗ +8.3% 本月
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card points">
+                        <div class="stat-header">
+                            <span class="stat-title">积分消费</span>
+                            <div class="stat-icon">🎯</div>
+                        </div>
+                        <div class="stat-number">185,230</div>
+                        <div class="stat-change positive">
+                            ↗ +15.2% 今日
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card growth">
+                        <div class="stat-header">
+                            <span class="stat-title">活跃率</span>
+                            <div class="stat-icon">📊</div>
+                        </div>
+                        <div class="stat-number">78.5%</div>
+                        <div class="stat-change negative">
+                            ↘ -2.1% 本周
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3 class="chart-title">用户增长趋势</h3>
+                        <div class="chart-filters">
+                            <button class="filter-btn active">7天</button>
+                            <button class="filter-btn">30天</button>
+                            <button class="filter-btn">90天</button>
+                        </div>
+                    </div>
+                    <div class="chart-placeholder">
+                        📈 用户增长图表（需要集成 Chart.js 或其他图表库）
+                    </div>
+                </div>
+
+                <div class="activity-feed">
+                    <div class="activity-card">
+                        <div class="activity-header">
+                            <h3 class="chart-title">实时活动动态</h3>
+                            <span style="color: #999; font-size: 14px;">最近24小时</span>
+                        </div>
+                        <ul class="activity-list">
+                            <li class="activity-item">
+                                <div class="activity-avatar">张</div>
+                                <div class="activity-content">
+                                    <div class="activity-text">用户 张三 购买了 <strong>专业版月卡</strong></div>
+                                    <div class="activity-time">2分钟前</div>
+                                </div>
+                                <div class="activity-amount">+¥99</div>
+                            </li>
+                            <li class="activity-item">
+                                <div class="activity-avatar">李</div>
+                                <div class="activity-content">
+                                    <div class="activity-text">用户 李四 使用了 <strong>文章生成器</strong></div>
+                                    <div class="activity-time">5分钟前</div>
+                                </div>
+                                <div class="activity-amount">-50积分</div>
+                            </li>
+                            <li class="activity-item">
+                                <div class="activity-avatar">王</div>
+                                <div class="activity-content">
+                                    <div class="activity-text">用户 王五 充值了 <strong>1000积分</strong></div>
+                                    <div class="activity-time">15分钟前</div>
+                                </div>
+                                <div class="activity-amount">+¥100</div>
+                            </li>
+                            <li class="activity-item">
+                                <div class="activity-avatar">赵</div>
+                                <div class="activity-content">
+                                    <div class="activity-text">新用户 赵六 注册并完成实名认证</div>
+                                    <div class="activity-time">20分钟前</div>
+                                </div>
+                                <div class="activity-amount">新用户</div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div id="recharge-content" style="display: none;">
+                <div class="activity-card">
+                    <div class="activity-header">
+                        <h3 class="chart-title">用户充值流水</h3>
+                        <div class="chart-filters">
+                            <button class="filter-btn active">今日</button>
+                            <button class="filter-btn">本周</button>
+                            <button class="filter-btn">本月</button>
+                        </div>
+                    </div>
+                    
+                    <table class="transaction-table">
+                        <thead>
+                            <tr>
+                                <th>订单号</th>
+                                <th>用户</th>
+                                <th>充值金额</th>
+                                <th>支付方式</th>
+                                <th>状态</th>
+                                <th>时间</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>RG20240915001</td>
+                                <td>张三</td>
+                                <td>¥99.00</td>
+                                <td>微信支付</td>
+                                <td><span class="status-success">成功</span></td>
+                                <td>2024-09-15 14:30</td>
+                            </tr>
+                            <tr>
+                                <td>RG20240915002</td>
+                                <td>李四</td>
+                                <td>¥199.00</td>
+                                <td>支付宝</td>
+                                <td><span class="status-success">成功</span></td>
+                                <td>2024-09-15 14:25</td>
+                            </tr>
+                            <tr>
+                                <td>RG20240915003</td>
+                                <td>王五</td>
+                                <td>¥100.00</td>
+                                <td>微信支付</td>
+                                <td><span class="status-pending">处理中</span></td>
+                                <td>2024-09-15 14:20</td>
+                            </tr>
+                            <tr>
+                                <td>RG20240915004</td>
+                                <td>赵六</td>
+                                <td>¥299.00</td>
+                                <td>银行卡</td>
+                                <td><span class="status-failed">失败</span></td>
+                                <td>2024-09-15 14:15</td>
+                            </tr>
+                            <tr>
+                                <td>RG20240915005</td>
+                                <td>钱七</td>
+                                <td>¥49.00</td>
+                                <td>支付宝</td>
+                                <td><span class="status-success">成功</span></td>
+                                <td>2024-09-15 14:10</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div id="points-content" style="display: none;">
+                <div class="activity-card">
+                    <div class="activity-header">
+                        <h3 class="chart-title">积分消费流水</h3>
+                        <div class="chart-filters">
+                            <button class="filter-btn active">今日</button>
+                            <button class="filter-btn">本周</button>
+                            <button class="filter-btn">本月</button>
+                        </div>
+                    </div>
+                    
+                    <table class="transaction-table">
+                        <thead>
+                            <tr>
+                                <th>流水号</th>
+                                <th>用户</th>
+                                <th>消费积分</th>
+                                <th>使用功能</th>
+                                <th>状态</th>
+                                <th>时间</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>PTS20240915001</td>
+                                <td>张三</td>
+                                <td>50积分</td>
+                                <td>文章生成器</td>
+                                <td><span class="status-success">完成</span></td>
+                                <td>2024-09-15 14:32</td>
+                            </tr>
+                            <tr>
+                                <td>PTS20240915002</td>
+                                <td>李四</td>
+                                <td>100积分</td>
+                                <td>AI绘画</td>
+                                <td><span class="status-success">完成</span></td>
+                                <td>2024-09-15 14:28</td>
+                            </tr>
+                            <tr>
+                                <td>PTS20240915003</td>
+                                <td>王五</td>
+                                <td>30积分</td>
+                                <td>智能翻译</td>
+                                <td><span class="status-success">完成</span></td>
+                                <td>2024-09-15 14:25</td>
+                            </tr>
+                            <tr>
+                                <td>PTS20240915004</td>
+                                <td>赵六</td>
+                                <td>80积分</td>
+                                <td>视频剪辑</td>
+                                <td><span class="status-pending">处理中</span></td>
+                                <td>2024-09-15 14:22</td>
+                            </tr>
+                            <tr>
+                                <td>PTS20240915005</td>
+                                <td>钱七</td>
+                                <td>20积分</td>
+                                <td>文本润色</td>
+                                <td><span class="status-success">完成</span></td>
+                                <td>2024-09-15 14:18</td>
+                            </tr>
+                            <tr>
+                                <td>PTS20240915006</td>
+                                <td>孙八</td>
+                                <td>150积分</td>
+                                <td>Logo设计</td>
+                                <td><span class="status-success">完成</span></td>
+                                <td>2024-09-15 14:15</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 用户数据 -->
+            <div id="users-content" style="display: none;">
+                <div class="tabs-header">
+                    <div class="tabs-nav">
+                        <button class="tab-btn active" onclick="switchUserTab('user-list')">用户列表</button>
+                        <button class="tab-btn" onclick="switchUserTab('subscriptions')">订阅管理</button>
+                        <button class="tab-btn" onclick="switchUserTab('consumption')">消费记录</button>
+                    </div>
+                </div>
+                
+                <div class="tab-content">
+                    <!-- 用户列表 -->
+                    <div id="user-list-tab" class="user-tab-content">
+                        <div class="table-header">
+                            <h3 class="table-title">用户管理</h3>
+                            <div class="search-box">
+                                <input type="text" class="search-input" placeholder="搜索用户昵称、手机号、邮箱...">
+                                <select class="filter-select">
+                                    <option>全部用户</option>
+                                    <option>免费用户</option>
+                                    <option>基础会员</option>
+                                    <option>专业会员</option>
+                                    <option>高级会员</option>
+                                </select>
+                                <div class="action-buttons">
+                                    <button class="btn btn-outline">导出用户</button>
+                                    <button class="btn btn-primary">新增用户</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <table class="transaction-table">
+                            <thead>
+                                <tr>
+                                    <th>头像</th>
+                                    <th>用户ID</th>
+                                    <th>昵称</th>
+                                    <th>手机号</th>
+                                    <th>邮箱</th>
+                                    <th>会员等级</th>
+                                    <th>累计消费</th>
+                                    <th>注册时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><div class="user-avatar">张</div></td>
+                                    <td>U001234</td>
+                                    <td>张三</td>
+                                    <td>138****1234</td>
+                                    <td>zhang***@email.com</td>
+                                    <td><span class="member-badge member-pro">专业会员</span></td>
+                                    <td>¥1,250.00</td>
+                                    <td>2024-01-15</td>
+                                    <td>
+                                        <div class="action-btns">
+                                            <button class="btn-sm btn-outline" onclick="viewUser('U001234')">查看</button>
+                                            <button class="btn-sm btn-primary" onclick="editUser('U001234')">编辑</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><div class="user-avatar">李</div></td>
+                                    <td>U001235</td>
+                                    <td>李四</td>
+                                    <td>139****5678</td>
+                                    <td>li***@email.com</td>
+                                    <td><span class="member-badge member-basic">基础会员</span></td>
+                                    <td>¥580.00</td>
+                                    <td>2024-02-20</td>
+                                    <td>
+                                        <div class="action-btns">
+                                            <button class="btn-sm btn-outline" onclick="viewUser('U001235')">查看</button>
+                                            <button class="btn-sm btn-primary" onclick="editUser('U001235')">编辑</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><div class="user-avatar">王</div></td>
+                                    <td>U001236</td>
+                                    <td>王五</td>
+                                    <td>136****9012</td>
+                                    <td>wang***@email.com</td>
+                                    <td><span class="member-badge member-premium">高级会员</span></td>
+                                    <td>¥2,980.00</td>
+                                    <td>2023-12-08</td>
+                                    <td>
+                                        <div class="action-btns">
+                                            <button class="btn-sm btn-outline" onclick="viewUser('U001236')">查看</button>
+                                            <button class="btn-sm btn-primary" onclick="editUser('U001236')">编辑</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><div class="user-avatar">赵</div></td>
+                                    <td>U001237</td>
+                                    <td>赵六</td>
+                                    <td>135****3456</td>
+                                    <td>zhao***@email.com</td>
+                                    <td><span class="member-badge member-free">免费用户</span></td>
+                                    <td>¥0.00</td>
+                                    <td>2024-03-10</td>
+                                    <td>
+                                        <div class="action-btns">
+                                            <button class="btn-sm btn-outline" onclick="viewUser('U001237')">查看</button>
+                                            <button class="btn-sm btn-primary" onclick="editUser('U001237')">编辑</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><div class="user-avatar">钱</div></td>
+                                    <td>U001238</td>
+                                    <td>钱七</td>
+                                    <td>134****7890</td>
+                                    <td>qian***@email.com</td>
+                                    <td><span class="member-badge member-basic">基础会员</span></td>
+                                    <td>¥350.00</td>
+                                    <td>2024-02-28</td>
+                                    <td>
+                                        <div class="action-btns">
+                                            <button class="btn-sm btn-outline" onclick="viewUser('U001238')">查看</button>
+                                            <button class="btn-sm btn-primary" onclick="editUser('U001238')">编辑</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                        <div class="pagination">
+                            <button class="page-btn">上一页</button>
+                            <button class="page-btn active">1</button>
+                            <button class="page-btn">2</button>
+                            <button class="page-btn">3</button>
+                            <button class="page-btn">下一页</button>
+                        </div>
+                    </div>
+                    
+                    <!-- 订阅管理 -->
+                    <div id="subscriptions-tab" class="user-tab-content" style="display: none;">
+                        <div class="table-header">
+                            <h3 class="table-title">订阅管理</h3>
+                            <div class="search-box">
+                                <input type="text" class="search-input" placeholder="搜索用户、订阅套餐...">
+                                <select class="filter-select">
+                                    <option>全部状态</option>
+                                    <option>有效订阅</option>
+                                    <option>即将到期</option>
+                                    <option>已过期</option>
+                                    <option>已取消</option>
+                                </select>
+                                <div class="action-buttons">
+                                    <button class="btn btn-outline">导出订阅数据</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <table class="transaction-table">
+                            <thead>
+                                <tr>
+                                    <th>用户</th>
+                                    <th>订阅套餐</th>
+                                    <th>开始时间</th>
+                                    <th>到期时间</th>
+                                    <th>价格</th>
+                                    <th>状态</th>
+                                    <th>自动续费</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>张三</td>
+                                    <td>专业版月卡</td>
+                                    <td>2024-09-01</td>
+                                    <td>2024-10-01</td>
+                                    <td>¥99.00</td>
+                                    <td><span class="status-success">有效</span></td>
+                                    <td><span class="status-success">开启</span></td>
+                                    <td>
+                                        <div class="action-btns">
+                                            <button class="btn-sm btn-outline" onclick="viewSubscription('SUB001')">详情</button>
+                                            <button class="btn-sm btn-primary" onclick="editSubscription('SUB001')">编辑</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>李四</td>
+                                    <td>基础版年卡</td>
+                                    <td>2024-01-15</td>
+                                    <td>2025-01-15</td>
+                                    <td>¥399.00</td>
+                                    <td><span class="status-success">有效</span></td>
+                                    <td><span class="status-failed">关闭</span></td>
+                                    <td>
+                                        <div class="action-btns">
+                                            <button class="btn-sm btn-outline" onclick="viewSubscription('SUB002')">详情</button>
+                                            <button class="btn-sm btn-primary" onclick="editSubscription('SUB002')">编辑</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>王五</td>
+                                    <td>高级版月卡</td>
+                                    <td>2024-08-20</td>
+                                    <td>2024-09-20</td>
+                                    <td>¥199.00</td>
+                                    <td><span class="status-pending">即将到期</span></td>
+                                    <td><span class="status-success">开启</span></td>
+                                    <td>
+                                        <div class="action-btns">
+                                            <button class="btn-sm btn-outline" onclick="viewSubscription('SUB003')">详情</button>
+                                            <button class="btn-sm btn-primary" onclick="editSubscription('SUB003')">编辑</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>钱七</td>
+                                    <td>专业版月卡</td>
+                                    <td>2024-07-15</td>
+                                    <td>2024-08-15</td>
+                                    <td>¥99.00</td>
+                                    <td><span class="status-failed">已过期</span></td>
+                                    <td><span class="status-failed">关闭</span></td>
+                                    <td>
+                                        <div class="action-btns">
+                                            <button class="btn-sm btn-outline" onclick="viewSubscription('SUB004')">详情</button>
+                                            <button class="btn-sm btn-primary" onclick="renewSubscription('SUB004')">续费</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                        <div class="pagination">
+                            <button class="page-btn">上一页</button>
+                            <button class="page-btn active">1</button>
+                            <button class="page-btn">2</button>
+                            <button class="page-btn">3</button>
+                            <button class="page-btn">下一页</button>
+                        </div>
+                    </div>
+                    
+                    <!-- 消费记录 -->
+                    <div id="consumption-tab" class="user-tab-content" style="display: none;">
+                        <div class="table-header">
+                            <h3 class="table-title">用户消费记录</h3>
+                            <div class="search-box">
+                                <input type="text" class="search-input" placeholder="搜索用户、订单号...">
+                                <select class="filter-select">
+                                    <option>全部类型</option>
+                                    <option>充值</option>
+                                    <option>购买会员</option>
+                                    <option>积分消费</option>
+                                    <option>退款</option>
+                                </select>
+                                <div class="action-buttons">
+                                    <button class="btn btn-outline">导出消费记录</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <table class="transaction-table">
+                            <thead>
+                                <tr>
+                                    <th>用户</th>
+                                    <th>订单号</th>
+                                    <th>消费类型</th>
+                                    <th>商品/服务</th>
+                                    <th>金额</th>
+                                    <th>支付方式</th>
+                                    <th>状态</th>
+                                    <th>时间</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>张三</td>
+                                    <td>ORD20240915001</td>
+                                    <td>购买会员</td>
+                                    <td>专业版月卡</td>
+                                    <td>¥99.00</td>
+                                    <td>微信支付</td>
+                                    <td><span class="status-success">成功</span></td>
+                                    <td>2024-09-15 14:30</td>
+                                </tr>
+                                <tr>
+                                    <td>李四</td>
+                                    <td>CHG20240915001</td>
+                                    <td>充值</td>
+                                    <td>账户余额</td>
+                                    <td>¥200.00</td>
+                                    <td>支付宝</td>
+                                    <td><span class="status-success">成功</span></td>
+                                    <td>2024-09-15 14:25</td>
+                                </tr>
+                                <tr>
+                                    <td>王五</td>
+                                    <td>PTS20240915001</td>
+                                    <td>积分消费</td>
+                                    <td>AI绘画服务</td>
+                                    <td>100积分</td>
+                                    <td>账户积分</td>
+                                    <td><span class="status-success">成功</span></td>
+                                    <td>2024-09-15 14:20</td>
+                                </tr>
+                                <tr>
+                                    <td>赵六</td>
+                                    <td>ORD20240915002</td>
+                                    <td>购买会员</td>
+                                    <td>基础版年卡</td>
+                                    <td>¥399.00</td>
+                                    <td>银行卡</td>
+                                    <td><span class="status-success">成功</span></td>
+                                    <td>2024-09-15 14:15</td>
+                                </tr>
+                                <tr>
+                                    <td>钱七</td>
+                                    <td>REF20240915001</td>
+                                    <td>退款</td>
+                                    <td>专业版月卡</td>
+                                    <td>-¥99.00</td>
+                                    <td>原路退回</td>
+                                    <td><span class="status-pending">处理中</span></td>
+                                    <td>2024-09-15 14:10</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                        <div class="pagination">
+                            <button class="page-btn">上一页</button>
+                            <button class="page-btn active">1</button>
+                            <button class="page-btn">2</button>
+                            <button class="page-btn">3</button>
+                            <button class="page-btn">下一页</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function switchTab(tabName) {
+            // 隐藏所有内容
+            const contents = document.querySelectorAll('[id$="-content"]');
+            contents.forEach(content => {
+                content.style.display = 'none';
+            });
+            
+            // 显示选中的内容
+            document.getElementById(tabName + '-content').style.display = 'block';
+            
+            // 更新左侧导航状态
+            const links = document.querySelectorAll('.sidebar-menu a');
+            links.forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            event.target.classList.add('active');
+        }
+        
+        function switchUserTab(tabName) {
+            // 隐藏所有用户标签页内容
+            const userTabs = document.querySelectorAll('.user-tab-content');
+            userTabs.forEach(tab => {
+                tab.style.display = 'none';
+            });
+            
+            // 显示选中的用户标签页内容
+            document.getElementById(tabName + '-tab').style.display = 'block';
+            
+            // 更新标签页按钮状态
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            tabBtns.forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            event.target.classList.add('active');
+        }
+        
+        function refreshData() {
+            const button = event.target;
+            button.textContent = '🔄 刷新中...';
+            button.disabled = true;
+            
+            setTimeout(() => {
+                button.textContent = '🔄 刷新数据';
+                button.disabled = false;
+                document.getElementById('lastUpdate').textContent = '最后更新：刚刚';
+                showToast('数据已刷新');
+            }, 2000);
+        }
+        
+        function viewUser(userId) {
+            showToast('查看用户详情: ' + userId);
+        }
+        
+        function editUser(userId) {
+            showToast('编辑用户: ' + userId);
+        }
+        
+        function viewSubscription(subscriptionId) {
+            showToast('查看订阅详情: ' + subscriptionId);
+        }
+        
+        function editSubscription(subscriptionId) {
+            showToast('编辑订阅: ' + subscriptionId);
+        }
+        
+        function renewSubscription(subscriptionId) {
+            if (confirm('确认为此用户续费订阅？')) {
+                showToast('订阅续费成功: ' + subscriptionId);
+            }
+        }
+        
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: rgba(0,0,0,0.8);
+                color: white;
+                padding: 15px 25px;
+                border-radius: 8px;
+                z-index: 1001;
+                opacity: 0;
+                transition: opacity 0.3s;
+                font-size: 14px;
+            `;
+            toast.textContent = message;
+            
+            document.body.appendChild(toast);
+            setTimeout(() => toast.style.opacity = '1', 100);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        document.body.removeChild(toast);
+                    }
+                }, 300);
+            }, 3000);
+        }
+        
+        // 模拟实时数据更新
+        setInterval(() => {
+            const numbers = document.querySelectorAll('.stat-number');
+            numbers.forEach(num => {
+                if (Math.random() < 0.1) { // 10%概率更新数字
+                    const current = parseInt(num.textContent.replace(/[^\d]/g, ''));
+                    const change = Math.floor(Math.random() * 10) - 5;
+                    const newValue = Math.max(0, current + change);
+                    
+                    if (num.textContent.includes('¥')) {
+                        num.textContent = '¥' + newValue.toLocaleString();
+                    } else if (num.textContent.includes('%')) {
+                        num.textContent = newValue + '%';
+                    } else {
+                        num.textContent = newValue.toLocaleString();
+                    }
+                }
+            });
+        }, 5000);
+    </script>
+</body>
+</html>

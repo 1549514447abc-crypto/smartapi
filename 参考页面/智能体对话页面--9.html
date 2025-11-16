@@ -1,0 +1,1510 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能体对话 - 创作魔方Content Cube</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Helvetica, Arial, sans-serif;
+            background: #ffffff;
+            height: 100vh;
+            overflow: hidden;
+            color: #1f2937;
+        }
+
+        /* Header样式 */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #e5e7eb;
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 48px;
+        }
+        
+        .logo {
+            font-size: 22px;
+            font-weight: 600;
+            color: #1f2937;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            cursor: pointer;
+        }
+        
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 32px;
+            margin-left: 20px;
+        }
+        
+        .nav-menu li {
+            color: #374151;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+            font-size: 16px;
+            position: relative;
+            padding: 8px 0;
+        }
+        
+        .nav-menu li:hover,
+        .nav-menu li.active {
+            color: #3b82f6;
+        }
+        
+        .nav-menu li::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: 0;
+            left: 0;
+            background: #3b82f6;
+            transition: width 0.3s;
+        }
+        
+        .nav-menu li:hover::after,
+        .nav-menu li.active::after {
+            width: 100%;
+        }
+        
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .promote-button {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+        }
+        
+        .promote-button:hover {
+            background: linear-gradient(135deg, #059669, #047857);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+            transform: translateY(-1px);
+        }
+        
+        .user-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.2s;
+            border: 2px solid #e5e7eb;
+        }
+        
+        .user-avatar:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            border-color: #3b82f6;
+        }
+        
+        .dropdown-content {
+            position: absolute;
+            right: 0;
+            top: 50px;
+            background: white;
+            min-width: 300px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            padding: 24px;
+            z-index: 1001;
+            border: 1px solid #e5e7eb;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+        }
+        
+        .user-dropdown .dropdown-content.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .user-info-header {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e5e7eb;
+            margin-bottom: 20px;
+        }
+        
+        .user-id {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        .user-balance {
+            color: #dc2626;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .vip-button {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.2s;
+        }
+        
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+        
+        .menu-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 16px 12px;
+            border-radius: 8px;
+            background: #f9fafb;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .menu-icon {
+            width: 32px;
+            height: 32px;
+            background: #3b82f6;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        .menu-text {
+            font-size: 12px;
+            color: #374151;
+            font-weight: 500;
+        }
+
+        /* 主应用容器 */
+        .app-container {
+            display: flex;
+            height: calc(100vh - 70px);
+        }
+        
+        /* 侧边栏样式 */
+        .sidebar {
+            width: 280px;
+            background: white;
+            border-right: 1px solid #e9ecef;
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s;
+        }
+        
+        .sidebar.collapsed {
+            width: 60px;
+        }
+        
+        .sidebar-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .sidebar-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .sidebar.collapsed .sidebar-title {
+            display: none;
+        }
+        
+        .toggle-sidebar-btn {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            color: #666;
+            padding: 5px;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+        
+        /* 返回按钮样式 */
+        .back-to-selection {
+            padding: 0 15px 15px 15px;
+            border-bottom: 1px solid #f0f0f0;
+            margin-bottom: 15px;
+        }
+        
+        .back-btn {
+            width: 100%;
+            padding: 10px 15px;
+            background: #f8f9fa;
+            color: #374151;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .back-btn:hover {
+            background: #e9ecef;
+            border-color: #3b82f6;
+            color: #3b82f6;
+        }
+        
+        .sidebar.collapsed .back-btn {
+            padding: 8px;
+            margin: 0 10px 15px 10px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            justify-content: center;
+        }
+        
+        .sidebar.collapsed .back-text {
+            display: none;
+        }
+        
+        .back-icon {
+            display: none;
+        }
+        
+        .sidebar.collapsed .back-icon {
+            display: inline;
+        }
+        
+        .sidebar.collapsed .back-arrow {
+            display: none;
+        }
+        
+        .new-chat-btn {
+            width: calc(100% - 20px);
+            margin: 0 10px 15px 10px;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .sidebar.collapsed .new-chat-btn {
+            width: 40px;
+            height: 40px;
+            padding: 8px;
+            border-radius: 50%;
+            font-size: 16px;
+        }
+        
+        .chat-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 10px;
+        }
+        
+        .chat-item {
+            padding: 12px 10px;
+            margin-bottom: 5px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        .chat-item:hover {
+            background: #f8f9fa;
+        }
+        
+        .chat-item.active {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+        }
+        
+        .chat-title {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 4px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .chat-preview {
+            font-size: 12px;
+            color: #666;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .chat-item.active .chat-preview {
+            color: rgba(255,255,255,0.8);
+        }
+        
+        .chat-time {
+            font-size: 11px;
+            color: #999;
+            margin-top: 4px;
+        }
+        
+        .chat-item.active .chat-time {
+            color: rgba(255,255,255,0.7);
+        }
+        
+        .agent-indicator {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: white;
+            margin-bottom: 8px;
+            flex-shrink: 0;
+        }
+        
+        /* 主聊天区域 */
+        .main-chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #f8f9fa;
+        }
+        
+        .chat-header {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 70px;
+        }
+        
+        .agent-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        
+        .agent-avatar {
+            width: 45px;
+            height: 45px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: white;
+        }
+        
+        .agent-details {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .agent-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .agent-status {
+            font-size: 12px;
+            color: #28a745;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #28a745;
+        }
+        
+        .chat-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 14px;
+            color: #6b7280;
+        }
+        
+        .chat-container {
+            height: calc(100vh - 140px);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .message {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+        
+        .message.user {
+            flex-direction: row-reverse;
+        }
+        
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        
+        .message.user .message-avatar {
+            background: linear-gradient(135deg, #28a745, #20c997);
+        }
+        
+        .message-content {
+            max-width: 70%;
+            background: white;
+            padding: 15px 18px;
+            border-radius: 18px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .message.user .message-content {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+        }
+        
+        .message-text {
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+        
+        .message-time {
+            font-size: 11px;
+            color: #999;
+            margin-top: 8px;
+        }
+        
+        .message.user .message-time {
+            color: rgba(255,255,255,0.7);
+        }
+        
+        .message-cost {
+            background: rgba(255,255,255,0.2);
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            margin-left: 8px;
+        }
+        
+        .typing-indicator {
+            display: none;
+            padding: 15px 18px;
+            background: white;
+            border-radius: 18px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #999;
+            animation: typing 1.4s infinite;
+        }
+        
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.5;
+            }
+            30% {
+                transform: translateY(-10px);
+                opacity: 1;
+            }
+        }
+        
+        .chat-input-area {
+            background: white;
+            border-top: 1px solid #e9ecef;
+            padding: 20px;
+        }
+        
+        .quick-commands {
+            margin-bottom: 15px;
+        }
+        
+        .commands-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .commands-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .command-tag {
+            background: #f0f4ff;
+            color: #3b82f6;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid #e0e7ff;
+        }
+        
+        .command-tag:hover {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .input-container {
+            position: relative;
+        }
+        
+        .message-input {
+            width: 100%;
+            min-height: 60px;
+            max-height: 120px;
+            padding: 15px 60px 15px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            font-size: 14px;
+            line-height: 1.5;
+            resize: none;
+            outline: none;
+            font-family: inherit;
+        }
+        
+        .message-input:focus {
+            border-color: #3b82f6;
+        }
+        
+        .send-btn {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.3s;
+        }
+        
+        .send-btn:hover {
+            transform: translateY(-50%) scale(1.05);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        
+        .input-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .char-count {
+            color: #999;
+        }
+        
+        .cost-info {
+            color: #3b82f6;
+            font-weight: 500;
+        }
+        
+        /* 模态框 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+        
+        .agents-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        
+        .agent-option {
+            padding: 15px;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .agent-option:hover {
+            border-color: #3b82f6;
+            background: #f0f4ff;
+        }
+        
+        .agent-option.selected {
+            border-color: #3b82f6;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+        }
+        
+        .agent-option-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        
+        .agent-option-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+        }
+        
+        .agent-option-name {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .agent-option-desc {
+            font-size: 12px;
+            color: #666;
+            margin-top: 8px;
+        }
+        
+        .agent-option.selected .agent-option-desc {
+            color: rgba(255,255,255,0.8);
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1024px) {
+            .nav-menu {
+                display: none;
+            }
+            
+            .sidebar {
+                position: absolute;
+                z-index: 100;
+                height: calc(100vh - 70px);
+                transform: translateX(-100%);
+                transition: transform 0.3s;
+            }
+            
+            .sidebar.show {
+                transform: translateX(0);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .header {
+                padding: 12px 16px;
+            }
+            
+            .message-content {
+                max-width: 85%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-left">
+            <div class="logo" onclick="goToHome()">创作魔方Content Cube</div>
+            <ul class="nav-menu">
+                <li onclick="goToHome()">首页</li>
+                <li onclick="goToAiReduce()">文章降AI率</li>
+                <li onclick="goToVideoExtract()">视频文案提取</li>
+                <li onclick="goToPromptGenerator()">提示词生成器</li>
+                <li onclick="goToNovelGenerator()">小说推文生成器</li>
+                <li onclick="goToWorkflowStore()">工作流商店</li>
+                <li onclick="goToCourseStore()">课程商店</li>
+                <li onclick="goToAutoPublish()">全平台爆款文案创作</li>
+                <li onclick="goToAiToolbox()" class="active">智能体工具箱</li>
+            </ul>
+        </div>
+        <div class="header-right">
+            <button class="promote-button" onclick="openPromote()">
+                <span>💰</span>
+                推广赚钱
+            </button>
+            <div class="user-dropdown">
+                <div class="user-avatar">O</div>
+                <div class="dropdown-content">
+                    <div class="user-info-header">
+                        <div class="user-id">ID: 253855 <button onclick="copyId()" style="border:none;background:#3b82f6;color:white;padding:4px 8px;border-radius:6px;font-size:12px;cursor:pointer;">复制</button></div>
+                        <div class="user-balance">余额: ¥8.76</div>
+                        <div style="font-size:12px;color:#6b7280;margin-bottom:16px;">余额即将耗尽，前往充值</div>
+                        <button class="vip-button">👑 成为会员</button>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div style="color: #374151;font-size: 14px;font-weight: 500;margin-bottom: 8px;">API Token （插件密钥）</div>
+                        <input type="password" style="width: 100%;padding: 12px;border: 1px solid #d1d5db;border-radius: 8px;background: #f9fafb;font-family: 'SF Mono', 'Monaco', monospace;font-size: 12px;" value="sk-proj-abc123defg456hijklmn789" readonly>
+                        <div style="display:flex;gap:8px;margin-top:12px;">
+                            <button onclick="copyToken()" style="flex:1;background:#3b82f6;color:white;border:none;padding:8px;border-radius:6px;cursor:pointer;font-size:12px;">📋 复制</button>
+                            <button onclick="refreshToken()" style="flex:1;background:#6b7280;color:white;border:none;padding:8px;border-radius:6px;cursor:pointer;font-size:12px;">🔄 更新</button>
+                        </div>
+                    </div>
+                    
+                    <div class="menu-grid">
+                        <div class="menu-item" onclick="goToUserCenter()">
+                            <div class="menu-icon">👤</div>
+                            <div class="menu-text">个人中心</div>
+                        </div>
+                        <div class="menu-item" onclick="goToVipPurchase()">
+                            <div class="menu-icon">👑</div>
+                            <div class="menu-text">会员购买</div>
+                        </div>
+                        <div class="menu-item" onclick="goToRecharge()">
+                            <div class="menu-icon">💳</div>
+                            <div class="menu-text">个人充值</div>
+                        </div>
+                        <div class="menu-item" onclick="goToPricing()">
+                            <div class="menu-icon">📖</div>
+                            <div class="menu-text">计费标准</div>
+                        </div>
+                        <div class="menu-item" onclick="goToWorkflowSystem()">
+                            <div class="menu-icon">⚙️</div>
+                            <div class="menu-text">工单系统</div>
+                        </div>
+                        <div class="menu-item" onclick="goToVideoGeneration()">
+                            <div class="menu-icon">📹</div>
+                            <div class="menu-text">查看生成任务</div>
+                        </div>
+                        <div class="menu-item" onclick="goToConsumptionDetails()">
+                            <div class="menu-icon">🕒</div>
+                            <div class="menu-text">消费明细</div>
+                        </div>
+                        <div class="menu-item" onclick="goToOfficialNews()">
+                            <div class="menu-icon">📘</div>
+                            <div class="menu-text">官方动态 <span style="background:#dc2626;color:white;border-radius:10px;font-size:10px;padding:2px 4px;margin-left:2px;">新</span></div>
+                        </div>
+                        <div class="menu-item" onclick="logout()">
+                            <div class="menu-icon">🚪</div>
+                            <div class="menu-text">退出登录</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <!-- 侧边栏 -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-title">对话记录</div>
+                <button class="toggle-sidebar-btn" onclick="toggleSidebar()">
+                    <span id="toggleIcon">◀</span>
+                </button>
+            </div>
+            
+            <!-- 返回选择按钮 -->
+            <div class="back-to-selection">
+                <button class="back-btn" onclick="goBackToSelection()">
+                    <span class="back-arrow">←</span>
+                    <span class="back-text">返回智能体选择</span>
+                    <span class="back-icon">←</span>
+                </button>
+            </div>
+            
+            <button class="new-chat-btn" onclick="createNewChat()">
+                <span class="new-chat-text">+ 新对话</span>
+                <span class="new-chat-icon" style="display: none;">+</span>
+            </button>
+            
+            <div class="chat-list" id="chatList">
+                <div class="chat-item active" onclick="switchChat(this, 'chat-1')">
+                    <div class="agent-indicator">✨</div>
+                    <div class="chat-title">护肤专家咨询</div>
+                    <div class="chat-preview">想了解一下敏感肌护肤...</div>
+                    <div class="chat-time">2分钟前</div>
+                </div>
+                
+                <div class="chat-item" onclick="switchChat(this, 'chat-2')">
+                    <div class="agent-indicator">🍳</div>
+                    <div class="chat-title">家常菜制作</div>
+                    <div class="chat-preview">请教一下番茄鸡蛋面的做法</div>
+                    <div class="chat-time">1小时前</div>
+                </div>
+                
+                <div class="chat-item" onclick="switchChat(this, 'chat-3')">
+                    <div class="agent-indicator">📱</div>
+                    <div class="chat-title">手机购买建议</div>
+                    <div class="chat-preview">预算3000左右推荐什么手机</div>
+                    <div class="chat-time">昨天</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主聊天区域 -->
+        <div class="main-chat">
+            <div class="chat-header">
+                <div class="agent-info" onclick="showAgentSelector()">
+                    <div class="agent-avatar" id="currentAgentIcon">✨</div>
+                    <div class="agent-details">
+                        <div class="agent-name" id="currentAgentName">
+                            护肤专家
+                            <span style="font-size: 14px;color: #999;">🔄</span>
+                        </div>
+                        <div class="agent-status">
+                            <div class="status-dot"></div>
+                            <span>在线 • 专业护肤知识分享</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="chat-info" id="chatInfo">
+                    <span>💎 对话轮数: 0/∞</span>
+                    <span>•</span>
+                    <span>下轮费用: 0.5点</span>
+                    <span>•</span>
+                    <span>余额: ¥8.76</span>
+                </div>
+            </div>
+
+            <div class="chat-container">
+                <div class="chat-messages" id="chatMessages">
+                    <!-- 欢迎消息 -->
+                    <div class="message">
+                        <div class="message-avatar">✨</div>
+                        <div class="message-content">
+                            <div class="message-text">
+                                您好！我是护肤专家，专门提供护肤知识分享、成分分析和产品推荐。<br><br>
+                                我可以帮助您：<br>
+                                • 分析不同肌肤类型的护肤需求<br>
+                                • 解读护肤品成分和功效<br>
+                                • 推荐适合的护肤产品<br>
+                                • 解答护肤过程中的问题<br><br>
+                                请告诉我您的肌肤状况或护肤困扰，我会为您提供专业建议！
+                            </div>
+                            <div class="message-time">刚刚</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chat-input-area">
+                    <div class="quick-commands">
+                        <div class="commands-title">💡 快捷指令</div>
+                        <div class="commands-list" id="commandsList">
+                            <div class="command-tag" onclick="useCommand(this)">分析肌肤类型</div>
+                            <div class="command-tag" onclick="useCommand(this)">推荐护肤品</div>
+                            <div class="command-tag" onclick="useCommand(this)">成分解析</div>
+                            <div class="command-tag" onclick="useCommand(this)">护肤步骤</div>
+                            <div class="command-tag" onclick="useCommand(this)">问题肌肤解决</div>
+                        </div>
+                    </div>
+
+                    <div class="input-container">
+                        <textarea 
+                            class="message-input" 
+                            id="messageInput" 
+                            placeholder="描述您的肌肤状况或护肤问题..."
+                            onkeydown="handleKeyDown(event)"
+                            oninput="updateCharCount()"
+                        ></textarea>
+                        <button class="send-btn" id="sendBtn" onclick="sendMessage()">📤</button>
+                    </div>
+                    
+                    <div class="input-info">
+                        <div class="char-count" id="charCount">0/2000字</div>
+                        <div class="cost-info" id="costInfo">💎 本次对话将消耗 0.5 点 (第1轮)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 智能体选择模态框 -->
+    <div class="modal" id="agentSelectorModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">选择智能体</div>
+                <button class="close-btn" onclick="closeAgentSelector()">&times;</button>
+            </div>
+            
+            <div class="agents-grid" id="agentsGrid">
+                <!-- 智能体选项 -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let userBalance = 8.76;
+        let currentAgent = {
+            name: '护肤专家',
+            icon: '✨',
+            desc: '专业护肤知识分享'
+        };
+        let currentChatId = 'chat-1';
+        let chatRounds = {};
+        let isSidebarCollapsed = false;
+        let dropdownTimer;
+        
+        // 智能体数据
+        const availableAgents = [
+            { name: '护肤专家', icon: '✨', desc: '护肤知识分享，成分分析和产品推荐', category: '美妆护肤' },
+            { name: '彩妆达人', icon: '💄', desc: '化妆技巧教学，妆容搭配和产品测评', category: '美妆护肤' },
+            { name: '家常菜大师', icon: '🍳', desc: '简单易学的家常菜制作方法', category: '美食料理' },
+            { name: '科技评测师', icon: '📱', desc: '数码产品评测和购买建议', category: '科技数码' },
+            { name: '健身教练', icon: '💪', desc: '运动健身指导和训练计划', category: '健康养生' },
+            { name: '旅行规划师', icon: '✈️', desc: '旅行攻略制定和目的地推荐', category: '旅游出行' },
+            { name: '爆款标题生成器', icon: '📝', desc: '基于千万级爆款数据训练，一键生成10万+阅读量标题', category: '自媒体创作' },
+            { name: '短视频脚本创作师', icon: '🎬', desc: '专业短视频编剧，生成抖音、快手爆款脚本', category: '视频创作' }
+        ];
+        
+        // 初始化
+        function init() {
+            chatRounds[currentChatId] = 0;
+            updateCostDisplay();
+            bindEvents();
+        }
+        
+        // 绑定事件
+        function bindEvents() {
+            const userDropdown = document.querySelector('.user-dropdown');
+            const dropdownContent = document.querySelector('.dropdown-content');
+            
+            if (userDropdown && dropdownContent) {
+                userDropdown.addEventListener('mouseenter', showDropdown);
+                userDropdown.addEventListener('mouseleave', hideDropdownWithDelay);
+                dropdownContent.addEventListener('mouseenter', showDropdown);
+                dropdownContent.addEventListener('mouseleave', hideDropdownWithDelay);
+            }
+        }
+        
+        // 计算费用
+        function calculateCost(rounds) {
+            if (rounds <= 5) return 0.5;
+            if (rounds <= 10) return 0.8;
+            return 1.2;
+        }
+        
+        // 更新费用显示
+        function updateCostDisplay() {
+            const currentRounds = chatRounds[currentChatId] || 0;
+            const nextRound = currentRounds + 1;
+            const cost = calculateCost(nextRound);
+            
+            const costInfo = document.getElementById('costInfo');
+            const chatInfo = document.getElementById('chatInfo');
+            
+            let roundType = '';
+            if (nextRound > 10) {
+                roundType = ' - 深度对话';
+            } else if (nextRound > 5) {
+                roundType = ' - 进阶对话';
+            }
+            
+            if (costInfo) {
+                costInfo.textContent = `💎 本次对话将消耗 ${cost} 点 (第${nextRound}轮${roundType})`;
+            }
+            
+            if (chatInfo) {
+                chatInfo.innerHTML = `
+                    <span>💎 对话轮数: ${currentRounds}/∞</span>
+                    <span>•</span>
+                    <span>下轮费用: ${cost}点</span>
+                    <span>•</span>
+                    <span>余额: ¥${userBalance.toFixed(2)}</span>
+                `;
+            }
+        }
+        
+        // 用户下拉菜单
+        function showDropdown() {
+            clearTimeout(dropdownTimer);
+            document.querySelector('.dropdown-content').classList.add('show');
+        }
+        
+        function hideDropdownWithDelay() {
+            dropdownTimer = setTimeout(() => {
+                document.querySelector('.dropdown-content').classList.remove('show');
+            }, 300);
+        }
+        
+        // 侧边栏切换
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleIcon = document.getElementById('toggleIcon');
+            
+            isSidebarCollapsed = !isSidebarCollapsed;
+            sidebar.classList.toggle('collapsed');
+            
+            toggleIcon.textContent = isSidebarCollapsed ? '▶' : '◀';
+            
+            const newChatText = document.querySelector('.new-chat-text');
+            const newChatIcon = document.querySelector('.new-chat-icon');
+            
+            if (isSidebarCollapsed) {
+                newChatText.style.display = 'none';
+                newChatIcon.style.display = 'inline';
+            } else {
+                newChatText.style.display = 'inline';
+                newChatIcon.style.display = 'none';
+            }
+        }
+        
+        // 返回智能体选择
+        function goBackToSelection() {
+            if(confirm('确认要返回智能体工具箱吗？当前对话将会保存。')) {
+                alert('正在返回智能体工具箱...');
+                // 实际项目中这里应该跳转到智能体工具箱页面
+                // window.location.href = '/ai-toolbox';
+            }
+        }
+        
+        // 创建新对话
+        function createNewChat() {
+            const newChatId = 'chat-' + Date.now();
+            currentChatId = newChatId;
+            chatRounds[newChatId] = 0;
+            
+            const chatList = document.getElementById('chatList');
+            const newChatItem = document.createElement('div');
+            newChatItem.className = 'chat-item active';
+            newChatItem.onclick = () => switchChat(newChatItem, newChatId);
+            newChatItem.innerHTML = `
+                <div class="agent-indicator">${currentAgent.icon}</div>
+                <div class="chat-title">新对话</div>
+                <div class="chat-preview">开始新的对话...</div>
+                <div class="chat-time">刚刚</div>
+            `;
+            
+            document.querySelectorAll('.chat-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            chatList.insertBefore(newChatItem, chatList.firstChild);
+            clearChatMessages();
+            showWelcomeMessage();
+            updateCostDisplay();
+        }
+        
+        // 切换对话
+        function switchChat(element, chatId) {
+            document.querySelectorAll('.chat-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            element.classList.add('active');
+            currentChatId = chatId;
+            
+            if (!chatRounds[chatId]) {
+                chatRounds[chatId] = 0;
+            }
+            
+            clearChatMessages();
+            showWelcomeMessage();
+            updateCostDisplay();
+        }
+        
+        // 清空消息
+        function clearChatMessages() {
+            document.getElementById('chatMessages').innerHTML = '';
+        }
+        
+        // 显示欢迎消息
+        function showWelcomeMessage() {
+            const welcomeMessage = `
+                您好！我是${currentAgent.name}，${currentAgent.desc}。<br><br>
+                请告诉我您需要什么帮助，我会为您提供专业建议！
+            `;
+            addMessage(welcomeMessage, 'ai');
+        }
+        
+        // 显示智能体选择器
+        function showAgentSelector() {
+            const modal = document.getElementById('agentSelectorModal');
+            const agentsGrid = document.getElementById('agentsGrid');
+            
+            agentsGrid.innerHTML = availableAgents.map(agent => `
+                <div class="agent-option ${agent.name === currentAgent.name ? 'selected' : ''}" 
+                     onclick="selectAgent('${agent.name}', '${agent.icon}', '${agent.desc}')">
+                    <div class="agent-option-header">
+                        <div class="agent-option-icon">${agent.icon}</div>
+                        <div class="agent-option-name">${agent.name}</div>
+                    </div>
+                    <div class="agent-option-desc">${agent.desc}</div>
+                </div>
+            `).join('');
+            
+            modal.classList.add('active');
+        }
+        
+        // 选择智能体
+        function selectAgent(name, icon, desc) {
+            currentAgent = { name, icon, desc };
+            
+            document.getElementById('currentAgentName').innerHTML = `${name} <span style="font-size: 14px;color: #999;">🔄</span>`;
+            document.getElementById('currentAgentIcon').textContent = icon;
+            
+            const activeChat = document.querySelector('.chat-item.active .agent-indicator');
+            if (activeChat) {
+                activeChat.textContent = icon;
+            }
+            
+            closeAgentSelector();
+            showWelcomeMessage();
+        }
+        
+        // 关闭智能体选择器
+        function closeAgentSelector() {
+            document.getElementById('agentSelectorModal').classList.remove('active');
+        }
+        
+        // 处理按键
+        function handleKeyDown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+        
+        // 更新字符计数
+        function updateCharCount() {
+            const input = document.getElementById('messageInput');
+            const charCount = document.getElementById('charCount');
+            const length = input.value.length;
+            charCount.textContent = `${length}/2000字`;
+            charCount.style.color = length > 2000 ? '#dc3545' : '#999';
+        }
+        
+        // 使用指令
+        function useCommand(element) {
+            const command = element.textContent;
+            const input = document.getElementById('messageInput');
+            
+            if (input.value.trim()) {
+                input.value += '\n\n' + command;
+            } else {
+                input.value = command;
+            }
+            
+            input.focus();
+            updateCharCount();
+        }
+        
+        // 发送消息
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            const currentRounds = chatRounds[currentChatId] || 0;
+            const nextRound = currentRounds + 1;
+            const cost = calculateCost(nextRound);
+            
+            if (userBalance < cost) {
+                alert(`余额不足！本次对话需要消耗${cost}点，您的余额为${userBalance.toFixed(2)}点。请充值后继续使用！`);
+                return;
+            }
+            
+            chatRounds[currentChatId] = nextRound;
+            addMessage(message, 'user', cost);
+            
+            const activeChat = document.querySelector('.chat-item.active');
+            if (activeChat) {
+                activeChat.querySelector('.chat-preview').textContent = message.substring(0, 20) + (message.length > 20 ? '...' : '');
+                activeChat.querySelector('.chat-time').textContent = '刚刚';
+            }
+            
+            input.value = '';
+            updateCharCount();
+            
+            userBalance -= cost;
+            document.querySelector('.user-balance').textContent = `余额: ¥${userBalance.toFixed(2)}`;
+            
+            updateCostDisplay();
+            showTypingIndicator();
+            
+            setTimeout(() => {
+                hideTypingIndicator();
+                const aiResponse = generateAIResponse(message);
+                addMessage(aiResponse, 'ai');
+            }, 2000 + Math.random() * 2000);
+        }
+        
+        // 添加消息
+        function addMessage(text, sender, cost = null) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            const time = new Date().toLocaleTimeString('zh-CN', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            
+            let costInfo = '';
+            if (sender === 'user' && cost !== null) {
+                const rounds = chatRounds[currentChatId] || 0;
+                let roundInfo = '';
+                if (rounds > 10) {
+                    roundInfo = ' • 深度对话';
+                } else if (rounds > 5) {
+                    roundInfo = ' • 进阶对话';
+                }
+                costInfo = `<span class="message-cost">-${cost}点${roundInfo}</span>`;
+            }
+            
+            const avatar = sender === 'user' ? '👤' : currentAgent.icon;
+            
+            messageDiv.innerHTML = `
+                <div class="message-avatar">${avatar}</div>
+                <div class="message-content">
+                    <div class="message-text">${text.replace(/\n/g, '<br>')}</div>
+                    <div class="message-time">${time} ${costInfo}</div>
+                </div>
+            `;
+            
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+        
+        // 显示打字指示器
+        function showTypingIndicator() {
+            const messagesContainer = document.getElementById('chatMessages');
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message';
+            typingDiv.id = 'typingIndicator';
+            typingDiv.innerHTML = `
+                <div class="message-avatar">${currentAgent.icon}</div>
+                <div class="typing-indicator">
+                    <div class="typing-dots">
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                    </div>
+                </div>
+            `;
+            
+            messagesContainer.appendChild(typingDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+        
+        // 隐藏打字指示器
+        function hideTypingIndicator() {
+            const indicator = document.getElementById('typingIndicator');
+            if (indicator) {
+                indicator.remove();
+            }
+        }
+        
+        // 生成AI回复
+        function generateAIResponse(userMessage) {
+            const responses = {
+                '护肤专家': [
+                    `根据您提到的"${userMessage}"，我来为您分析一下：\n\n🔍 肌肤分析：\n您的情况可能属于敏感肌肤类型...\n\n💡 护肤建议：\n建议您采用温和清洁+保湿修护的护肤步骤...\n\n🧴 产品推荐：\n基于您的肌肤状况，推荐使用含有神经酰胺和玻尿酸成分的产品...`,
+                    `关于"${userMessage}"这个问题，我的专业建议是：\n\n✨ 成分解析：\n这个问题的关键在于选择合适的活性成分...\n\n📋 护肤方案：\n建议按照清洁→爽肤→精华→乳液→防晒的步骤...\n\n⚠️ 注意事项：\n使用新产品时建议先进行皮肤测试...`
+                ],
+                '家常菜大师': [
+                    `"${userMessage}"这道菜我来教您做：\n\n🥘 所需食材：\n主料：新鲜食材...\n调料：生抽、老抽、盐...\n\n👨‍🍳 制作步骤：\n1. 准备工作：食材清洗切配...\n2. 烹饪过程：热锅下油...\n\n💡 小贴士：\n制作这道菜的关键是火候掌控...`
+                ]
+            };
+            
+            const agentResponses = responses[currentAgent.name] || responses['护肤专家'];
+            return agentResponses[Math.floor(Math.random() * agentResponses.length)];
+        }
+        
+        // 导航函数
+        function goToHome() { alert('返回首页'); }
+        function goToAiReduce() { alert('进入文章降AI率工具'); }
+        function goToVideoExtract() { alert('进入视频文案提取工具'); }
+        function goToPromptGenerator() { alert('进入提示词生成器'); }
+        function goToNovelGenerator() { alert('进入小说推文生成器 - 一键生成爆款小说推广文案'); }
+        function goToWorkflowStore() { alert('进入工作流商店'); }
+        function goToCourseStore() { alert('进入课程商店'); }
+        function goToAutoPublish() { alert('进入全平台爆款文案创作'); }
+        function goToAiToolbox() { alert('返回智能体工具箱'); }
+        
+        function openPromote() { alert('开启推广赚钱计划'); }
+        function copyId() { 
+            navigator.clipboard.writeText('253855');
+            alert('用户ID已复制到剪贴板');
+        }
+        function copyToken() {
+            navigator.clipboard.writeText('sk-proj-abc123defg456hijklmn789');
+            alert('API Token已复制到剪贴板');
+        }
+        function refreshToken() { alert('API Token已更新'); }
+        function goToUserCenter() { alert('跳转到个人中心'); }
+        function goToVipPurchase() { alert('跳转到会员购买页面'); }
+        function goToRecharge() { alert('跳转到个人充值页面'); }
+        function goToPricing() { alert('查看计费标准'); }
+        function goToWorkflowSystem() { alert('进入工单系统'); }
+        function goToVideoGeneration() { alert('查看生成任务'); }
+        function goToConsumptionDetails() { alert('查看消费明细'); }
+        function goToOfficialNews() { alert('查看官方动态'); }
+        function logout() { 
+            if(confirm('确认要退出登录吗？')) {
+                alert('已退出登录');
+            }
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', init);
+        
+        // 点击模态框背景关闭
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal')) {
+                closeAgentSelector();
+            }
+        });
+    </script>
+</body>
+</html>

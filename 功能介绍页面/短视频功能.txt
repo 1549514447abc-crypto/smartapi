@@ -1,0 +1,28 @@
+## 1，**短视频聚合解析**
+
+API文档地址：[短视频聚合解析-接口列表-API文档-API免费测试 - ALAPI](https://www.alapi.cn/api/68/api_document)
+
+接口地址：POST https://v3.alapi.cn/api/video/url
+
+接口功能：把短视频链接转为公网直链
+
+这里需要登录获取token才可以调用，可以问我要账号登录
+
+这个token需要在管理员后台可以灵活更换，因为每个token的日调用量有限，需要有一个正式的token和备用token，如果正式的token不够额度，会报对应错误代码，有错误的话自动替换为备用token
+
+
+
+import requests
+
+url = "https://v3.alapi.cn/api/video/url"
+
+payload = {
+    "token": "请在token管理生成token",
+    "url": ""
+}
+headers = {"Content-Type": "application/json"}
+
+response = requests.post(url, json=payload, headers=headers)
+
+print(response.json())
+
