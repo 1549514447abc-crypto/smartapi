@@ -91,13 +91,13 @@ const Home = () => {
 
           <div className="product-item">
             <Row gutter={[64, 48]} align="middle">
-              <Col xs={24} lg={12} order={{ xs: 2, lg: 1 }}>
+              <Col xs={24} lg={12} order={{ xs: 2, lg: 1 } as any}>
                 <div
                   className="product-visual"
                   style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?w=800&auto=format&fit=crop)' }}
                 ></div>
               </Col>
-              <Col xs={24} lg={12} order={{ xs: 1, lg: 2 }}>
+              <Col xs={24} lg={12} order={{ xs: 1, lg: 2 } as any}>
                 <div className="product-info">
                   <span className="product-label">视频处理</span>
                   <h3>视频文案提取</h3>
@@ -151,13 +151,13 @@ const Home = () => {
 
           <div className="product-item">
             <Row gutter={[64, 48]} align="middle">
-              <Col xs={24} lg={12} order={{ xs: 2, lg: 1 }}>
+              <Col xs={24} lg={12} order={{ xs: 2, lg: 1 } as any}>
                 <div
                   className="product-visual"
                   style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&auto=format&fit=crop)' }}
                 ></div>
               </Col>
-              <Col xs={24} lg={12} order={{ xs: 1, lg: 2 }}>
+              <Col xs={24} lg={12} order={{ xs: 1, lg: 2 } as any}>
                 <div className="product-info">
                   <span className="product-label">自动化</span>
                   <h3>工作流商店</h3>

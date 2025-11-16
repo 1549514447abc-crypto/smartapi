@@ -47,7 +47,7 @@ const Recharge: React.FC = () => {
   const [selectedMethod, setSelectedMethod] = useState<string>('alipay');
   const [payModalVisible, setPayModalVisible] = useState(false);
   const [currentOrder, setCurrentOrder] = useState<RechargeOrder | null>(null);
-  const [pollingTimer, setPollingTimer] = useState<NodeJS.Timeout | null>(null);
+  const [pollingTimer, setPollingTimer] = useState<number | null>(null);
   const [userBalance, setUserBalance] = useState<number>(0);
 
   // 加载充值配置

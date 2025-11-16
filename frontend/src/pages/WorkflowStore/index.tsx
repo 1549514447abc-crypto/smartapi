@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Button, Select, Input, Spin, message } from 'antd';
+import { Select, Input, Spin, message } from 'antd';
 import { useWorkflowStore } from '../../store/useWorkflowStore';
-import type { WorkflowPlatform, WorkflowCategory } from '../../types/workflow';
+import type { WorkflowCategory } from '../../types/workflow';
 import { api } from '../../api/request';
 import './WorkflowStore.css';
 
@@ -35,10 +35,11 @@ interface PackageConfig {
   features: string[];
   savings_text: string;
   is_popular: boolean;
+  discount_rate?: number;
 }
 
 const WorkflowStore = () => {
-  const { workflows, pagination, filters, loading, fetchWorkflows, setFilters } = useWorkflowStore();
+  const { workflows, filters, loading, fetchWorkflows, setFilters } = useWorkflowStore();
   const [currentPlatform, setCurrentPlatform] = useState<Platform>('coze');
   const [currentCategory, setCurrentCategory] = useState<string>('all');
   const [showVipBanner, setShowVipBanner] = useState(true);
@@ -238,7 +239,7 @@ const WorkflowStore = () => {
               <Select
                 className="filter-select"
                 defaultValue="latest"
-                onChange={(value) => setFilters({ ...filters, sort_by: value })}
+                onChange={(value) => setFilters({ ...filters, sort_by: value as "latest" | "popular" | "rating" | "price_low" | "price_high" })}
               >
                 <Option value="latest">最新发布</Option>
                 <Option value="popular">最受欢迎</Option>
