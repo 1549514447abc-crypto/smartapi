@@ -142,22 +142,60 @@ git commit -m "bug fix"
 
 ## 🚀 部署流程
 
-### 方式1：使用一键部署脚本（推荐）
+### 完整发布部署流程（推荐）
+
+从开发到生产的完整流程：
 
 ```bash
-# 确保在项目根目录
-cd D:\code-program\smartapi
+# Step 1: 在 dev 分支开发并测试
+git checkout dev
+# ... 开发代码 ...
+git add .
+git commit -m "feat: 添加新功能"
+git push origin dev
 
-# 执行部署脚本
+# Step 2: 测试通过后，发布到 main 分支
+bash release.sh
+
+# Step 3: 一键部署到生产服务器
+bash deploy.sh
+```
+
+### 方式1：使用一键脚本（推荐）
+
+#### 发布脚本 (release.sh)
+
+将测试通过的 dev 分支合并到 main 分支：
+
+```bash
+bash release.sh
+```
+
+脚本会自动完成：
+1. ✅ 检查工作区状态（确保无未提交修改）
+2. ✅ 更新 dev 分支
+3. ✅ 更新 main 分支
+4. ✅ 合并 dev 到 main
+5. ✅ 推送到 GitHub
+6. ✅ 切换回 dev 分支
+
+#### 部署脚本 (deploy.sh)
+
+部署到生产服务器：
+
+```bash
 bash deploy.sh
 ```
 
 脚本会自动完成：
-1. ✅ 构建前端（`npm run build`）
-2. ✅ 上传后端代码到服务器
-3. ✅ 上传前端构建文件
-4. ✅ 安装依赖并重启后端服务
-5. ✅ 更新 Nginx 配置
+1. ✅ 检查当前分支（建议在 main 分支）
+2. ✅ 构建前端（`npm run build`）
+3. ✅ 上传后端代码到服务器
+4. ✅ 上传前端构建文件
+5. ✅ 上传数据库迁移文件
+6. ✅ 执行数据库迁移
+7. ✅ 安装依赖并重启后端服务
+8. ✅ 更新 Nginx 配置
 
 ### 方式2：手动部署
 
@@ -171,6 +209,68 @@ ssh root@119.29.37.208 "cd /www/smartapi && npm install && npm run build"
 # 3. 重启服务
 ssh root@119.29.37.208 "pm2 restart smartapi-backend"
 ```
+
+---
+
+## 🗄️ 数据库迁移
+
+### 什么是数据库迁移？
+
+当你添加新功能需要修改数据库结构时（如添加新表、新字段），应该创建数据库迁移文件。
+
+### 创建迁移文件
+
+```bash
+# 使用脚本创建迁移文件（推荐）
+bash create-migration.sh "add_comments_table"
+
+# 会生成：database/migrations/20241117_120000_add_comments_table.sql
+```
+
+### 编写迁移 SQL
+
+```sql
+-- database/migrations/20241117_120000_add_comments_table.sql
+CREATE TABLE IF NOT EXISTS `comments` (
+  `id` INT PRIMARY KEY AUTO_INCREMENT,
+  `user_id` INT NOT NULL,
+  `course_id` INT NOT NULL,
+  `content` TEXT NOT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+```
+
+### 测试迁移
+
+```bash
+# 在本地数据库测试
+mysql -u root -p smartapi_dev < database/migrations/20241117_120000_add_comments_table.sql
+```
+
+### 提交迁移文件
+
+```bash
+git add database/migrations/20241117_120000_add_comments_table.sql
+git commit -m "feat: 添加课程评论表"
+git push origin dev
+```
+
+### 部署时自动执行
+
+执行 `bash deploy.sh` 时，脚本会自动：
+1. 上传所有迁移文件到服务器
+2. 按文件名顺序执行所有 SQL 文件
+3. 如果某个迁移已执行过会跳过（使用 IF NOT EXISTS）
+
+### 注意事项
+
+- ✅ 始终使用 `CREATE TABLE IF NOT EXISTS`
+- ✅ 始终使用 `ADD COLUMN IF NOT EXISTS`（MySQL 8.0+）
+- ✅ 迁移文件一旦部署就不要修改，如需改动创建新迁移
+- ✅ 在本地测试通过后再提交
+
+详细文档：`database/migrations/README.md`
 
 ---
 
@@ -359,30 +459,68 @@ git remote set-url origin https://<新token>@github.com/1549514447abc-crypto/sma
 
 ## 📊 工作流示例
 
-### 完整开发流程示例
+### 完整开发流程示例（包含数据库变更）
 
 ```bash
-# Day 1: 开始开发新功能
+# Day 1: 开始开发新功能 - 添加课程评论功能
 git checkout dev
 git pull origin dev
-# 开发代码...
+
+# 创建数据库迁移文件
+bash create-migration.sh "add_comments_table"
+# 编辑 database/migrations/20241117_120000_add_comments_table.sql
+
+# 在本地测试迁移
+mysql -u root -p smartapi_dev < database/migrations/20241117_120000_add_comments_table.sql
+
+# 开发后端API代码...
+# 开发前端UI代码...
+
+# 提交代码
 git add .
-git commit -m "feat: 添加课程评论功能（进行中）"
+git commit -m "feat: 添加课程评论功能
+
+- 添加comments表
+- 实现评论CRUD API
+- 添加前端评论组件"
 git push origin dev
 
-# Day 2: 继续开发
-# 开发代码...
+# Day 2: 本地测试
+# 测试所有功能...
+# 修复bug...
 git add .
-git commit -m "feat: 完成课程评论功能"
+git commit -m "fix: 修复评论排序问题"
 git push origin dev
 
 # Day 3: 测试通过，准备上线
-git checkout main
-git pull origin main
-git merge dev
-git push origin main
+# Step 1: 发布到 main 分支
+bash release.sh
 
-# 部署到生产
+# Step 2: 部署到生产服务器
+bash deploy.sh
+# 脚本会自动：
+# - 构建前端
+# - 上传代码
+# - 执行数据库迁移（创建comments表）
+# - 重启服务
+
+# 完成！访问 http://119.29.37.208/smartapi/ 查看新功能
+```
+
+### 日常开发流程示例（无数据库变更）
+
+```bash
+# 开始开发小功能
+git checkout dev
+git pull origin dev
+
+# 开发代码...
+git add .
+git commit -m "feat: 优化课程列表加载速度"
+git push origin dev
+
+# 测试通过后发布
+bash release.sh
 bash deploy.sh
 ```
 
@@ -463,8 +601,17 @@ git add . && git commit -m "feat: xxx" && git push
 # 切换并拉取
 git checkout dev && git pull
 
-# 合并并推送
-git checkout main && git merge dev && git push
+# 发布到生产（dev → main）
+bash release.sh
+
+# 部署到服务器
+bash deploy.sh
+
+# 完整发布流程
+bash release.sh && bash deploy.sh
+
+# 创建数据库迁移
+bash create-migration.sh "描述"
 
 # 查看简洁日志
 git log --oneline -10
@@ -472,6 +619,14 @@ git log --oneline -10
 # 撤销最后一次提交
 git reset --soft HEAD^
 ```
+
+### 脚本文件说明
+
+| 脚本 | 说明 | 使用场景 |
+|------|------|----------|
+| `release.sh` | 发布脚本 | dev 测试通过后，合并到 main 分支 |
+| `deploy.sh` | 部署脚本 | 将代码部署到生产服务器 |
+| `create-migration.sh` | 创建迁移 | 需要修改数据库结构时 |
 
 ---
 
