@@ -65,11 +65,41 @@ mysql -u root -p smartapi_dev < smartapi_dev.sql
 
 ## 生产部署
 
-### 方式1：使用部署脚本（推荐）
+### 完整发布流程（推荐）
+
+从开发到生产的完整流程：
 
 ```bash
-# 部署到生产服务器
-npm run deploy:prod
+# Step 1: 在 dev 分支开发并测试
+git checkout dev
+git add .
+git commit -m "feat: 新功能"
+git push origin dev
+
+# Step 2: 发布到 main 分支
+bash release.sh
+
+# Step 3: 部署到生产服务器
+bash deploy.sh
+```
+
+### 方式1：使用自动化脚本（推荐）
+
+#### 发布脚本
+将测试通过的 dev 分支合并到 main：
+```bash
+bash release.sh
+```
+
+#### 部署脚本
+部署到生产服务器（包含数据库迁移）：
+```bash
+bash deploy.sh
+```
+
+#### 一键发布+部署
+```bash
+bash release.sh && bash deploy.sh
 ```
 
 ### 方式2：手动部署
@@ -89,6 +119,27 @@ ssh root@your-server "cd /www/smartapi && git pull origin main"
 3. 重启服务：
 ```bash
 ssh root@your-server "pm2 restart smartapi-backend"
+```
+
+### 数据库迁移
+
+当需要修改数据库结构时：
+
+```bash
+# 1. 创建迁移文件
+bash create-migration.sh "add_comments_table"
+
+# 2. 编辑迁移文件
+# database/migrations/20241117_120000_add_comments_table.sql
+
+# 3. 本地测试
+mysql -u root -p smartapi_dev < database/migrations/20241117_120000_add_comments_table.sql
+
+# 4. 提交并部署
+git add .
+git commit -m "feat: 添加评论表"
+bash release.sh
+bash deploy.sh  # 自动执行迁移
 ```
 
 ## 常用命令
@@ -115,23 +166,34 @@ npm run deploy:prod
 
 ```
 smartapi/
-├── backend/              # 后端代码
+├── backend/                    # 后端代码
 │   ├── src/
-│   │   ├── controllers/  # 控制器
-│   │   ├── models/       # 数据模型
-│   │   ├── routes/       # 路由
-│   │   ├── middleware/   # 中间件
-│   │   └── utils/        # 工具函数
+│   │   ├── controllers/        # 控制器
+│   │   ├── models/             # 数据模型
+│   │   ├── routes/             # 路由
+│   │   ├── middleware/         # 中间件
+│   │   └── utils/              # 工具函数
+│   ├── .env.example            # 环境变量模板
 │   └── package.json
-├── frontend/             # 前端代码
+├── frontend/                   # 前端代码
 │   ├── src/
-│   │   ├── api/          # API 接口
-│   │   ├── components/   # 组件
-│   │   ├── pages/        # 页面
-│   │   ├── store/        # 状态管理
-│   │   └── types/        # 类型定义
+│   │   ├── api/                # API 接口
+│   │   ├── components/         # 组件
+│   │   ├── pages/              # 页面
+│   │   ├── store/              # 状态管理
+│   │   └── types/              # 类型定义
+│   ├── .env.example            # 环境变量模板
 │   └── package.json
-└── README.md
+├── database/                   # 数据库相关
+│   └── migrations/             # 数据库迁移文件
+│       ├── README.md           # 迁移使用说明
+│       └── *.sql               # SQL 迁移文件
+├── deploy.sh                   # 部署脚本
+├── release.sh                  # 发布脚本
+├── create-migration.sh         # 创建迁移脚本
+├── GIT_GUIDE.md                # Git 使用指南
+├── README.md                   # 项目说明
+└── .gitignore                  # Git 忽略配置
 ```
 
 ## 环境变量说明
