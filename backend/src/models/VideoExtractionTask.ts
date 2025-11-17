@@ -1,3 +1,4 @@
+// Updated status types for async processing
 import { DataTypes, Model, Optional } from 'sequelize';
 import sequelize from '../config/database';
 import User from './User';
@@ -22,7 +23,7 @@ export interface VideoExtractionTaskAttributes {
   enable_correction: boolean;
   correction_cost: number | null;
   raw_response: object | null;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
+  status: 'pending' | 'step1_parsing' | 'step2_transcribing' | 'step3_correcting' | 'completed' | 'failed';
   error_message: string | null;
   created_at: Date;
   completed_at: Date | null;
@@ -57,7 +58,7 @@ class VideoExtractionTask extends Model<VideoExtractionTaskAttributes, VideoExtr
   public enable_correction!: boolean;
   public correction_cost!: number | null;
   public raw_response!: object | null;
-  public status!: 'pending' | 'processing' | 'completed' | 'failed';
+  public status!: 'pending' | 'step1_parsing' | 'step2_transcribing' | 'step3_correcting' | 'completed' | 'failed';
   public error_message!: string | null;
   public readonly created_at!: Date;
   public completed_at!: Date | null;
@@ -157,7 +158,7 @@ VideoExtractionTask.init(
       comment: 'ALAPI完整响应'
     },
     status: {
-      type: DataTypes.ENUM('pending', 'processing', 'completed', 'failed'),
+      type: DataTypes.ENUM('pending', 'step1_parsing', 'step2_transcribing', 'step3_correcting', 'completed', 'failed'),
       defaultValue: 'pending',
       comment: '任务状态'
     },
