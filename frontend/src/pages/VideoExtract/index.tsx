@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { message, Button } from 'antd';
 import { api } from '../../api/request';
 import './VideoExtract.css';
@@ -6,12 +6,13 @@ import './VideoExtract.css';
 interface ExtractionTask {
   id: number;
   video_title: string | null;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
+  status: 'pending' | 'step1_parsing' | 'step2_transcribing' | 'step3_correcting' | 'completed' | 'failed';
   transcript: string | null;
   corrected_transcript: string | null;
   created_at: string;
   audio_duration: number | null;
   used_seconds: number | null;
+  error_message?: string | null;
 }
 
 interface ExtractionResult {
@@ -39,6 +40,34 @@ const VideoExtract = () => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [processingTaskId, setProcessingTaskId] = useState<number | null>(null);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, []);
+
+  // Convert status to step number
+  const getStepFromStatus = (status: string): number => {
+    switch (status) {
+      case 'pending':
+      case 'step1_parsing':
+        return 0;
+      case 'step2_transcribing':
+        return 1;
+      case 'step3_correcting':
+        return 2;
+      case 'completed':
+        return 3;
+      default:
+        return 0;
+    }
+  };
 
   // 加载历史任务
   useEffect(() => {
@@ -103,6 +132,80 @@ const VideoExtract = () => {
     }
   };
 
+  // 轮询任务状态
+  const pollTaskStatus = (taskId: number) => {
+    // Clear any existing polling
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+    }
+
+    pollingIntervalRef.current = setInterval(async () => {
+      try {
+        const response = await api.get<{
+          success: boolean;
+          data: ExtractionTask;
+        }>(`/video/tasks/${taskId}`);
+
+        if (response.success) {
+          const task = response.data;
+
+          // Update step based on status
+          setCurrentStep(getStepFromStatus(task.status));
+
+          // Update history list with latest status
+          setHistoryTasks(prev =>
+            prev.map(t => t.id === taskId ? { ...t, ...task } : t)
+          );
+
+          // Check if task is completed or failed
+          if (task.status === 'completed') {
+            // Stop polling
+            if (pollingIntervalRef.current) {
+              clearInterval(pollingIntervalRef.current);
+              pollingIntervalRef.current = null;
+            }
+
+            // Set result
+            setCurrentResult({
+              task_id: task.id,
+              video_title: task.video_title,
+              video_cover: null,
+              platform: null,
+              transcript: task.transcript || '',
+              corrected_transcript: task.corrected_transcript,
+              audio_duration: task.audio_duration || 0,
+              used_seconds: task.used_seconds || 0,
+              cost: 0, // Cost is already deducted
+              remaining_balance: 0
+            });
+
+            setExtracting(false);
+            setProcessingTaskId(null);
+            message.success('提取成功！');
+
+            // Refresh history to get latest data
+            fetchHistoryTasks(1);
+          } else if (task.status === 'failed') {
+            // Stop polling
+            if (pollingIntervalRef.current) {
+              clearInterval(pollingIntervalRef.current);
+              pollingIntervalRef.current = null;
+            }
+
+            setExtracting(false);
+            setProcessingTaskId(null);
+            message.error(task.error_message || '提取失败');
+
+            // Refresh history
+            fetchHistoryTasks(1);
+          }
+        }
+      } catch (error) {
+        console.error('Poll task status error:', error);
+      }
+    }, 2000); // Poll every 2 seconds
+  };
+
   // 提取视频文案
   const handleExtract = async () => {
     if (!videoUrls.trim()) {
@@ -124,49 +227,60 @@ const VideoExtract = () => {
 
     const url = urls[0].trim();
 
-    setExtracting(true);
+    // Don't show modal, just clear result
     setCurrentResult(null);
     setCurrentStep(0);
 
     try {
-      // 模拟3步流程的进度显示
-      const progressInterval = setInterval(() => {
-        setCurrentStep(prev => {
-          if (prev < 2) return prev + 1;
-          return prev;
-        });
-      }, 2000);
-
+      // Submit extraction request (returns immediately with task ID)
       const response = await api.post<{
         success: boolean;
-        data: ExtractionResult;
+        data: {
+          task_id: number;
+          status: string;
+          message: string;
+        };
         message: string;
       }>('/video/extract', {
         url,
         enableCorrection
       });
 
-      clearInterval(progressInterval);
-      setCurrentStep(3); // 完成状态
-
       if (response.success) {
-        setCurrentResult(response.data);
-        message.success(`提取成功！消耗 ${response.data.cost} 点数`);
+        const taskId = response.data.task_id;
+        setProcessingTaskId(taskId);
 
-        // 刷新历史任务
-        fetchHistoryTasks(1);
+        // Add to history immediately
+        const newTask: ExtractionTask = {
+          id: taskId,
+          video_title: '正在解析...',
+          status: 'pending',
+          transcript: null,
+          corrected_transcript: null,
+          created_at: new Date().toISOString(),
+          audio_duration: null,
+          used_seconds: null
+        };
+        setHistoryTasks(prev => [newTask, ...prev]);
 
-        // 清空输入
+        // Start polling for status updates
+        pollTaskStatus(taskId);
+
+        // Clear input
         setVideoUrls('');
+
+        // Don't show modal by default, just show progress in sidebar
+        setExtracting(false);
+
+        message.info('任务已创建，正在后台处理...');
       } else {
-        message.error(response.message || '提取失败');
+        message.error(response.message || '创建任务失败');
+        setExtracting(false);
       }
     } catch (error: any) {
       console.error('Extract failed:', error);
-      message.error(error.response?.data?.error || '提取失败，请重试');
-    } finally {
+      message.error(error.response?.data?.error || '创建任务失败，请重试');
       setExtracting(false);
-      setCurrentStep(0);
     }
   };
 
@@ -209,19 +323,40 @@ const VideoExtract = () => {
 
       if (response.success) {
         const task = response.data;
-        // 显示历史任务的结果
-        setCurrentResult({
-          task_id: task.id,
-          video_title: task.video_title,
-          video_cover: null,
-          platform: null,
-          transcript: task.transcript || '',
-          corrected_transcript: task.corrected_transcript,
-          audio_duration: task.audio_duration || 0,
-          used_seconds: task.used_seconds || 0,
-          cost: 0,
-          remaining_balance: 0
-        });
+
+        // Check if task is still processing
+        const isProcessing = !['completed', 'failed'].includes(task.status);
+
+        if (isProcessing) {
+          // Start polling for this task
+          setProcessingTaskId(taskId);
+          setExtracting(true);
+          setCurrentStep(getStepFromStatus(task.status));
+          setCurrentResult(null);
+          pollTaskStatus(taskId);
+        } else {
+          // Stop any existing polling
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+          }
+          setProcessingTaskId(null);
+          setExtracting(false);
+
+          // Show completed/failed task result
+          setCurrentResult({
+            task_id: task.id,
+            video_title: task.video_title,
+            video_cover: null,
+            platform: null,
+            transcript: task.transcript || '',
+            corrected_transcript: task.corrected_transcript,
+            audio_duration: task.audio_duration || 0,
+            used_seconds: task.used_seconds || 0,
+            cost: 0,
+            remaining_balance: 0
+          });
+        }
       }
     } catch (error) {
       console.error('Failed to load task:', error);
@@ -251,6 +386,18 @@ const VideoExtract = () => {
       <div className="extract-sidebar">
         <div className="sidebar-header">
           <h3>📋 提取历史</h3>
+          <Button
+            type="primary"
+            icon={<span style={{ marginRight: '4px' }}>➕</span>}
+            onClick={() => {
+              setSelectedTaskId(null);
+              setCurrentResult(null);
+              setVideoUrls('');
+            }}
+            style={{ marginBottom: '12px', width: '100%' }}
+          >
+            新建提取
+          </Button>
           <div className="sidebar-stats">
             <div className="stat-item">
               <span className="stat-label">总计</span>
@@ -266,35 +413,54 @@ const VideoExtract = () => {
         </div>
 
         <div className="history-list">
-          {historyTasks.map((task) => (
-            <div
-              key={task.id}
-              className={`history-item ${selectedTaskId === task.id ? 'active' : ''}`}
-              onClick={() => handleSelectTask(task.id)}
-            >
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div className="history-item-title">
-                  {task.video_title || '未命名视频'}
+          {historyTasks.map((task) => {
+            const isProcessing = !['completed', 'failed'].includes(task.status);
+            const progressPercent = task.status === 'pending' ? 5 :
+              task.status === 'step1_parsing' ? 20 :
+              task.status === 'step2_transcribing' ? 50 :
+              task.status === 'step3_correcting' ? 80 : 100;
+
+            return (
+              <div
+                key={task.id}
+                className={`history-item ${selectedTaskId === task.id ? 'active' : ''}`}
+                onClick={() => handleSelectTask(task.id)}
+              >
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="history-item-title">
+                    {task.video_title || '未命名视频'}
+                  </div>
+                  <div className="history-item-time">{formatTime(task.created_at)}</div>
+                  <span
+                    className={`history-item-status status-${task.status === 'completed' || task.status === 'failed' ? task.status : 'processing'}`}
+                  >
+                    {task.status === 'completed' && '✓ 已完成'}
+                    {task.status === 'pending' && '⏳ 等待处理'}
+                    {task.status === 'step1_parsing' && '⏳ 解析中...'}
+                    {task.status === 'step2_transcribing' && '⏳ 识别中...'}
+                    {task.status === 'step3_correcting' && '⏳ 纠错中...'}
+                    {task.status === 'failed' && '✗ 失败'}
+                  </span>
+                  {isProcessing && (
+                    <div className="history-progress-bar">
+                      <div
+                        className="history-progress-fill"
+                        style={{ width: `${progressPercent}%` }}
+                      />
+                    </div>
+                  )}
                 </div>
-                <div className="history-item-time">{formatTime(task.created_at)}</div>
-                <span
-                  className={`history-item-status status-${task.status}`}
-                >
-                  {task.status === 'completed' && '✓ 已完成'}
-                  {task.status === 'processing' && '⏳ 处理中'}
-                  {task.status === 'failed' && '✗ 失败'}
-                </span>
+                <Button
+                  type="text"
+                  danger
+                  size="small"
+                  icon={<span style={{ fontSize: '16px' }}>🗑️</span>}
+                  onClick={(e) => handleDeleteTask(task.id, e)}
+                  style={{ marginLeft: '8px', flexShrink: 0 }}
+                />
               </div>
-              <Button
-                type="text"
-                danger
-                size="small"
-                icon={<span style={{ fontSize: '16px' }}>🗑️</span>}
-                onClick={(e) => handleDeleteTask(task.id, e)}
-                style={{ marginLeft: '8px', flexShrink: 0 }}
-              />
-            </div>
-          ))}
+            );
+          })}
 
           {historyTasks.length === 0 && (
             <div style={{ textAlign: 'center', padding: '40px 20px', color: '#999' }}>
@@ -476,6 +642,13 @@ const VideoExtract = () => {
       {extracting && (
         <div className="progress-overlay">
           <div className="progress-modal">
+            <button
+              className="progress-close-btn"
+              onClick={() => setExtracting(false)}
+              title="隐藏进度（任务将在后台继续）"
+            >
+              ×
+            </button>
             <h2 className="progress-title">⚡ 正在提取视频文案</h2>
 
             <div className="progress-steps">
@@ -515,8 +688,17 @@ const VideoExtract = () => {
               )}
             </div>
 
-            <div style={{ textAlign: 'center', color: '#999', fontSize: '13px' }}>
-              请耐心等待，处理时间取决于视频时长
+            <div style={{ textAlign: 'center', color: '#999', fontSize: '13px', marginBottom: '12px' }}>
+              处理时间取决于视频时长，可关闭此窗口
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <Button
+                type="default"
+                onClick={() => setExtracting(false)}
+                style={{ fontSize: '13px' }}
+              >
+                隐藏进度（后台继续处理）
+              </Button>
             </div>
           </div>
         </div>

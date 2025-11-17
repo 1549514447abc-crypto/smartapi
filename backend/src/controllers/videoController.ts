@@ -52,7 +52,173 @@ const calculateCost = (usedSeconds: number, enableCorrection: boolean, user: Use
 };
 
 /**
- * Extract video transcript from URL (3-step process)
+ * Process video extraction in background (async)
+ */
+const processVideoExtraction = async (taskId: number, url: string, enableCorrection: boolean, userId: number): Promise<void> => {
+  const startTime = Date.now();
+
+  try {
+    // Get task and user
+    const task = await VideoExtractionTask.findByPk(taskId);
+    const user = await User.findByPk(userId);
+
+    if (!task || !user) {
+      console.error(`Task ${taskId} or user ${userId} not found`);
+      return;
+    }
+
+    // ========================================
+    // STEP 1: Parse video URL with ALAPI
+    // ========================================
+    console.log('\n📍 Step 1/3: Parsing video URL...');
+    const startStep1 = Date.now();
+
+    await task.update({ status: 'step1_parsing' });
+
+    const apiResponse = await AlapiService.parseVideo(url, userId);
+    const videoData = apiResponse.data || {};
+
+    // Update task with video metadata
+    await task.update({
+      platform: videoData.platform || null,
+      video_url: videoData.video_url || null,
+      video_title: videoData.title || null,
+      video_cover: videoData.cover_url || null,
+      video_duration: videoData.duration || null,
+      author_name: videoData.author || null,
+      author_avatar: videoData.author_avatar || null,
+      raw_response: apiResponse,
+      audio_url: videoData.video_url || null // Use video URL as audio source
+    });
+
+    console.log(`✅ Step 1 completed in ${Date.now() - startStep1}ms`);
+    console.log(`   Platform: ${task.platform}`);
+    console.log(`   Title: ${task.video_title}`);
+
+    // Check if video URL was extracted
+    if (!task.audio_url) {
+      throw new Error('Failed to extract video URL from source');
+    }
+
+    // ========================================
+    // STEP 2: Speech recognition with DashScope
+    // ========================================
+    console.log('\n📍 Step 2/3: Converting speech to text...');
+    const startStep2 = Date.now();
+
+    await task.update({ status: 'step2_transcribing' });
+
+    const transcriptionResult = await DashscopeAsrService.transcribeFromUrl(
+      task.audio_url,
+      userId
+    );
+
+    // Update task with transcript data
+    await task.update({
+      transcript: transcriptionResult.text,
+      audio_duration: transcriptionResult.duration,
+      used_seconds: transcriptionResult.usedSeconds
+    });
+
+    console.log(`✅ Step 2 completed in ${Date.now() - startStep2}ms`);
+    console.log(`   Transcript length: ${transcriptionResult.text.length} characters`);
+    console.log(`   Used seconds: ${transcriptionResult.usedSeconds}s`);
+
+    // ========================================
+    // STEP 3 (Optional): Text correction with Doubao
+    // ========================================
+    let correctionCost = 0;
+
+    if (enableCorrection && task.transcript) {
+      console.log('\n📍 Step 3/3: Correcting text errors...');
+      const startStep3 = Date.now();
+
+      await task.update({ status: 'step3_correcting' });
+
+      const correctionResult = await DoubaoLlmService.correctText(
+        task.transcript,
+        userId
+      );
+
+      // Update task with corrected transcript
+      await task.update({
+        corrected_transcript: correctionResult.correctedText,
+        correction_cost: correctionResult.totalTokens
+      });
+
+      correctionCost = correctionResult.totalTokens;
+
+      console.log(`✅ Step 3 completed in ${Date.now() - startStep3}ms`);
+      console.log(`   Tokens used: ${correctionResult.totalTokens}`);
+      console.log(`   Text changed: ${correctionResult.changed ? 'Yes' : 'No'}`);
+    } else {
+      console.log('\n⏭️  Step 3: Skipped (correction not enabled)');
+    }
+
+    // ========================================
+    // Calculate cost and deduct from balance
+    // ========================================
+    // Reload user to get latest balance
+    await user.reload();
+
+    const cost = calculateCost(
+      task.used_seconds || 0,
+      enableCorrection,
+      user
+    );
+
+    console.log(`\n💰 Cost calculation:`);
+    console.log(`   Used seconds: ${task.used_seconds}s`);
+    console.log(`   Membership: ${user.workflow_member_status || 'none'}`);
+    console.log(`   Correction enabled: ${enableCorrection}`);
+    console.log(`   Total cost: ${cost} credits`);
+
+    // Check balance
+    if (user.balance < cost) {
+      await task.update({
+        status: 'failed',
+        error_message: `Insufficient balance. Required: ${cost}, Available: ${user.balance}`,
+        completed_at: new Date()
+      });
+      return;
+    }
+
+    // Deduct balance
+    await user.update({
+      balance: user.balance - cost
+    });
+
+    console.log(`✅ Balance deducted: ${user.balance + cost} → ${user.balance}`);
+
+    // ========================================
+    // Mark task as completed
+    // ========================================
+    await task.update({
+      status: 'completed',
+      completed_at: new Date()
+    });
+
+    console.log(`\n🎉 Extraction completed successfully!`);
+    console.log(`   Task ID: ${task.id}`);
+    console.log(`   Total time: ${Date.now() - startTime}ms\n`);
+
+  } catch (error: any) {
+    // Update task as failed
+    const task = await VideoExtractionTask.findByPk(taskId);
+    if (task) {
+      await task.update({
+        status: 'failed',
+        error_message: error.message,
+        completed_at: new Date()
+      });
+    }
+
+    console.error(`\n❌ Extraction failed for task ${taskId}:`, error.message);
+  }
+};
+
+/**
+ * Extract video transcript from URL (async mode)
  * POST /api/video/extract
  */
 export const extractVideo = async (req: Request, res: Response): Promise<void> => {
@@ -83,172 +249,27 @@ export const extractVideo = async (req: Request, res: Response): Promise<void> =
     const task = await VideoExtractionTask.create({
       user_id: userId,
       original_url: url,
-      status: 'processing',
+      status: 'pending',
       enable_correction: enableCorrection
     });
 
-    console.log(`\n🎬 Starting video transcript extraction for task #${task.id}`);
+    console.log(`\n🎬 Task #${task.id} created, starting async extraction...`);
     console.log(`   URL: ${url.substring(0, 60)}...`);
     console.log(`   Enable Correction: ${enableCorrection}`);
 
-    try {
-      // ========================================
-      // STEP 1: Parse video URL with ALAPI
-      // ========================================
-      console.log('\n📍 Step 1/3: Parsing video URL...');
-      const startStep1 = Date.now();
+    // Start async processing (don't await)
+    processVideoExtraction(task.id, url, enableCorrection, userId);
 
-      const apiResponse = await AlapiService.parseVideo(url, userId);
-      const videoData = apiResponse.data || {};
-
-      // Update task with video metadata
-      await task.update({
-        platform: videoData.platform || null,
-        video_url: videoData.video_url || null,
-        video_title: videoData.title || null,
-        video_cover: videoData.cover_url || null,
-        video_duration: videoData.duration || null,
-        author_name: videoData.author || null,
-        author_avatar: videoData.author_avatar || null,
-        raw_response: apiResponse,
-        audio_url: videoData.video_url || null // Use video URL as audio source
-      });
-
-      console.log(`✅ Step 1 completed in ${Date.now() - startStep1}ms`);
-      console.log(`   Platform: ${task.platform}`);
-      console.log(`   Title: ${task.video_title}`);
-
-      // Check if video URL was extracted
-      if (!task.audio_url) {
-        throw new Error('Failed to extract video URL from source');
-      }
-
-      // ========================================
-      // STEP 2: Speech recognition with DashScope
-      // ========================================
-      console.log('\n📍 Step 2/3: Converting speech to text...');
-      const startStep2 = Date.now();
-
-      const transcriptionResult = await DashscopeAsrService.transcribeFromUrl(
-        task.audio_url,
-        userId
-      );
-
-      // Update task with transcript data
-      await task.update({
-        transcript: transcriptionResult.text,
-        audio_duration: transcriptionResult.duration,
-        used_seconds: transcriptionResult.usedSeconds
-      });
-
-      console.log(`✅ Step 2 completed in ${Date.now() - startStep2}ms`);
-      console.log(`   Transcript length: ${transcriptionResult.text.length} characters`);
-      console.log(`   Used seconds: ${transcriptionResult.usedSeconds}s`);
-
-      // ========================================
-      // STEP 3 (Optional): Text correction with Doubao
-      // ========================================
-      let correctionCost = 0;
-
-      if (enableCorrection && task.transcript) {
-        console.log('\n📍 Step 3/3: Correcting text errors...');
-        const startStep3 = Date.now();
-
-        const correctionResult = await DoubaoLlmService.correctText(
-          task.transcript,
-          userId
-        );
-
-        // Update task with corrected transcript
-        await task.update({
-          corrected_transcript: correctionResult.correctedText,
-          correction_cost: correctionResult.totalTokens
-        });
-
-        correctionCost = correctionResult.totalTokens;
-
-        console.log(`✅ Step 3 completed in ${Date.now() - startStep3}ms`);
-        console.log(`   Tokens used: ${correctionResult.totalTokens}`);
-        console.log(`   Text changed: ${correctionResult.changed ? 'Yes' : 'No'}`);
-      } else {
-        console.log('\n⏭️  Step 3: Skipped (correction not enabled)');
-      }
-
-      // ========================================
-      // Calculate cost and deduct from balance
-      // ========================================
-      const cost = calculateCost(
-        task.used_seconds || 0,
-        enableCorrection,
-        user
-      );
-
-      console.log(`\n💰 Cost calculation:`);
-      console.log(`   Used seconds: ${task.used_seconds}s`);
-      console.log(`   Membership: ${user.workflow_member_status || 'none'}`);
-      console.log(`   Correction enabled: ${enableCorrection}`);
-      console.log(`   Total cost: ${cost} credits`);
-
-      // Check balance
-      if (user.balance < cost) {
-        await task.update({
-          status: 'failed',
-          error_message: `Insufficient balance. Required: ${cost}, Available: ${user.balance}`,
-          completed_at: new Date()
-        });
-
-        errorResponse(res, 'Insufficient balance', 402, `Required: ${cost}, Available: ${user.balance}`);
-        return;
-      }
-
-      // Deduct balance
-      await user.update({
-        balance: user.balance - cost
-      });
-
-      console.log(`✅ Balance deducted: ${user.balance + cost} → ${user.balance}`);
-
-      // ========================================
-      // Mark task as completed
-      // ========================================
-      await task.update({
-        status: 'completed',
-        completed_at: new Date()
-      });
-
-      console.log(`\n🎉 Extraction completed successfully!`);
-      console.log(`   Task ID: ${task.id}`);
-      console.log(`   Total time: ${Date.now() - startStep1}ms\n`);
-
-      // Return success response
-      successResponse(res, {
-        task_id: task.id,
-        video_title: task.video_title,
-        video_cover: task.video_cover,
-        platform: task.platform,
-        transcript: task.transcript,
-        corrected_transcript: task.corrected_transcript,
-        audio_duration: task.audio_duration,
-        used_seconds: task.used_seconds,
-        cost,
-        remaining_balance: user.balance
-      }, 'Video transcript extracted successfully', 201);
-
-    } catch (error: any) {
-      // Update task as failed
-      await task.update({
-        status: 'failed',
-        error_message: error.message,
-        completed_at: new Date()
-      });
-
-      console.error(`\n❌ Extraction failed:`, error.message);
-      throw error;
-    }
+    // Return immediately with task ID
+    successResponse(res, {
+      task_id: task.id,
+      status: 'pending',
+      message: 'Task created, processing in background'
+    }, 'Video extraction task created', 202);
 
   } catch (error: any) {
     console.error('Extract video error:', error);
-    errorResponse(res, 'Failed to extract video transcript', 500, error.message);
+    errorResponse(res, 'Failed to create video extraction task', 500, error.message);
   }
 };
 
