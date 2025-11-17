@@ -9,6 +9,7 @@ import apiKeyRoutes from './apiKeyRoutes';
 import workflowConfigRoutes from './workflowConfigRoutes';
 import pluginCategoryRoutes from './pluginCategoryRoutes';
 import courseRoutes from './courseRoutes';
+import referralRoutes from './referral';
 
 const router = express.Router();
 
@@ -33,5 +34,6 @@ router.use('/apikey', apiKeyRoutes);
 router.use('/workflow-config', workflowConfigRoutes);
 router.use('/plugin-categories', pluginCategoryRoutes);
 router.use('/course', courseRoutes);
+router.use('/referral', referralRoutes);
 
 export default router;
