@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Button, Card, message, Statistic, Table, Tag, Input } from 'antd';
+import { Button, Card, message, Statistic, Input } from 'antd';
 import { CopyOutlined, GiftOutlined, TeamOutlined, WalletOutlined } from '@ant-design/icons';
 import { useAuthStore } from '../../store/useAuthStore';
 import { api } from '../../api/request';
@@ -16,7 +16,7 @@ interface ReferralStats {
 const Referral = () => {
   const { user } = useAuthStore();
   const [stats, setStats] = useState<ReferralStats | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [, setLoading] = useState(false);
   const [referralCode, setReferralCode] = useState('');
 
   useEffect(() => {

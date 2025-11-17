@@ -41,7 +41,10 @@ const VideoExtract = () => {
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [processingTaskId, setProcessingTaskId] = useState<number | null>(null);
-  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Keep processingTaskId for future use
+  void processingTaskId;
 
   // Cleanup polling on unmount
   useEffect(() => {
