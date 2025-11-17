@@ -17,6 +17,7 @@ export interface PluginAttributes {
   review_count: number;
   is_free: boolean;
   status: 'approved' | 'pending' | 'rejected' | 'offline';
+  feishu_link: string | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -25,7 +26,7 @@ export interface PluginAttributes {
 interface PluginCreationAttributes extends Optional<PluginAttributes,
   'id' | 'developer_id' | 'description' | 'category' | 'icon_url' |
   'plugin_config' | 'version' | 'install_count' | 'rating' | 'review_count' |
-  'is_free' | 'status' | 'created_at' | 'updated_at'> {}
+  'is_free' | 'status' | 'feishu_link' | 'created_at' | 'updated_at'> {}
 
 // Plugin model class
 class Plugin extends Model<PluginAttributes, PluginCreationAttributes> implements PluginAttributes {
@@ -42,6 +43,7 @@ class Plugin extends Model<PluginAttributes, PluginCreationAttributes> implement
   public review_count!: number;
   public is_free!: boolean;
   public status!: 'approved' | 'pending' | 'rejected' | 'offline';
+  public feishu_link!: string | null;
   public readonly created_at!: Date;
   public readonly updated_at!: Date;
 
@@ -117,6 +119,11 @@ Plugin.init(
       defaultValue: 'pending',
       comment: '状态'
     },
+    feishu_link: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+      comment: '飞书详情链接'
+    },
     created_at: {
       type: DataTypes.DATE,
       allowNull: false,
@@ -150,3 +157,4 @@ Plugin.belongsTo(User, {
 });
 
 export default Plugin;
+

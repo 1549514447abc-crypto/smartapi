@@ -66,14 +66,8 @@ export const Header = () => {
           <li className={isActive('/') ? 'active' : ''} onClick={() => navigate('/')}>
             首页
           </li>
-          <li className={isActive('/ai-reduce') ? 'active' : ''} onClick={() => navigate('/ai-reduce')}>
-            文章降AI率
-          </li>
           <li className={isActive('/video-extract') ? 'active' : ''} onClick={() => navigate('/video-extract')}>
             视频文案提取
-          </li>
-          <li className={isActive('/prompt-generator') ? 'active' : ''} onClick={() => navigate('/prompt-generator')}>
-            提示词生成器
           </li>
           <li className={isActive('/plugin-market') ? 'active' : ''} onClick={() => navigate('/plugin-market')}>
             插件市场
@@ -84,19 +78,17 @@ export const Header = () => {
           <li className={isActive('/course') ? 'active' : ''} onClick={() => navigate('/course')}>
             课程商店
           </li>
-          <li className={isActive('/ai-toolbox') ? 'active' : ''} onClick={() => navigate('/ai-toolbox')}>
-            智能体工具箱
-          </li>
         </ul>
       </div>
       <div className="header-right">
-        <Button
+        {/* 推广赚钱功能暂时隐藏 */}
+        {/* <Button
           className="promote-button"
           onClick={() => navigate('/promote')}
         >
           <span>💰</span>
           推广赚钱
-        </Button>
+        </Button> */}
         {user ? (
           <div
             className="user-dropdown"

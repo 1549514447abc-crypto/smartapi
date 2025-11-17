@@ -6,6 +6,7 @@ import Register from './pages/Auth/Register';
 import VideoExtract from './pages/VideoExtract';
 import WorkflowStore from './pages/WorkflowStore';
 import PluginMarket from './pages/PluginMarket';
+import PluginDetail from './pages/PluginMarket/PluginDetail';
 import Recharge from './pages/Recharge';
 import Profile from './pages/Profile';
 import Course from './pages/Course';
@@ -32,6 +33,10 @@ export const router = createBrowserRouter([
       {
         path: 'plugin-market',
         element: <PluginMarket />
+      },
+      {
+        path: 'plugin-market/:id',
+        element: <PluginDetail />
       },
       {
         path: 'recharge',
