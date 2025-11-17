@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button, Select, Input, Spin, Tag, message } from 'antd';
 import { api } from '../../api/request';
 import './PluginMarket.css';
@@ -17,6 +18,7 @@ interface Plugin {
   review_count: number;
   is_free: boolean;
   status: string;
+  feishu_link: string | null;
   developer?: {
     id: number;
     username: string;
@@ -33,6 +35,7 @@ interface PluginCategory {
 }
 
 const PluginMarket = () => {
+  const navigate = useNavigate();
   const [plugins, setPlugins] = useState<Plugin[]>([]);
   const [loading, setLoading] = useState(false);
   const [category, setCategory] = useState<string>('all');
@@ -84,8 +87,9 @@ const PluginMarket = () => {
     setCategory(cat);
   };
 
-  const installPlugin = (plugin: Plugin) => {
-    message.success(`插件 "${plugin.name}" 已安装！`);
+  const viewPluginDetail = (plugin: Plugin) => {
+    // 跳转到插件详情页
+    navigate(`/plugin-market/${plugin.id}`);
   };
 
   const filteredPlugins = category === 'all'
@@ -202,9 +206,9 @@ const PluginMarket = () => {
                       <Button
                         type="primary"
                         size="small"
-                        onClick={() => installPlugin(plugin)}
+                        onClick={() => viewPluginDetail(plugin)}
                       >
-                        安装插件
+                        查看详情
                       </Button>
                     </div>
                   </div>
