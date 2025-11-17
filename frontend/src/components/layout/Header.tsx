@@ -81,14 +81,13 @@ export const Header = () => {
         </ul>
       </div>
       <div className="header-right">
-        {/* 推广赚钱功能暂时隐藏 */}
-        {/* <Button
+        <Button
           className="promote-button"
-          onClick={() => navigate('/promote')}
+          onClick={() => navigate('/referral')}
         >
           <span>💰</span>
-          推广赚钱
-        </Button> */}
+          推广返佣
+        </Button>
         {user ? (
           <div
             className="user-dropdown"

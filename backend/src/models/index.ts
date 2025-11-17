@@ -11,6 +11,8 @@ import UserPlugin from './UserPlugin';
 import CourseSetting from './CourseSetting';
 import CourseLesson from './CourseLesson';
 import CourseOrder from './CourseOrder';
+import UserReferral from './UserReferral';
+import Commission from './Commission';
 
 // Export all models
 export {
@@ -23,7 +25,9 @@ export {
   UserPlugin,
   CourseSetting,
   CourseLesson,
-  CourseOrder
+  CourseOrder,
+  UserReferral,
+  Commission
 };
 
 // This ensures all model associations are loaded when the app starts
@@ -37,5 +41,7 @@ export default {
   UserPlugin,
   CourseSetting,
   CourseLesson,
-  CourseOrder
+  CourseOrder,
+  UserReferral,
+  Commission
 };

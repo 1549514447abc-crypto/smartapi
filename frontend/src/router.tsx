@@ -12,6 +12,7 @@ import Profile from './pages/Profile';
 import Course from './pages/Course';
 import Preview from './pages/Course/Preview';
 import Payment from './pages/Course/Payment';
+import Referral from './pages/Referral';
 
 export const router = createBrowserRouter([
   {
@@ -65,6 +66,10 @@ export const router = createBrowserRouter([
       {
         path: 'register',
         element: <Register />
+      },
+      {
+        path: 'referral',
+        element: <Referral />
       },
       {
         path: '*',
