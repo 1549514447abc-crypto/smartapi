@@ -1,31 +1,111 @@
-/* 重置样式 */
+/* Google Fonts - Inter - must be first */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+@import "tailwindcss";
+
+/* 全局样式 */
 * {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  background: linear-gradient(135deg, #fff7ed 0%, #f0f9ff 50%, #ecfdf3 100%);
+  min-height: 100vh;
+  color: #0f172a;
 }
 
 #root {
   min-height: 100vh;
 }
 
-a {
-  color: #1890ff;
-  text-decoration: none;
+/* 自定义卡片样式 */
+.card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: 0 16px 44px rgba(15, 23, 42, 0.1);
+  border-color: #d1d5db;
+}
+
+/* 可点击卡片的悬停效果 - 需要时手动添加 card-interactive 类 */
+.card-interactive {
   cursor: pointer;
 }
 
-a:hover {
-  color: #40a9ff;
+.card-interactive:hover {
+  transform: translateY(-2px);
+  transition: all 0.2s ease;
+}
+
+/* 侧边栏样式 */
+.sidebar {
+  background: rgba(255, 255, 255, 0.9);
+  border-right: 1px solid #e5e7eb;
+  backdrop-filter: blur(8px);
+}
+
+/* 导航项样式 */
+.nav-item {
+  border-left: 3px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.nav-item:hover {
+  background: #f8fafc;
+  border-left-color: #38bdf8;
+  color: #0ea5e9;
+}
+
+.nav-item.active {
+  background: #e0f2fe;
+  border-left-color: #38bdf8;
+  color: #0ea5e9;
+}
+
+/* 标签样式 */
+.tag {
+  font-size: 10px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.tag-hot {
+  background: linear-gradient(135deg, #f59e0b, #fb7185);
+  color: #fff;
+}
+
+.tag-new {
+  background: linear-gradient(135deg, #34d399, #10b981);
+  color: #064e3b;
+}
+
+.tag-soon {
+  background: linear-gradient(135deg, #38bdf8, #818cf8);
+  color: #0b3f6b;
+}
+
+/* 平台图标 */
+.platform-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 13px;
+  transition: transform 0.2s ease;
+}
+
+.platform-icon:hover {
+  transform: scale(1.1);
 }
 
 /* 滚动条样式 */
@@ -39,10 +119,20 @@ a:hover {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #888;
+  background: #cbd5e1;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  background: #94a3b8;
+}
+
+/* 跑马灯动画 */
+.ticker {
+  animation: ticker 18s linear infinite;
+}
+
+@keyframes ticker {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }

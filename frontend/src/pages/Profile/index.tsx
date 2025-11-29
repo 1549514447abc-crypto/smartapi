@@ -1,20 +1,24 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, Avatar, Button, Row, Col, message, Modal, Typography, Space, Divider } from 'antd';
-import {
-  UserOutlined,
-  WalletOutlined,
-  CopyOutlined,
-  ReloadOutlined,
-  BookOutlined,
-  GiftOutlined,
-  CheckCircleOutlined,
-  FileTextOutlined
-} from '@ant-design/icons';
+import { message } from 'antd';
 import { api } from '../../api/request';
-import './Profile.css';
-
-const { Title, Text, Paragraph } = Typography;
+import {
+  User,
+  Wallet,
+  Copy,
+  RefreshCw,
+  BookOpen,
+  Gift,
+  CheckCircle,
+  FileText,
+  Key,
+  ChevronRight,
+  Loader2,
+  Check,
+  Zap,
+  Calendar,
+  Activity
+} from 'lucide-react';
 
 interface UserInfo {
   id: number;
@@ -40,6 +44,8 @@ const Profile = () => {
   const [apiKeyInfo, setApiKeyInfo] = useState<ApiKeyInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [regenerating, setRegenerating] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   useEffect(() => {
     fetchUserData();
@@ -50,19 +56,20 @@ const Profile = () => {
       setLoading(true);
 
       // 获取用户信息
-      const userRes = await api.get('/auth/me');
-      if (userRes.data.success) {
-        setUserInfo(userRes.data.data);
+      const userRes = await api.get<{ success: boolean; data: UserInfo }>('/auth/me');
+      if (userRes.success) {
+        setUserInfo(userRes.data);
       }
 
       // 获取API Key信息
-      const apiKeyRes = await api.get('/apikey');
-      if (apiKeyRes.data.success) {
-        setApiKeyInfo(apiKeyRes.data.data);
+      const apiKeyRes = await api.get<{ success: boolean; data: ApiKeyInfo }>('/apikey');
+      if (apiKeyRes.success) {
+        setApiKeyInfo(apiKeyRes.data);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to fetch user data:', error);
-      message.error(error.response?.data?.message || '获取用户信息失败');
+      const err = error as { response?: { data?: { message?: string } } };
+      message.error(err.response?.data?.message || '获取用户信息失败');
     } finally {
       setLoading(false);
     }
@@ -72,62 +79,58 @@ const Profile = () => {
     if (apiKeyInfo?.api_key) {
       navigator.clipboard.writeText(apiKeyInfo.api_key);
       message.success('API密钥已复制到剪贴板');
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
   };
 
-  const handleRegenerateApiKey = () => {
-    Modal.confirm({
-      title: '确认刷新API密钥？',
-      content: '刷新后，旧的API密钥将立即失效，请确保已更新所有使用该密钥的应用。',
-      okText: '确认刷新',
-      cancelText: '取消',
-      onOk: async () => {
-        try {
-          setRegenerating(true);
-          const res = await api.post('/apikey/regenerate');
-          if (res.data.success) {
-            setApiKeyInfo(res.data.data);
-            message.success('API密钥刷新成功');
-          }
-        } catch (error: any) {
-          message.error(error.response?.data?.message || '刷新API密钥失败');
-        } finally {
-          setRegenerating(false);
-        }
+  const handleRegenerateApiKey = async () => {
+    try {
+      setRegenerating(true);
+      const res = await api.post<{ success: boolean; data: ApiKeyInfo }>('/apikey/regenerate');
+      if (res.success) {
+        setApiKeyInfo(res.data);
+        message.success('API密钥刷新成功');
       }
-    });
-  };
-
-  const handleRecharge = () => {
-    navigate('/recharge');
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      message.error(err.response?.data?.message || '刷新API密钥失败');
+    } finally {
+      setRegenerating(false);
+      setShowConfirmModal(false);
+    }
   };
 
   const featureCards = [
     {
       title: '使用教程',
       description: '查看详细的API使用教程，全面的开发指南',
-      icon: <BookOutlined style={{ fontSize: 32, color: '#1890ff' }} />,
+      icon: BookOpen,
+      color: 'sky',
       action: '立即查看',
-      onClick: () => message.info('使用教程功能开发中')
+      onClick: () => navigate('/course')
     },
     {
       title: '推广赚钱',
-      description: '分享推广，提现收益',
-      icon: <GiftOutlined style={{ fontSize: 32, color: '#52c41a' }} />,
+      description: '分享推广，赚取最高50%佣金',
+      icon: Gift,
+      color: 'emerald',
       action: '立即查看',
-      onClick: () => message.info('推广功能开发中')
+      onClick: () => navigate('/referral')
     },
     {
       title: '每日签到',
-      description: '每日签到领取奖励，连续签到获得更多福利',
-      icon: <CheckCircleOutlined style={{ fontSize: 32, color: '#fa8c16' }} />,
+      description: '每日签到领取奖励，连续签到获得更多',
+      icon: CheckCircle,
+      color: 'orange',
       action: '立即签到',
       onClick: () => message.info('签到功能开发中')
     },
     {
       title: '开发票',
-      description: '在线申请发票服务，支持增值税普通发票和专用发票',
-      icon: <FileTextOutlined style={{ fontSize: 32, color: '#722ed1' }} />,
+      description: '在线申请发票服务，支持普通和专用发票',
+      icon: FileText,
+      color: 'violet',
       action: '立即申请',
       onClick: () => message.info('发票功能开发中')
     }
@@ -135,137 +138,183 @@ const Profile = () => {
 
   if (loading) {
     return (
-      <div className="profile-container">
-        <div className="loading-container">
-          <Text>加载中...</Text>
-        </div>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="w-8 h-8 text-sky-500 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="profile-container">
-      <Row gutter={[24, 24]}>
+    <div className="space-y-6">
+      <div className="flex gap-6">
         {/* 左侧：个人信息卡片 */}
-        <Col xs={24} lg={8}>
-          <Card className="user-info-card" bordered={false}>
-            <div className="user-header">
-              <Avatar
-                size={80}
-                icon={<UserOutlined />}
-                src={userInfo?.avatar_url}
-                className="user-avatar"
-              />
-              <div className="user-details">
-                <Title level={4} style={{ margin: '8px 0 4px' }}>
+        <div className="w-80 flex-shrink-0 space-y-6">
+          {/* 用户信息 */}
+          <div className="card p-6">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-sky-400 to-emerald-400 flex items-center justify-center text-white shadow-lg shadow-sky-200 overflow-hidden">
+                {userInfo?.avatar_url ? (
+                  <img src={userInfo.avatar_url} alt="avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-8 h-8" />
+                )}
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">
                   {userInfo?.nickname || userInfo?.username}
-                </Title>
-                <Text type="secondary">@{userInfo?.username}</Text>
+                </h2>
+                <p className="text-sm text-slate-500">@{userInfo?.username}</p>
               </div>
             </div>
 
-            <Divider />
-
-            <div className="balance-section">
-              <div className="balance-header">
-                <Space>
-                  <WalletOutlined style={{ fontSize: 20, color: '#1890ff' }} />
-                  <Text strong>账户余额</Text>
-                </Space>
+            {/* 余额 */}
+            <div className="p-4 rounded-xl bg-gradient-to-r from-sky-50 to-emerald-50 mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2 text-slate-600">
+                  <Wallet className="w-4 h-4" />
+                  <span className="text-sm">账户余额</span>
+                </div>
+                <Zap className="w-4 h-4 text-orange-500" />
               </div>
-              <div className="balance-amount">
-                <Title level={2} style={{ margin: '12px 0', color: '#1890ff' }}>
-                  ¥{userInfo?.balance?.toFixed(2) || '0.00'}
-                </Title>
+              <div className="text-3xl font-bold text-slate-900 mb-3">
+                ¥{userInfo?.balance?.toFixed(2) || '0.00'}
               </div>
-              <Button
-                type="primary"
-                block
-                size="large"
-                onClick={handleRecharge}
+              <button
+                onClick={() => navigate('/recharge')}
+                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-sky-400 to-emerald-400 text-white font-semibold shadow-lg shadow-sky-200 hover:shadow-xl transition-shadow"
               >
                 立即充值
-              </Button>
+              </button>
             </div>
 
-            <Divider />
-
-            {/* API密钥区域 */}
-            <div className="api-key-section">
-              <div className="api-key-header">
-                <Text strong>API 密钥</Text>
+            {/* API密钥 */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2 text-slate-700 font-medium">
+                  <Key className="w-4 h-4 text-orange-500" />
+                  API 密钥
+                </div>
               </div>
-              <div className="api-key-box">
-                <Paragraph
-                  copyable={{
-                    text: apiKeyInfo?.api_key,
-                    tooltips: ['复制', '已复制'],
-                    icon: [<CopyOutlined key="copy" />, <CopyOutlined key="copied" />]
-                  }}
-                  ellipsis
-                  style={{ marginBottom: 8, fontFamily: 'monospace' }}
-                >
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 mb-3">
+                <p className="text-sm font-mono text-slate-600 truncate mb-2">
                   {apiKeyInfo?.api_key || '暂无密钥'}
-                </Paragraph>
-                <Space>
-                  <Button
-                    size="small"
-                    icon={<CopyOutlined />}
+                </p>
+                <div className="flex gap-2">
+                  <button
                     onClick={handleCopyApiKey}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-all ${
+                      copied
+                        ? 'bg-emerald-500 text-white'
+                        : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                    }`}
                   >
-                    复制
-                  </Button>
-                  <Button
-                    size="small"
-                    icon={<ReloadOutlined />}
-                    loading={regenerating}
-                    onClick={handleRegenerateApiKey}
+                    {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    {copied ? '已复制' : '复制'}
+                  </button>
+                  <button
+                    onClick={() => setShowConfirmModal(true)}
+                    disabled={regenerating}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-slate-200 text-slate-700 hover:bg-slate-300 text-sm font-medium transition-colors disabled:opacity-50"
                   >
+                    {regenerating ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-4 h-4" />
+                    )}
                     刷新
-                  </Button>
-                </Space>
+                  </button>
+                </div>
               </div>
               {apiKeyInfo && (
-                <div className="api-key-stats">
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    调用次数: {apiKeyInfo.total_calls} |
-                    创建时间: {new Date(apiKeyInfo.created_at).toLocaleDateString()}
-                  </Text>
+                <div className="flex items-center gap-4 text-xs text-slate-500">
+                  <span className="flex items-center gap-1">
+                    <Activity className="w-3 h-3" />
+                    调用 {apiKeyInfo.total_calls} 次
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Calendar className="w-3 h-3" />
+                    {new Date(apiKeyInfo.created_at).toLocaleDateString()}
+                  </span>
                 </div>
               )}
             </div>
-          </Card>
-        </Col>
+          </div>
+        </div>
 
-        {/* 右侧：功能入口卡片 */}
-        <Col xs={24} lg={16}>
-          <Title level={4} style={{ marginBottom: 16 }}>快捷功能</Title>
-          <Row gutter={[16, 16]}>
+        {/* 右侧：功能入口 */}
+        <div className="flex-1">
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">快捷功能</h3>
+          <div className="grid grid-cols-2 gap-4">
             {featureCards.map((card, index) => (
-              <Col xs={24} sm={12} key={index}>
-                <Card
-                  className="feature-card"
-                  hoverable
-                  onClick={card.onClick}
-                >
-                  <div className="feature-card-content">
-                    <div className="feature-icon">{card.icon}</div>
-                    <Title level={5} style={{ marginTop: 16 }}>
-                      {card.title}
-                    </Title>
-                    <Paragraph type="secondary" style={{ marginBottom: 16 }}>
-                      {card.description}
-                    </Paragraph>
-                    <Button type="link" style={{ padding: 0 }}>
-                      {card.action} →
-                    </Button>
-                  </div>
-                </Card>
-              </Col>
+              <div
+                key={index}
+                onClick={card.onClick}
+                className="card p-6 cursor-pointer group"
+              >
+                <div className={`w-12 h-12 rounded-xl bg-${card.color}-100 text-${card.color}-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                  <card.icon className="w-6 h-6" />
+                </div>
+                <h4 className="text-lg font-semibold text-slate-900 mb-1 flex items-center gap-2">
+                  {card.title}
+                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
+                </h4>
+                <p className="text-sm text-slate-500 mb-3">{card.description}</p>
+                <span className={`text-sm font-medium text-${card.color}-600`}>
+                  {card.action} →
+                </span>
+              </div>
             ))}
-          </Row>
-        </Col>
-      </Row>
+          </div>
+
+          {/* 快速入口 */}
+          <h3 className="text-lg font-semibold text-slate-900 mt-6 mb-4">常用功能</h3>
+          <div className="grid grid-cols-4 gap-4">
+            {[
+              { label: '视频提取', path: '/video-extract', color: 'sky' },
+              { label: '插件市场', path: '/plugin-market', color: 'emerald' },
+              { label: '工作流', path: '/workflow-store', color: 'amber' },
+              { label: '充值记录', path: '/recharge/history', color: 'pink' }
+            ].map((item) => (
+              <button
+                key={item.path}
+                onClick={() => navigate(item.path)}
+                className={`p-4 rounded-xl bg-${item.color}-50 hover:bg-${item.color}-100 border border-${item.color}-200 text-${item.color}-700 font-medium transition-colors`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* 确认弹窗 */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-2xl shadow-2xl w-[400px] overflow-hidden">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-slate-900 mb-2">确认刷新API密钥？</h3>
+              <p className="text-sm text-slate-500 mb-6">
+                刷新后，旧的API密钥将立即失效，请确保已更新所有使用该密钥的应用。
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowConfirmModal(false)}
+                  className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-medium hover:bg-slate-200 transition-colors"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={handleRegenerateApiKey}
+                  disabled={regenerating}
+                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-orange-400 to-pink-400 text-white font-medium shadow-lg shadow-orange-200 hover:shadow-xl transition-shadow disabled:opacity-50"
+                >
+                  {regenerating ? '刷新中...' : '确认刷新'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
