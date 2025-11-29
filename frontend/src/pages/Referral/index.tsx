@@ -136,7 +136,7 @@ const Referral = () => {
               { rate: 30, title: '新手佣金', desc: '立即开始', icon: Star },
               { rate: 40, title: '进阶佣金', desc: '推广10人', icon: TrendingUp },
               { rate: 50, title: '高级佣金', desc: '推广20人', icon: Crown }
-            ].map((tier, index) => (
+            ].map((tier) => (
               <div
                 key={tier.rate}
                 className={`flex-1 p-4 rounded-xl border-2 transition-all ${

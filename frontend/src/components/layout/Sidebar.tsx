@@ -8,8 +8,7 @@ import {
   User,
   GraduationCap,
   Gift,
-  LogOut,
-  Zap
+  LogOut
 } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 

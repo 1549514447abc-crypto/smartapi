@@ -8,6 +8,7 @@ export interface User {
   email?: string;
   phone?: string;
   avatar_url?: string;
+  balance?: number | string;
   user_type: UserType;
   created_at: string;
   updated_at: string;
@@ -32,6 +33,7 @@ export interface RegisterRequest {
   email?: string;
   phone?: string;
   nickname?: string;
+  referral_code?: string;
 }
 
 // 注册响应
