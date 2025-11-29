@@ -1,7 +1,22 @@
 import { useState, useEffect, useRef } from 'react';
-import { message, Button } from 'antd';
+import { message } from 'antd';
 import { api } from '../../api/request';
-import './VideoExtract.css';
+import {
+  Video,
+  Plus,
+  Trash2,
+  Download,
+  Clock,
+  Coins,
+  FileText,
+  CheckCircle,
+  Loader2,
+  AlertCircle,
+  X,
+  Sparkles,
+  Zap,
+  ChevronDown
+} from 'lucide-react';
 
 interface ExtractionTask {
   id: number;
@@ -43,10 +58,8 @@ const VideoExtract = () => {
   const [processingTaskId, setProcessingTaskId] = useState<number | null>(null);
   const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Keep processingTaskId for future use
   void processingTaskId;
 
-  // Cleanup polling on unmount
   useEffect(() => {
     return () => {
       if (pollingIntervalRef.current) {
@@ -55,7 +68,6 @@ const VideoExtract = () => {
     };
   }, []);
 
-  // Convert status to step number
   const getStepFromStatus = (status: string): number => {
     switch (status) {
       case 'pending':
@@ -72,7 +84,6 @@ const VideoExtract = () => {
     }
   };
 
-  // 加载历史任务
   useEffect(() => {
     fetchHistoryTasks(1);
   }, []);
@@ -115,15 +126,12 @@ const VideoExtract = () => {
   };
 
   const handleDeleteTask = async (taskId: number, e: React.MouseEvent) => {
-    e.stopPropagation(); // 阻止事件冒泡
-
+    e.stopPropagation();
     try {
       const response = await api.delete(`/video/tasks/${taskId}`);
       if (response.success) {
         message.success('删除成功');
-        // 从列表中移除
         setHistoryTasks(prev => prev.filter(t => t.id !== taskId));
-        // 如果删除的是当前选中的任务，清空结果
         if (selectedTaskId === taskId) {
           setSelectedTaskId(null);
           setCurrentResult(null);
@@ -135,9 +143,7 @@ const VideoExtract = () => {
     }
   };
 
-  // 轮询任务状态
   const pollTaskStatus = (taskId: number) => {
-    // Clear any existing polling
     if (pollingIntervalRef.current) {
       clearInterval(pollingIntervalRef.current);
     }
@@ -151,24 +157,16 @@ const VideoExtract = () => {
 
         if (response.success) {
           const task = response.data;
-
-          // Update step based on status
           setCurrentStep(getStepFromStatus(task.status));
-
-          // Update history list with latest status
           setHistoryTasks(prev =>
             prev.map(t => t.id === taskId ? { ...t, ...task } : t)
           );
 
-          // Check if task is completed or failed
           if (task.status === 'completed') {
-            // Stop polling
             if (pollingIntervalRef.current) {
               clearInterval(pollingIntervalRef.current);
               pollingIntervalRef.current = null;
             }
-
-            // Set result
             setCurrentResult({
               task_id: task.id,
               video_title: task.video_title,
@@ -178,64 +176,50 @@ const VideoExtract = () => {
               corrected_transcript: task.corrected_transcript,
               audio_duration: task.audio_duration || 0,
               used_seconds: task.used_seconds || 0,
-              cost: 0, // Cost is already deducted
+              cost: 0,
               remaining_balance: 0
             });
-
             setExtracting(false);
             setProcessingTaskId(null);
             message.success('提取成功！');
-
-            // Refresh history to get latest data
             fetchHistoryTasks(1);
           } else if (task.status === 'failed') {
-            // Stop polling
             if (pollingIntervalRef.current) {
               clearInterval(pollingIntervalRef.current);
               pollingIntervalRef.current = null;
             }
-
             setExtracting(false);
             setProcessingTaskId(null);
             message.error(task.error_message || '提取失败');
-
-            // Refresh history
             fetchHistoryTasks(1);
           }
         }
       } catch (error) {
         console.error('Poll task status error:', error);
       }
-    }, 2000); // Poll every 2 seconds
+    }, 2000);
   };
 
-  // 提取视频文案
   const handleExtract = async () => {
     if (!videoUrls.trim()) {
       message.warning('请输入视频链接');
       return;
     }
 
-    // 解析多个URL（每行一个）
     const urls = videoUrls.split('\n').filter(url => url.trim());
-
     if (urls.length === 0) {
       message.warning('请输入有效的视频链接');
       return;
     }
-
     if (urls.length > 1) {
       message.info('批量处理功能即将上线，当前仅处理第一个链接');
     }
 
     const url = urls[0].trim();
-
-    // Don't show modal, just clear result
     setCurrentResult(null);
     setCurrentStep(0);
 
     try {
-      // Submit extraction request (returns immediately with task ID)
       const response = await api.post<{
         success: boolean;
         data: {
@@ -253,7 +237,6 @@ const VideoExtract = () => {
         const taskId = response.data.task_id;
         setProcessingTaskId(taskId);
 
-        // Add to history immediately
         const newTask: ExtractionTask = {
           id: taskId,
           video_title: '正在解析...',
@@ -265,16 +248,9 @@ const VideoExtract = () => {
           used_seconds: null
         };
         setHistoryTasks(prev => [newTask, ...prev]);
-
-        // Start polling for status updates
         pollTaskStatus(taskId);
-
-        // Clear input
         setVideoUrls('');
-
-        // Don't show modal by default, just show progress in sidebar
         setExtracting(false);
-
         message.info('任务已创建，正在后台处理...');
       } else {
         message.error(response.message || '创建任务失败');
@@ -287,7 +263,6 @@ const VideoExtract = () => {
     }
   };
 
-  // 导出文案
   const handleExport = () => {
     if (!currentResult) {
       message.warning('暂无可导出的内容');
@@ -299,8 +274,6 @@ const VideoExtract = () => {
       : currentResult.transcript;
 
     const filename = `${currentResult.video_title || '视频文案'}_${Date.now()}.${exportFormat}`;
-
-    // 创建Blob并下载
     const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -310,11 +283,9 @@ const VideoExtract = () => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-
     message.success(`已导出为 ${exportFormat.toUpperCase()} 文件`);
   };
 
-  // 选择历史任务
   const handleSelectTask = async (taskId: number) => {
     setSelectedTaskId(taskId);
 
@@ -326,19 +297,15 @@ const VideoExtract = () => {
 
       if (response.success) {
         const task = response.data;
-
-        // Check if task is still processing
         const isProcessing = !['completed', 'failed'].includes(task.status);
 
         if (isProcessing) {
-          // Start polling for this task
           setProcessingTaskId(taskId);
           setExtracting(true);
           setCurrentStep(getStepFromStatus(task.status));
           setCurrentResult(null);
           pollTaskStatus(taskId);
         } else {
-          // Stop any existing polling
           if (pollingIntervalRef.current) {
             clearInterval(pollingIntervalRef.current);
             pollingIntervalRef.current = null;
@@ -346,7 +313,6 @@ const VideoExtract = () => {
           setProcessingTaskId(null);
           setExtracting(false);
 
-          // Show completed/failed task result
           setCurrentResult({
             task_id: task.id,
             video_title: task.video_title,
@@ -367,7 +333,6 @@ const VideoExtract = () => {
     }
   };
 
-  // 格式化时间
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -383,41 +348,55 @@ const VideoExtract = () => {
     return date.toLocaleDateString();
   };
 
+  const getStatusInfo = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return { icon: <CheckCircle className="w-4 h-4" />, text: '已完成', color: 'text-emerald-600 bg-emerald-50' };
+      case 'failed':
+        return { icon: <AlertCircle className="w-4 h-4" />, text: '失败', color: 'text-red-600 bg-red-50' };
+      case 'pending':
+        return { icon: <Loader2 className="w-4 h-4 animate-spin" />, text: '等待中', color: 'text-amber-600 bg-amber-50' };
+      case 'step1_parsing':
+        return { icon: <Loader2 className="w-4 h-4 animate-spin" />, text: '解析中', color: 'text-sky-600 bg-sky-50' };
+      case 'step2_transcribing':
+        return { icon: <Loader2 className="w-4 h-4 animate-spin" />, text: '识别中', color: 'text-violet-600 bg-violet-50' };
+      case 'step3_correcting':
+        return { icon: <Loader2 className="w-4 h-4 animate-spin" />, text: '纠错中', color: 'text-pink-600 bg-pink-50' };
+      default:
+        return { icon: <Clock className="w-4 h-4" />, text: '未知', color: 'text-slate-600 bg-slate-50' };
+    }
+  };
+
   return (
-    <div className="video-extract-container">
+    <div className="flex gap-6 h-[calc(100vh-140px)]">
       {/* 左侧历史栏 */}
-      <div className="extract-sidebar">
-        <div className="sidebar-header">
-          <h3>📋 提取历史</h3>
-          <Button
-            type="primary"
-            icon={<span style={{ marginRight: '4px' }}>➕</span>}
+      <div className="w-72 flex-shrink-0 card p-4 flex flex-col">
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-slate-900 flex items-center gap-2">
+              <FileText className="w-5 h-5 text-sky-500" />
+              提取历史
+            </h3>
+            <span className="text-xs text-slate-500">{historyTasks.length} 条</span>
+          </div>
+
+          <button
             onClick={() => {
               setSelectedTaskId(null);
               setCurrentResult(null);
               setVideoUrls('');
             }}
-            style={{ marginBottom: '12px', width: '100%' }}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-sky-400 to-emerald-400 text-white font-medium shadow-lg shadow-sky-200 hover:shadow-xl transition-shadow"
           >
+            <Plus className="w-4 h-4" />
             新建提取
-          </Button>
-          <div className="sidebar-stats">
-            <div className="stat-item">
-              <span className="stat-label">总计</span>
-              <span className="stat-value">{historyTasks.length}</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-label">成功</span>
-              <span className="stat-value">
-                {historyTasks.filter(t => t.status === 'completed').length}
-              </span>
-            </div>
-          </div>
+          </button>
         </div>
 
-        <div className="history-list">
+        <div className="flex-1 overflow-y-auto space-y-2">
           {historyTasks.map((task) => {
             const isProcessing = !['completed', 'failed'].includes(task.status);
+            const statusInfo = getStatusInfo(task.status);
             const progressPercent = task.status === 'pending' ? 5 :
               task.status === 'step1_parsing' ? 20 :
               task.status === 'step2_transcribing' ? 50 :
@@ -426,283 +405,290 @@ const VideoExtract = () => {
             return (
               <div
                 key={task.id}
-                className={`history-item ${selectedTaskId === task.id ? 'active' : ''}`}
                 onClick={() => handleSelectTask(task.id)}
+                className={`p-3 rounded-xl border cursor-pointer transition-all ${
+                  selectedTaskId === task.id
+                    ? 'border-sky-300 bg-sky-50'
+                    : 'border-slate-200 bg-white hover:border-slate-300'
+                }`}
               >
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div className="history-item-title">
-                    {task.video_title || '未命名视频'}
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-slate-900 text-sm truncate">
+                      {task.video_title || '未命名视频'}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-0.5">{formatTime(task.created_at)}</p>
                   </div>
-                  <div className="history-item-time">{formatTime(task.created_at)}</div>
-                  <span
-                    className={`history-item-status status-${task.status === 'completed' || task.status === 'failed' ? task.status : 'processing'}`}
+                  <button
+                    onClick={(e) => handleDeleteTask(task.id, e)}
+                    className="p-1 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"
                   >
-                    {task.status === 'completed' && '✓ 已完成'}
-                    {task.status === 'pending' && '⏳ 等待处理'}
-                    {task.status === 'step1_parsing' && '⏳ 解析中...'}
-                    {task.status === 'step2_transcribing' && '⏳ 识别中...'}
-                    {task.status === 'step3_correcting' && '⏳ 纠错中...'}
-                    {task.status === 'failed' && '✗ 失败'}
-                  </span>
-                  {isProcessing && (
-                    <div className="history-progress-bar">
-                      <div
-                        className="history-progress-fill"
-                        style={{ width: `${progressPercent}%` }}
-                      />
-                    </div>
-                  )}
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
-                <Button
-                  type="text"
-                  danger
-                  size="small"
-                  icon={<span style={{ fontSize: '16px' }}>🗑️</span>}
-                  onClick={(e) => handleDeleteTask(task.id, e)}
-                  style={{ marginLeft: '8px', flexShrink: 0 }}
-                />
+
+                <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}>
+                  {statusInfo.icon}
+                  {statusInfo.text}
+                </div>
+
+                {isProcessing && (
+                  <div className="mt-2 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-sky-400 to-emerald-400 rounded-full transition-all duration-500"
+                      style={{ width: `${progressPercent}%` }}
+                    />
+                  </div>
+                )}
               </div>
             );
           })}
 
           {historyTasks.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '40px 20px', color: '#999' }}>
-              暂无提取记录
+            <div className="text-center py-8 text-slate-400">
+              <Video className="w-12 h-12 mx-auto mb-3 opacity-50" />
+              <p className="text-sm">暂无提取记录</p>
             </div>
           )}
 
           {historyTasks.length > 0 && hasMore && (
-            <div style={{ padding: '12px', textAlign: 'center' }}>
-              <Button
-                type="link"
-                loading={loadingMore}
-                onClick={handleLoadMore}
-                style={{ width: '100%' }}
-              >
-                {loadingMore ? '加载中...' : '加载更多'}
-              </Button>
-            </div>
+            <button
+              onClick={handleLoadMore}
+              disabled={loadingMore}
+              className="w-full py-2 text-sm text-sky-600 hover:text-sky-700 flex items-center justify-center gap-1"
+            >
+              {loadingMore ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  加载中...
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="w-4 h-4" />
+                  加载更多
+                </>
+              )}
+            </button>
           )}
         </div>
       </div>
 
       {/* 主内容区 */}
-      <div className="extract-main-content">
-        <div className="content-header">
-          <h1>🎬 短视频文案提取</h1>
-          <p>智能提取视频语音并转换为文字，支持批量处理和智能纠错</p>
+      <div className="flex-1 flex flex-col gap-6 overflow-y-auto">
+        {/* 标题区域 */}
+        <div className="card p-6 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-sky-200 to-emerald-200 rounded-full blur-3xl translate-x-1/3 -translate-y-1/3 opacity-50"></div>
+          <div className="relative">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-12 h-12 rounded-xl bg-sky-100 text-sky-600 flex items-center justify-center">
+                <Video className="w-6 h-6" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-slate-900">短视频文案提取</h1>
+                <p className="text-sm text-slate-500">智能提取视频语音，转换为文字</p>
+              </div>
+              <span className="tag tag-hot ml-2">HOT</span>
+            </div>
+          </div>
         </div>
 
-        <div className="content-body">
-          {/* 输入区域 */}
-          <div className="input-section">
-            <h2 className="section-title">视频链接</h2>
+        {/* 输入区域 */}
+        <div className="card p-6">
+          <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+            <Zap className="w-5 h-5 text-amber-500" />
+            输入视频链接
+          </h2>
 
-            <div className="url-input-wrapper">
-              <label className="url-input-label">
-                粘贴视频链接（支持抖音/快手/B站等平台，每行一个链接）
-              </label>
-              <textarea
-                className="url-textarea"
-                placeholder={`示例：\nhttps://v.douyin.com/xxxxx\nhttps://www.kuaishou.com/xxxxx\nhttps://www.bilibili.com/video/xxxxx`}
-                value={videoUrls}
-                onChange={(e) => setVideoUrls(e.target.value)}
-                disabled={extracting}
-              />
-              <div className="input-hint">
-                💡 支持批量提取，每行一个视频链接即可
-              </div>
-            </div>
+          <textarea
+            className="w-full h-32 px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-400 transition-all resize-none"
+            placeholder={`粘贴视频链接，支持抖音、快手、B站等平台\n\n示例：\nhttps://v.douyin.com/xxxxx\nhttps://www.bilibili.com/video/xxxxx`}
+            value={videoUrls}
+            onChange={(e) => setVideoUrls(e.target.value)}
+            disabled={extracting}
+          />
 
-            {/* 选项行 */}
-            <div className="options-row">
-              <label className="checkbox-option">
+          <div className="flex items-center justify-between mt-4">
+            <div className="flex items-center gap-6">
+              <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={enableCorrection}
                   onChange={(e) => setEnableCorrection(e.target.checked)}
+                  className="w-4 h-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500"
                   disabled={extracting}
                 />
-                <span className="checkbox-label">
-                  智能纠错
-                  <span className="cost-badge">+0.01 点</span>
-                </span>
+                <span className="text-sm text-slate-700">智能纠错</span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-600 font-medium">+0.01点</span>
               </label>
 
-              <div className="radio-group">
-                <span style={{ fontSize: '14px', color: '#666' }}>导出格式：</span>
-                <label className="radio-option">
+              <div className="flex items-center gap-2 text-sm text-slate-600">
+                <span>导出格式：</span>
+                <label className="flex items-center gap-1.5 cursor-pointer">
                   <input
                     type="radio"
                     name="format"
-                    value="txt"
                     checked={exportFormat === 'txt'}
                     onChange={() => setExportFormat('txt')}
+                    className="w-4 h-4 border-slate-300 text-sky-500 focus:ring-sky-500"
                   />
-                  <span className="radio-label">TXT文本</span>
+                  <span>TXT</span>
                 </label>
-                <label className="radio-option">
+                <label className="flex items-center gap-1.5 cursor-pointer">
                   <input
                     type="radio"
                     name="format"
-                    value="word"
                     checked={exportFormat === 'word'}
                     onChange={() => setExportFormat('word')}
+                    className="w-4 h-4 border-slate-300 text-sky-500 focus:ring-sky-500"
                   />
-                  <span className="radio-label">Word文档</span>
+                  <span>Word</span>
                 </label>
               </div>
             </div>
 
-            {/* 操作按钮 */}
-            <div className="action-row">
+            <div className="flex items-center gap-3">
               <button
-                className="btn-extract"
-                onClick={handleExtract}
-                disabled={extracting || !videoUrls.trim()}
-              >
-                {extracting ? '提取中...' : '🚀 开始提取'}
-              </button>
-
-              <button
-                className="btn-export"
                 onClick={handleExport}
                 disabled={!currentResult}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-medium border border-slate-200 hover:bg-slate-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                📥 导出文案
+                <Download className="w-4 h-4" />
+                导出文案
+              </button>
+              <button
+                onClick={handleExtract}
+                disabled={extracting || !videoUrls.trim()}
+                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-sky-400 to-emerald-400 text-white font-semibold shadow-lg shadow-sky-200 hover:shadow-xl transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Sparkles className="w-4 h-4" />
+                {extracting ? '提取中...' : '开始提取'}
               </button>
             </div>
           </div>
+        </div>
 
-          {/* 结果区域 */}
-          {currentResult && (
-            <div className="result-section">
-              <div className="result-header">
-                <h2 className="section-title">提取结果</h2>
-                <div className="result-meta">
-                  <div className="meta-item">
-                    <span>⏱️</span>
-                    <span>{currentResult.audio_duration ? Number(currentResult.audio_duration).toFixed(1) : '0.0'}秒</span>
-                  </div>
-                  <div className="meta-item">
-                    <span>💰</span>
-                    <span>{currentResult.cost ? Number(currentResult.cost).toFixed(2) : '0.00'} 点数</span>
-                  </div>
-                  <div className="meta-item">
-                    <span>📝</span>
-                    <span>
-                      {(enableCorrection && currentResult.corrected_transcript
-                        ? currentResult.corrected_transcript
-                        : currentResult.transcript
-                      )?.length || 0} 字
-                    </span>
-                  </div>
+        {/* 结果区域 */}
+        <div className="card p-6 flex-1">
+          {currentResult ? (
+            <>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-slate-900">提取结果</h2>
+                <div className="flex items-center gap-4 text-sm text-slate-500">
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="w-4 h-4" />
+                    {currentResult.audio_duration ? Number(currentResult.audio_duration).toFixed(1) : '0.0'}秒
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <Coins className="w-4 h-4" />
+                    {currentResult.cost ? Number(currentResult.cost).toFixed(2) : '0.00'}点
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <FileText className="w-4 h-4" />
+                    {(enableCorrection && currentResult.corrected_transcript
+                      ? currentResult.corrected_transcript
+                      : currentResult.transcript
+                    )?.length || 0}字
+                  </span>
                 </div>
               </div>
-
-              <div className="result-content">
+              <div className="bg-slate-50 rounded-xl p-4 text-slate-700 text-sm leading-relaxed whitespace-pre-wrap max-h-96 overflow-y-auto">
                 {enableCorrection && currentResult.corrected_transcript
                   ? currentResult.corrected_transcript
                   : currentResult.transcript}
               </div>
+            </>
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center text-slate-400">
+              <FileText className="w-16 h-16 mb-4 opacity-30" />
+              <p className="text-lg font-medium mb-1">等待提取</p>
+              <p className="text-sm">输入视频链接后点击"开始提取"</p>
             </div>
           )}
+        </div>
 
-          {!currentResult && !extracting && (
-            <div className="result-section">
-              <div className="empty-result">
-                <div className="empty-icon">📝</div>
-                <div>提取完成后，文案将在这里显示</div>
-              </div>
+        {/* 计费说明 */}
+        <div className="card p-6">
+          <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+            <Coins className="w-5 h-5 text-amber-500" />
+            计费标准
+          </h3>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+              <p className="text-sm text-slate-500 mb-1">非会员</p>
+              <p className="text-2xl font-bold text-slate-900">0.02 <span className="text-sm font-normal text-slate-500">点/秒</span></p>
+              <p className="text-xs text-slate-400 mt-1">按实际音频时长计费</p>
             </div>
-          )}
-
-          {/* 计费说明 */}
-          <div className="pricing-section">
-            <h3 className="pricing-title">💰 计费标准</h3>
-            <div className="pricing-grid">
-              <div className="pricing-card">
-                <div className="pricing-card-title">非会员</div>
-                <div className="pricing-card-value">0.02 点/秒</div>
-                <div className="pricing-card-desc">按实际音频时长计费</div>
-              </div>
-              <div className="pricing-card">
-                <div className="pricing-card-title">月度会员</div>
-                <div className="pricing-card-value">0.018 点/秒</div>
-                <div className="pricing-card-desc">享受 10% 折扣</div>
-              </div>
-              <div className="pricing-card">
-                <div className="pricing-card-title">年度会员</div>
-                <div className="pricing-card-value">0.015 点/秒</div>
-                <div className="pricing-card-desc">享受 25% 折扣</div>
-              </div>
+            <div className="p-4 rounded-xl bg-sky-50 border border-sky-100">
+              <p className="text-sm text-sky-600 mb-1">月度会员</p>
+              <p className="text-2xl font-bold text-sky-700">0.018 <span className="text-sm font-normal text-sky-500">点/秒</span></p>
+              <p className="text-xs text-sky-400 mt-1">享受 10% 折扣</p>
+            </div>
+            <div className="p-4 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-100">
+              <p className="text-sm text-amber-600 mb-1">年度会员</p>
+              <p className="text-2xl font-bold text-amber-700">0.015 <span className="text-sm font-normal text-amber-500">点/秒</span></p>
+              <p className="text-xs text-amber-400 mt-1">享受 25% 折扣</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 进度显示Modal */}
+      {/* 进度弹窗 */}
       {extracting && (
-        <div className="progress-overlay">
-          <div className="progress-modal">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="card p-8 w-[400px] relative">
             <button
-              className="progress-close-btn"
               onClick={() => setExtracting(false)}
-              title="隐藏进度（任务将在后台继续）"
+              className="absolute top-4 right-4 p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
             >
-              ×
+              <X className="w-5 h-5" />
             </button>
-            <h2 className="progress-title">⚡ 正在提取视频文案</h2>
 
-            <div className="progress-steps">
-              {/* Step 1 */}
-              <div className={`progress-step ${currentStep >= 0 ? (currentStep > 0 ? 'completed' : 'active') : ''}`}>
-                <div className={`step-icon ${currentStep > 0 ? 'completed' : currentStep === 0 ? 'active' : 'pending'}`}>
-                  {currentStep > 0 ? '✓' : '1'}
-                </div>
-                <div className="step-info">
-                  <div className="step-name">解析视频链接</div>
-                  <div className="step-desc">正在获取视频信息...</div>
-                </div>
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-sky-400 to-emerald-400 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-sky-200">
+                <Zap className="w-8 h-8 text-white" />
               </div>
-
-              {/* Step 2 */}
-              <div className={`progress-step ${currentStep >= 1 ? (currentStep > 1 ? 'completed' : 'active') : ''}`}>
-                <div className={`step-icon ${currentStep > 1 ? 'completed' : currentStep === 1 ? 'active' : 'pending'}`}>
-                  {currentStep > 1 ? '✓' : '2'}
-                </div>
-                <div className="step-info">
-                  <div className="step-name">语音识别</div>
-                  <div className="step-desc">正在将语音转换为文字...</div>
-                </div>
-              </div>
-
-              {/* Step 3 */}
-              {enableCorrection && (
-                <div className={`progress-step ${currentStep >= 2 ? (currentStep > 2 ? 'completed' : 'active') : ''}`}>
-                  <div className={`step-icon ${currentStep > 2 ? 'completed' : currentStep === 2 ? 'active' : 'pending'}`}>
-                    {currentStep > 2 ? '✓' : '3'}
-                  </div>
-                  <div className="step-info">
-                    <div className="step-name">智能纠错</div>
-                    <div className="step-desc">正在纠正文本错误...</div>
-                  </div>
-                </div>
-              )}
+              <h2 className="text-xl font-bold text-slate-900">正在提取视频文案</h2>
             </div>
 
-            <div style={{ textAlign: 'center', color: '#999', fontSize: '13px', marginBottom: '12px' }}>
+            <div className="space-y-4 mb-6">
+              {[
+                { step: 0, name: '解析视频链接', desc: '获取视频信息' },
+                { step: 1, name: '语音识别', desc: '转换为文字' },
+                ...(enableCorrection ? [{ step: 2, name: '智能纠错', desc: '优化文本' }] : [])
+              ].map((item, index) => (
+                <div key={index} className="flex items-center gap-4">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold transition-all ${
+                    currentStep > item.step
+                      ? 'bg-emerald-100 text-emerald-600'
+                      : currentStep === item.step
+                        ? 'bg-sky-100 text-sky-600 animate-pulse'
+                        : 'bg-slate-100 text-slate-400'
+                  }`}>
+                    {currentStep > item.step ? <CheckCircle className="w-5 h-5" /> : index + 1}
+                  </div>
+                  <div className="flex-1">
+                    <p className={`font-medium ${currentStep >= item.step ? 'text-slate-900' : 'text-slate-400'}`}>
+                      {item.name}
+                    </p>
+                    <p className="text-xs text-slate-400">{item.desc}</p>
+                  </div>
+                  {currentStep === item.step && (
+                    <Loader2 className="w-5 h-5 text-sky-500 animate-spin" />
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <p className="text-center text-sm text-slate-400 mb-4">
               处理时间取决于视频时长，可关闭此窗口
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <Button
-                type="default"
-                onClick={() => setExtracting(false)}
-                style={{ fontSize: '13px' }}
-              >
-                隐藏进度（后台继续处理）
-              </Button>
-            </div>
+            </p>
+
+            <button
+              onClick={() => setExtracting(false)}
+              className="w-full py-2.5 rounded-xl bg-slate-100 text-slate-700 font-medium hover:bg-slate-200 transition-colors"
+            >
+              隐藏进度（后台继续处理）
+            </button>
           </div>
         </div>
       )}
