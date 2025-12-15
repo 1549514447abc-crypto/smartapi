@@ -5,38 +5,30 @@ import Commission from '../models/Commission';
 import User from '../models/User';
 
 /**
- * 等级转佣金比例映射
+ * 新的积分返利规则：
+ * - 课程购买：10% 返积分
+ * - 会员购买：10% 返积分
+ * - 充值：不返积分
+ * - 插件购买：不返积分
+ */
+const POINTS_COMMISSION_RATE = 10; // 固定10%返利比例
+
+/**
+ * 等级转佣金比例映射（旧系统，保留兼容）
+ * @deprecated 使用 POINTS_COMMISSION_RATE 替代
  */
 const getLevelCommissionRate = (level: number): number => {
-  switch (level) {
-    case 1: return 30;
-    case 2: return 40;
-    case 3: return 50;
-    default: return 30;
-  }
+  // 新规则：统一返10%积分
+  return POINTS_COMMISSION_RATE;
 };
 
 /**
  * 检查并升级用户推广等级（只升不降）
+ * @deprecated 新规则不再使用等级系统
  */
 const checkAndUpgradeLevel = async (userId: number, totalReferrals: number): Promise<void> => {
-  const user = await User.findByPk(userId);
-  if (!user) return;
-
-  let newLevel = user.referral_level;
-
-  // 根据推广人数确定应该的等级
-  if (totalReferrals >= 20 && user.referral_level < 3) {
-    newLevel = 3;
-  } else if (totalReferrals >= 10 && user.referral_level < 2) {
-    newLevel = 2;
-  }
-
-  // 如果等级提升，更新数据库
-  if (newLevel > user.referral_level) {
-    await user.update({ referral_level: newLevel });
-    console.log(`用户 ${userId} 推广等级提升：${user.referral_level} -> ${newLevel}`);
-  }
+  // 新规则下不再升级等级，但保留函数兼容性
+  return;
 };
 
 /**
@@ -62,13 +54,7 @@ export const getReferralStats = async (req: Request, res: Response): Promise<voi
       where: { referrer_id: userId }
     });
 
-    // 检查并升级等级
-    await checkAndUpgradeLevel(userId, totalReferrals);
-
-    // 重新获取用户信息（可能已升级）
-    await user.reload();
-
-    // 获取活跃推广人数（已消费的）
+    // 获取已购课用户数（只统计课程和会员购买）
     const activeReferrals = await UserReferral.count({
       where: {
         referrer_id: userId,
@@ -76,34 +62,39 @@ export const getReferralStats = async (req: Request, res: Response): Promise<voi
       }
     });
 
-    // 获取累计佣金
-    const commissionSum = await Commission.sum('amount', {
+    // 获取累计积分返利（只统计课程和会员购买）
+    const totalPointsEarned = await Commission.sum('amount', {
       where: {
         referrer_id: userId,
-        status: 'settled'
+        status: 'settled',
+        source_type: ['course', 'membership']
       }
     });
 
-    // 获取待结算佣金
-    const pendingCommission = await Commission.sum('amount', {
+    // 获取待结算积分
+    const pendingPoints = await Commission.sum('amount', {
       where: {
         referrer_id: userId,
-        status: 'pending'
+        status: 'pending',
+        source_type: ['course', 'membership']
       }
     });
 
-    // 从用户表获取当前佣金比例
-    const commission_rate = getLevelCommissionRate(user.referral_level);
+    // 新规则：固定10%返利比例
+    const commission_rate = POINTS_COMMISSION_RATE;
 
     res.json({
       success: true,
       data: {
         total_referrals: totalReferrals,
         active_referrals: activeReferrals,
-        total_commission: commissionSum || 0,
-        pending_commission: pendingCommission || 0,
+        total_commission: totalPointsEarned || 0, // 兼容前端字段名
+        pending_commission: pendingPoints || 0,
         commission_rate: commission_rate,
-        referral_level: user.referral_level
+        referral_level: 1, // 新规则不再使用等级
+        // 新增字段
+        total_points: user.points || 0,
+        points_commission_rate: POINTS_COMMISSION_RATE
       }
     });
   } catch (error) {
@@ -321,6 +312,81 @@ export const handleRechargeCommission = async (userId: number, amount: number): 
     return commission;
   } catch (error) {
     console.error('处理充值佣金失败:', error);
+    return undefined;
+  }
+};
+
+/**
+ * 处理课程/会员购买后的积分返利（新规则）
+ * 仅对课程和会员购买返10%积分
+ * @param userId 购买用户ID
+ * @param amount 购买金额
+ * @param sourceType 来源类型 'course' | 'membership'
+ * @param sourceId 来源记录ID（订单ID等）
+ */
+export const handlePurchasePointsCommission = async (
+  userId: number,
+  amount: number,
+  sourceType: 'course' | 'membership',
+  sourceId?: number
+): Promise<Commission | undefined> => {
+  try {
+    // 查找推广关系
+    const referral = await UserReferral.findOne({
+      where: { referee_id: userId }
+    });
+
+    if (!referral) {
+      console.log(`用户 ${userId} 没有推广关系，不返积分`);
+      return undefined;
+    }
+
+    // 更新首次消费时间和状态
+    if (!referral.first_purchase_at) {
+      await referral.update({
+        first_purchase_at: new Date(),
+        status: 'active'
+      });
+    }
+
+    // 更新总贡献金额
+    await referral.increment('total_contribution', { by: amount });
+
+    // 获取推广人信息
+    const referrer = await User.findByPk(referral.referrer_id);
+    if (!referrer) {
+      console.error('推广人不存在');
+      return undefined;
+    }
+
+    // 计算积分（固定10%）
+    const pointsAmount = Math.floor((amount * POINTS_COMMISSION_RATE) / 100);
+
+    // 创建佣金记录
+    const commission = await Commission.create({
+      referrer_id: referral.referrer_id,
+      referee_id: userId,
+      referral_id: referral.id,
+      amount: pointsAmount,
+      commission_rate: POINTS_COMMISSION_RATE,
+      source_amount: amount,
+      source_type: sourceType,
+      source_id: sourceId || null,
+      status: 'settled',
+      settled_at: new Date(),
+      notes: `${sourceType === 'course' ? '课程购买' : '会员购买'}返积分`
+    });
+
+    // 更新推广人积分（而不是余额）
+    await User.increment('points', {
+      by: pointsAmount,
+      where: { id: referral.referrer_id }
+    });
+
+    console.log(`✅ 积分返利成功: 推广人 ${referral.referrer_id} 获得 ${pointsAmount} 积分 (来源: ${sourceType}, 金额: ¥${amount})`);
+    return commission;
+  } catch (error) {
+    console.error('处理购买积分返利失败:', error);
     return undefined;
   }
 };

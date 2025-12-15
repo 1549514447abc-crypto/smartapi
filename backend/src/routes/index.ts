@@ -10,6 +10,10 @@ import workflowConfigRoutes from './workflowConfigRoutes';
 import pluginCategoryRoutes from './pluginCategoryRoutes';
 import courseRoutes from './courseRoutes';
 import referralRoutes from './referral';
+import appDownloadRoutes from './appDownloadRoutes';
+import promptRoutes from './promptRoutes';
+import userRoutes from './userRoutes';
+import polymarketRoutes from './polymarketRoutes';
 
 const router = express.Router();
 
@@ -35,5 +39,9 @@ router.use('/workflow-config', workflowConfigRoutes);
 router.use('/plugin-categories', pluginCategoryRoutes);
 router.use('/course', courseRoutes);
 router.use('/referral', referralRoutes);
+router.use('/apps', appDownloadRoutes);
+router.use('/prompts', promptRoutes);
+router.use('/users', userRoutes);
+router.use('/polymarket', polymarketRoutes);
 
 export default router;

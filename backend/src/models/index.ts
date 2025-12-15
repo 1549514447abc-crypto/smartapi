@@ -13,6 +13,10 @@ import CourseLesson from './CourseLesson';
 import CourseOrder from './CourseOrder';
 import UserReferral from './UserReferral';
 import Commission from './Commission';
+import AppDownload from './AppDownload';
+import Prompt from './Prompt';
+import UserPrompt from './UserPrompt';
+import PromptCategory from './PromptCategory';
 
 // Export all models
 export {
@@ -27,7 +31,11 @@ export {
   CourseLesson,
   CourseOrder,
   UserReferral,
-  Commission
+  Commission,
+  AppDownload,
+  Prompt,
+  UserPrompt,
+  PromptCategory
 };
 
 // This ensures all model associations are loaded when the app starts
@@ -43,5 +51,9 @@ export default {
   CourseLesson,
   CourseOrder,
   UserReferral,
-  Commission
+  Commission,
+  AppDownload,
+  Prompt,
+  UserPrompt,
+  PromptCategory
 };

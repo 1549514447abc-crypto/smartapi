@@ -145,30 +145,30 @@ const Profile = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex gap-6">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
         {/* 左侧：个人信息卡片 */}
-        <div className="w-80 flex-shrink-0 space-y-6">
+        <div className="w-full lg:w-80 lg:flex-shrink-0 space-y-4 lg:space-y-6">
           {/* 用户信息 */}
-          <div className="card p-6">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-sky-400 to-emerald-400 flex items-center justify-center text-white shadow-lg shadow-sky-200 overflow-hidden">
+          <div className="card p-4 sm:p-6">
+            <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-sky-400 to-emerald-400 flex items-center justify-center text-white shadow-lg shadow-sky-200 overflow-hidden flex-shrink-0">
                 {userInfo?.avatar_url ? (
                   <img src={userInfo.avatar_url} alt="avatar" className="w-full h-full object-cover" />
                 ) : (
-                  <User className="w-8 h-8" />
+                  <User className="w-7 h-7 sm:w-8 sm:h-8" />
                 )}
               </div>
-              <div>
-                <h2 className="text-lg font-bold text-slate-900">
+              <div className="min-w-0">
+                <h2 className="text-base sm:text-lg font-bold text-slate-900 truncate">
                   {userInfo?.nickname || userInfo?.username}
                 </h2>
-                <p className="text-sm text-slate-500">@{userInfo?.username}</p>
+                <p className="text-sm text-slate-500 truncate">@{userInfo?.username}</p>
               </div>
             </div>
 
             {/* 余额 */}
-            <div className="p-4 rounded-xl bg-gradient-to-r from-sky-50 to-emerald-50 mb-4">
+            <div className="p-3 sm:p-4 rounded-xl bg-gradient-to-r from-sky-50 to-emerald-50 mb-4">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2 text-slate-600">
                   <Wallet className="w-4 h-4" />
@@ -176,12 +176,12 @@ const Profile = () => {
                 </div>
                 <Zap className="w-4 h-4 text-orange-500" />
               </div>
-              <div className="text-3xl font-bold text-slate-900 mb-3">
-                ¥{userInfo?.balance?.toFixed(2) || '0.00'}
+              <div className="text-2xl sm:text-3xl font-bold text-slate-900 mb-3">
+                ¥{Number(userInfo?.balance || 0).toFixed(2)}
               </div>
               <button
                 onClick={() => navigate('/recharge')}
-                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-sky-400 to-emerald-400 text-white font-semibold shadow-lg shadow-sky-200 hover:shadow-xl transition-shadow"
+                className="w-full py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-sky-400 to-emerald-400 text-white font-semibold text-sm sm:text-base shadow-lg shadow-sky-200 hover:shadow-xl transition-shadow"
               >
                 立即充值
               </button>
@@ -243,23 +243,23 @@ const Profile = () => {
 
         {/* 右侧：功能入口 */}
         <div className="flex-1">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">快捷功能</h3>
-          <div className="grid grid-cols-2 gap-4">
+          <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-3 sm:mb-4">快捷功能</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             {featureCards.map((card, index) => (
               <div
                 key={index}
                 onClick={card.onClick}
-                className="card p-6 cursor-pointer group"
+                className="card p-4 sm:p-6 cursor-pointer group"
               >
-                <div className={`w-12 h-12 rounded-xl bg-${card.color}-100 text-${card.color}-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                  <card.icon className="w-6 h-6" />
+                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-${card.color}-100 text-${card.color}-600 flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform`}>
+                  <card.icon className="w-5 h-5 sm:w-6 sm:h-6" />
                 </div>
-                <h4 className="text-lg font-semibold text-slate-900 mb-1 flex items-center gap-2">
+                <h4 className="text-base sm:text-lg font-semibold text-slate-900 mb-1 flex items-center gap-2">
                   {card.title}
                   <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
                 </h4>
-                <p className="text-sm text-slate-500 mb-3">{card.description}</p>
-                <span className={`text-sm font-medium text-${card.color}-600`}>
+                <p className="text-xs sm:text-sm text-slate-500 mb-2 sm:mb-3">{card.description}</p>
+                <span className={`text-xs sm:text-sm font-medium text-${card.color}-600`}>
                   {card.action} →
                 </span>
               </div>
@@ -267,8 +267,8 @@ const Profile = () => {
           </div>
 
           {/* 快速入口 */}
-          <h3 className="text-lg font-semibold text-slate-900 mt-6 mb-4">常用功能</h3>
-          <div className="grid grid-cols-4 gap-4">
+          <h3 className="text-base sm:text-lg font-semibold text-slate-900 mt-4 sm:mt-6 mb-3 sm:mb-4">常用功能</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
             {[
               { label: '视频提取', path: '/video-extract', color: 'sky' },
               { label: '插件市场', path: '/plugin-market', color: 'emerald' },
@@ -278,7 +278,7 @@ const Profile = () => {
               <button
                 key={item.path}
                 onClick={() => navigate(item.path)}
-                className={`p-4 rounded-xl bg-${item.color}-50 hover:bg-${item.color}-100 border border-${item.color}-200 text-${item.color}-700 font-medium transition-colors`}
+                className={`p-3 sm:p-4 rounded-xl bg-${item.color}-50 hover:bg-${item.color}-100 border border-${item.color}-200 text-${item.color}-700 font-medium text-sm sm:text-base transition-colors`}
               >
                 {item.label}
               </button>
@@ -289,8 +289,8 @@ const Profile = () => {
 
       {/* 确认弹窗 */}
       {showConfirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-2xl shadow-2xl w-[400px] overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[400px] overflow-hidden">
             <div className="p-6">
               <h3 className="text-lg font-semibold text-slate-900 mb-2">确认刷新API密钥？</h3>
               <p className="text-sm text-slate-500 mb-6">

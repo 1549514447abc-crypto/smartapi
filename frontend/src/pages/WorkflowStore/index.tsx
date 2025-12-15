@@ -148,7 +148,7 @@ const WorkflowStore = () => {
             onClick={() => switchPlatform(platform.platform_key as Platform)}
           >
             {platform.platform_name}工作流
-            {platform.is_hot && <span className="tab-badge">HOT</span>}
+            {!!platform.is_hot && <span className="tab-badge">HOT</span>}
           </div>
         ))}
       </div>

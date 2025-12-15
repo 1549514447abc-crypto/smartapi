@@ -2,6 +2,8 @@ import { Router } from 'express';
 import {
   getCourseInfo,
   getLessons,
+  getExtras,
+  getFullCourseData,
   getVideoStream,
   createOrder,
   getMyOrders,
@@ -13,7 +15,9 @@ const router = Router();
 
 // 公开接口
 router.get('/info', getCourseInfo);                    // 获取课程信息
-router.get('/lessons', getLessons);                    // 获取试听课列表
+router.get('/lessons', getLessons);                    // 获取课程章节列表
+router.get('/extras', getExtras);                      // 获取附赠内容
+router.get('/full', getFullCourseData);                // 获取完整课程数据
 router.get('/lessons/:id/video', getVideoStream);      // 获取视频流
 
 // 需要登录的接口

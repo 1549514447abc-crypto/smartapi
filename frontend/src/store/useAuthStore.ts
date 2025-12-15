@@ -15,6 +15,7 @@ interface AuthState {
   setUser: (user: User | null) => void;
   setToken: (token: string | null) => void;
   loadUserFromStorage: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -128,6 +129,20 @@ export const useAuthStore = create<AuthState>((set) => ({
         localStorage.removeItem('token');
         localStorage.removeItem('user');
       }
+    }
+  },
+
+  // 刷新用户信息
+  refreshUser: async () => {
+    try {
+      const response = await authApi.getCurrentUser();
+      if (response.success && response.data) {
+        const user = response.data;
+        localStorage.setItem('user', JSON.stringify(user));
+        set({ user });
+      }
+    } catch (error) {
+      console.error('刷新用户信息失败:', error);
     }
   }
 }));

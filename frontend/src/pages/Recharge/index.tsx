@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { message } from 'antd';
 import { api } from '../../api/request';
+import { useAuthStore } from '../../store/useAuthStore';
 import {
   Zap,
   Gift,
@@ -45,6 +46,7 @@ interface RechargeOrder {
 
 const Recharge = () => {
   const navigate = useNavigate();
+  const { user, refreshUser } = useAuthStore();
   const [config, setConfig] = useState<RechargeConfig | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
@@ -52,12 +54,14 @@ const Recharge = () => {
   const [payModalVisible, setPayModalVisible] = useState(false);
   const [currentOrder, setCurrentOrder] = useState<RechargeOrder | null>(null);
   const [pollingTimer, setPollingTimer] = useState<ReturnType<typeof setInterval> | null>(null);
-  const [userBalance, setUserBalance] = useState<number>(0);
+
+  // 从全局 store 获取余额
+  const userBalance = user?.balance || 0;
 
   // 加载充值配置
   useEffect(() => {
     fetchConfig();
-    fetchUserBalance();
+    refreshUser(); // 刷新用户信息（包括余额）
   }, []);
 
   // 清理轮询
@@ -74,9 +78,12 @@ const Recharge = () => {
       const response = await api.get<{ success: boolean; data: RechargeConfig }>('/recharge/config');
       if (response.success) {
         setConfig(response.data);
-        // 默认选中第三个档位（100元）
-        if (response.data.bonusRules.length >= 3) {
+        // 默认选中第四个档位（100元），索引从0开始
+        if (response.data.bonusRules.length > 3) {
           setSelectedAmount(response.data.bonusRules[3].amount);
+        } else if (response.data.bonusRules.length > 0) {
+          // 如果不够4个，选第一个
+          setSelectedAmount(response.data.bonusRules[0].amount);
         }
       }
     } catch (error) {
@@ -84,16 +91,6 @@ const Recharge = () => {
     }
   };
 
-  const fetchUserBalance = async () => {
-    try {
-      const response = await api.get<{ success: boolean; data: { balance: number } }>('/auth/me');
-      if (response.success && response.data.balance !== undefined) {
-        setUserBalance(response.data.balance);
-      }
-    } catch (error) {
-      console.error('获取用户余额失败:', error);
-    }
-  };
 
   const calculateBonus = (amount: number): number => {
     if (!config) return 0;
@@ -152,7 +149,7 @@ const Recharge = () => {
           setPollingTimer(null);
           setPayModalVisible(false);
           message.success('充值成功！');
-          fetchUserBalance(); // 刷新余额
+          refreshUser(); // 刷新用户信息（包括余额）
           setCurrentOrder(null);
         }
       } catch (error) {
@@ -196,58 +193,58 @@ const Recharge = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
       {/* 标题区域 */}
-      <div className="card p-6 relative overflow-hidden">
+      <div className="card p-4 sm:p-6 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-orange-200 to-amber-200 rounded-full blur-3xl translate-x-1/3 -translate-y-1/3 opacity-50"></div>
-        <div className="relative flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-400 to-amber-500 text-white flex items-center justify-center shadow-lg shadow-orange-200">
-              <Wallet className="w-7 h-7" />
+        <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-orange-400 to-amber-500 text-white flex items-center justify-center shadow-lg shadow-orange-200">
+              <Wallet className="w-6 h-6 sm:w-7 sm:h-7" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">账户充值</h1>
-              <p className="text-sm text-slate-500">充值即享好礼，满100送20</p>
+              <h1 className="text-xl sm:text-2xl font-bold text-slate-900">账户充值</h1>
+              <p className="text-xs sm:text-sm text-slate-500">充值即享好礼，满100送20</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              <p className="text-sm text-slate-500">当前余额</p>
-              <p className="text-2xl font-bold text-emerald-600">¥{userBalance.toFixed(2)}</p>
+          <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end bg-emerald-50 sm:bg-transparent p-3 sm:p-0 rounded-xl sm:rounded-none">
+            <div className="text-left sm:text-right">
+              <p className="text-xs sm:text-sm text-slate-500">当前余额</p>
+              <p className="text-xl sm:text-2xl font-bold text-emerald-600">¥{Number(userBalance || 0).toFixed(2)}</p>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
-              <Zap className="w-6 h-6" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
+              <Zap className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
           </div>
         </div>
       </div>
 
       {/* 充值金额选择 */}
-      <div className="card p-6">
-        <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
-          <CreditCard className="w-5 h-5 text-sky-500" />
+      <div className="card p-4 sm:p-6">
+        <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-3 sm:mb-4 flex items-center gap-2">
+          <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 text-sky-500" />
           选择充值金额
         </h3>
-        <div className="grid grid-cols-4 gap-4">
-          {config.bonusRules.map((rule) => (
+        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
+          {config.bonusRules.map((rule, index) => (
             <button
-              key={rule.amount}
+              key={`${rule.amount}-${index}`}
               onClick={() => setSelectedAmount(rule.amount)}
-              className={`relative p-4 rounded-xl border-2 transition-all ${
+              className={`relative p-2.5 sm:p-4 rounded-xl border-2 transition-all ${
                 selectedAmount === rule.amount
                   ? 'border-sky-400 bg-sky-50 shadow-lg shadow-sky-100'
                   : 'border-slate-200 hover:border-sky-200 hover:bg-slate-50'
               }`}
             >
               {selectedAmount === rule.amount && (
-                <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-sky-500 text-white flex items-center justify-center">
-                  <Check className="w-4 h-4" />
+                <div className="absolute -top-1.5 -right-1.5 sm:-top-2 sm:-right-2 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-sky-500 text-white flex items-center justify-center">
+                  <Check className="w-3 h-3 sm:w-4 sm:h-4" />
                 </div>
               )}
-              <div className="text-2xl font-bold text-slate-900">¥{rule.amount}</div>
+              <div className="text-lg sm:text-2xl font-bold text-slate-900">¥{rule.amount}</div>
               {rule.bonusAmount > 0 && (
-                <div className="mt-2 flex items-center justify-center gap-1 text-xs px-2 py-1 rounded-full bg-gradient-to-r from-orange-400 to-amber-400 text-white font-medium">
-                  <Gift className="w-3 h-3" />
+                <div className="mt-1.5 sm:mt-2 flex items-center justify-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full bg-gradient-to-r from-orange-400 to-amber-400 text-white font-medium">
+                  <Gift className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                   送{rule.bonusAmount.toFixed(0)}元
                 </div>
               )}
@@ -257,48 +254,48 @@ const Recharge = () => {
       </div>
 
       {/* 支付方式选择 */}
-      <div className="card p-6">
-        <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
-          <QrCode className="w-5 h-5 text-emerald-500" />
+      <div className="card p-4 sm:p-6">
+        <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-3 sm:mb-4 flex items-center gap-2">
+          <QrCode className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-500" />
           选择支付方式
         </h3>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-2 sm:gap-4">
           <button
             onClick={() => setSelectedMethod('alipay')}
-            className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
+            className={`flex items-center gap-2 sm:gap-4 p-3 sm:p-4 rounded-xl border-2 transition-all ${
               selectedMethod === 'alipay'
                 ? 'border-sky-400 bg-sky-50'
                 : 'border-slate-200 hover:border-sky-200'
             }`}
           >
-            <div className="w-12 h-12 rounded-xl bg-[#1677ff] text-white flex items-center justify-center text-xl font-bold">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[#1677ff] text-white flex items-center justify-center text-lg sm:text-xl font-bold flex-shrink-0">
               支
             </div>
-            <div className="text-left">
-              <div className="font-semibold text-slate-900">支付宝</div>
-              <div className="text-sm text-slate-500">推荐使用</div>
+            <div className="text-left min-w-0">
+              <div className="font-semibold text-slate-900 text-sm sm:text-base">支付宝</div>
+              <div className="text-xs sm:text-sm text-slate-500 hidden sm:block">推荐使用</div>
             </div>
             {selectedMethod === 'alipay' && (
-              <Check className="w-5 h-5 text-sky-500 ml-auto" />
+              <Check className="w-4 h-4 sm:w-5 sm:h-5 text-sky-500 ml-auto flex-shrink-0" />
             )}
           </button>
           <button
             onClick={() => setSelectedMethod('wechat')}
-            className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
+            className={`flex items-center gap-2 sm:gap-4 p-3 sm:p-4 rounded-xl border-2 transition-all ${
               selectedMethod === 'wechat'
                 ? 'border-sky-400 bg-sky-50'
                 : 'border-slate-200 hover:border-sky-200'
             }`}
           >
-            <div className="w-12 h-12 rounded-xl bg-[#07c160] text-white flex items-center justify-center text-xl font-bold">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[#07c160] text-white flex items-center justify-center text-lg sm:text-xl font-bold flex-shrink-0">
               微
             </div>
-            <div className="text-left">
-              <div className="font-semibold text-slate-900">微信支付</div>
-              <div className="text-sm text-slate-500">扫码支付</div>
+            <div className="text-left min-w-0">
+              <div className="font-semibold text-slate-900 text-sm sm:text-base">微信支付</div>
+              <div className="text-xs sm:text-sm text-slate-500 hidden sm:block">扫码支付</div>
             </div>
             {selectedMethod === 'wechat' && (
-              <Check className="w-5 h-5 text-sky-500 ml-auto" />
+              <Check className="w-4 h-4 sm:w-5 sm:h-5 text-sky-500 ml-auto flex-shrink-0" />
             )}
           </button>
         </div>
@@ -306,22 +303,22 @@ const Recharge = () => {
 
       {/* 充值汇总 */}
       {selectedAmount && (
-        <div className="card p-6 bg-gradient-to-r from-slate-50 to-sky-50">
-          <div className="grid grid-cols-3 gap-6">
+        <div className="card p-4 sm:p-6 bg-gradient-to-r from-slate-50 to-sky-50">
+          <div className="grid grid-cols-3 gap-2 sm:gap-6">
             <div className="text-center">
-              <p className="text-sm text-slate-500 mb-1">充值金额</p>
-              <p className="text-2xl font-bold text-slate-900">¥{selectedAmount}</p>
+              <p className="text-xs sm:text-sm text-slate-500 mb-1">充值金额</p>
+              <p className="text-lg sm:text-2xl font-bold text-slate-900">¥{selectedAmount}</p>
             </div>
             <div className="text-center border-x border-slate-200">
-              <p className="text-sm text-slate-500 mb-1">赠送金额</p>
-              <p className="text-2xl font-bold text-orange-500">
-                +¥{calculateBonus(selectedAmount).toFixed(2)}
+              <p className="text-xs sm:text-sm text-slate-500 mb-1">赠送金额</p>
+              <p className="text-lg sm:text-2xl font-bold text-orange-500">
+                +¥{calculateBonus(selectedAmount).toFixed(0)}
               </p>
             </div>
             <div className="text-center">
-              <p className="text-sm text-slate-500 mb-1">实际到账</p>
-              <p className="text-2xl font-bold text-emerald-600">
-                ¥{(selectedAmount + calculateBonus(selectedAmount)).toFixed(2)}
+              <p className="text-xs sm:text-sm text-slate-500 mb-1">实际到账</p>
+              <p className="text-lg sm:text-2xl font-bold text-emerald-600">
+                ¥{(selectedAmount + calculateBonus(selectedAmount)).toFixed(0)}
               </p>
             </div>
           </div>
@@ -329,11 +326,11 @@ const Recharge = () => {
       )}
 
       {/* 操作按钮 */}
-      <div className="flex gap-4">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
         <button
           onClick={handleRecharge}
           disabled={!selectedAmount || loading}
-          className="flex-1 flex items-center justify-center gap-2 py-4 rounded-xl bg-gradient-to-r from-sky-400 to-emerald-400 text-white font-semibold text-lg shadow-lg shadow-sky-200 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 flex items-center justify-center gap-2 py-3 sm:py-4 rounded-xl bg-gradient-to-r from-sky-400 to-emerald-400 text-white font-semibold text-base sm:text-lg shadow-lg shadow-sky-200 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? (
             <Loader2 className="w-5 h-5 animate-spin" />
@@ -344,7 +341,7 @@ const Recharge = () => {
         </button>
         <button
           onClick={() => navigate('/recharge/history')}
-          className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl bg-slate-100 text-slate-700 font-medium border border-slate-200 hover:bg-slate-200 transition-colors"
+          className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 sm:py-4 rounded-xl bg-slate-100 text-slate-700 font-medium border border-slate-200 hover:bg-slate-200 transition-colors"
         >
           <History className="w-5 h-5" />
           充值记录

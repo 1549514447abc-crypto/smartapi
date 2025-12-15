@@ -1,37 +1,14 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Bell, Zap } from 'lucide-react';
+import { Bell, Zap } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 
 export const TopBar = () => {
-  const [searchQuery, setSearchQuery] = useState('');
   const { isAuthenticated, user } = useAuthStore();
   const navigate = useNavigate();
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    // TODO: 实现搜索功能
-    console.log('Search:', searchQuery);
-  };
-
   return (
-    <header className="sticky top-0 z-40 bg-white/85 backdrop-blur border-b border-orange-200/70">
-      <div className="flex items-center justify-between px-6 py-4">
-        {/* 搜索框 */}
-        <form onSubmit={handleSearch} className="relative flex-1 max-w-md">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 pl-10 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200"
-            placeholder="搜索功能、插件、课程..."
-          />
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <kbd className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
-            ⌘K
-          </kbd>
-        </form>
-
+    <header className="sticky top-0 z-40 bg-white/85 backdrop-blur border-b border-orange-200/70 hidden lg:block">
+      <div className="flex items-center justify-end px-6 py-4">
         {/* 右侧按钮 */}
         <div className="flex items-center gap-3">
           {isAuthenticated ? (

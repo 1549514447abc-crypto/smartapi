@@ -64,15 +64,15 @@ const Payment = () => {
               <div className="course-summary">
                 <div className="summary-item">
                   <span className="label">课程名称：</span>
-                  <span className="value">React全栈开发实战课程</span>
+                  <span className="value">Coze实战训练营</span>
                 </div>
                 <div className="summary-item">
                   <span className="label">课程内容：</span>
-                  <span className="value">65节正式课程，40+小时</span>
+                  <span className="value">100节系统课程，31个实战项目</span>
                 </div>
                 <div className="summary-item highlight">
                   <span className="label">支付金额：</span>
-                  <span className="value price">¥299</span>
+                  <span className="value price">¥799</span>
                 </div>
               </div>
 

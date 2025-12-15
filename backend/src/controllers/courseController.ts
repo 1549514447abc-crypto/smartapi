@@ -4,6 +4,7 @@ import path from 'path';
 import CourseSetting from '../models/CourseSetting';
 import CourseLesson from '../models/CourseLesson';
 import CourseOrder from '../models/CourseOrder';
+import CourseExtra from '../models/CourseExtra';
 import { successResponse, errorResponse } from '../utils/response';
 
 /**
@@ -29,12 +30,12 @@ export const getCourseInfo = async (req: Request, res: Response): Promise<void> 
 };
 
 /**
- * 获取试听课列表
+ * 获取课程章节列表（包含视频路径和文档链接）
  */
 export const getLessons = async (req: Request, res: Response): Promise<void> => {
   try {
     const lessons = await CourseLesson.findAll({
-      attributes: ['id', 'title', 'duration', 'sort_order'],
+      attributes: ['id', 'title', 'video_path', 'duration', 'sort_order', 'is_free', 'document_url'],
       order: [['sort_order', 'ASC']]
     });
 
@@ -42,6 +43,56 @@ export const getLessons = async (req: Request, res: Response): Promise<void> => 
   } catch (error: any) {
     console.error('Get lessons error:', error);
     errorResponse(res, error.message || 'Failed to get lessons', 500);
+  }
+};
+
+/**
+ * 获取课程附赠内容
+ */
+export const getExtras = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const extras = await CourseExtra.findAll({
+      attributes: ['id', 'type', 'title', 'description', 'link_url', 'sort_order'],
+      order: [['sort_order', 'ASC']]
+    });
+
+    successResponse(res, { extras });
+  } catch (error: any) {
+    console.error('Get extras error:', error);
+    errorResponse(res, error.message || 'Failed to get extras', 500);
+  }
+};
+
+/**
+ * 获取完整课程页面数据（课程信息 + 章节 + 附赠）
+ */
+export const getFullCourseData = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // 获取课程设置
+    const courseSetting = await CourseSetting.findOne({
+      order: [['id', 'ASC']]
+    });
+
+    // 获取课程章节
+    const lessons = await CourseLesson.findAll({
+      attributes: ['id', 'title', 'video_path', 'duration', 'sort_order', 'is_free', 'document_url'],
+      order: [['sort_order', 'ASC']]
+    });
+
+    // 获取附赠内容
+    const extras = await CourseExtra.findAll({
+      attributes: ['id', 'type', 'title', 'description', 'link_url', 'sort_order'],
+      order: [['sort_order', 'ASC']]
+    });
+
+    successResponse(res, {
+      course: courseSetting,
+      lessons,
+      extras
+    });
+  } catch (error: any) {
+    console.error('Get full course data error:', error);
+    errorResponse(res, error.message || 'Failed to get course data', 500);
   }
 };
 

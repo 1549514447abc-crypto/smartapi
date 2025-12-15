@@ -467,27 +467,37 @@ export const getRechargeConfig = async (req: Request, res: Response) => {
     // 从数据库获取赠送规则
     const rules = await getBonusRules();
 
-    // 转换为前端友好的格式
-    const bonusConfig = rules.map(rule => {
-      const minAmount = parseFloat(rule.min_amount);
-      const bonusRate = parseFloat(rule.bonus_rate);
-      let bonusAmount = 0;
+    // 转换为前端友好的格式，并按金额去重
+    const seenAmounts = new Set<number>();
+    const bonusConfig = rules
+      .map(rule => {
+        const minAmount = parseFloat(rule.min_amount);
+        const bonusRate = parseFloat(rule.bonus_rate);
+        let bonusAmount = 0;
 
-      if (rule.bonus_type === 'fixed' && rule.bonus_fixed_amount) {
-        bonusAmount = parseFloat(rule.bonus_fixed_amount);
-      } else {
-        bonusAmount = minAmount * bonusRate;
-      }
+        if (rule.bonus_type === 'fixed' && rule.bonus_fixed_amount) {
+          bonusAmount = parseFloat(rule.bonus_fixed_amount);
+        } else {
+          bonusAmount = minAmount * bonusRate;
+        }
 
-      return {
-        amount: minAmount,
-        bonusRate: bonusRate,
-        bonusAmount: bonusAmount,
-        displayText: rule.display_text || (bonusRate > 0
-          ? `充${minAmount}送${bonusAmount.toFixed(0)}`
-          : `充${minAmount}`)
-      };
-    });
+        return {
+          amount: minAmount,
+          bonusRate: bonusRate,
+          bonusAmount: bonusAmount,
+          displayText: rule.display_text || (bonusRate > 0
+            ? `充${minAmount}送${bonusAmount.toFixed(0)}`
+            : `充${minAmount}`)
+        };
+      })
+      .filter(rule => {
+        // 按金额去重，只保留第一个
+        if (seenAmounts.has(rule.amount)) {
+          return false;
+        }
+        seenAmounts.add(rule.amount);
+        return true;
+      });
 
     return res.json({
       success: true,

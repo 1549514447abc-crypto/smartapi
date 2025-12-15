@@ -12,7 +12,7 @@ export interface CommissionAttributes {
   amount: number; // 佣金金额
   commission_rate: number; // 佣金比例
   source_amount: number; // 来源金额（充值或消费）
-  source_type: 'recharge' | 'consume'; // 来源类型
+  source_type: 'recharge' | 'consume' | 'course' | 'membership'; // 来源类型
   source_id: number | null; // 来源记录ID
   status: 'pending' | 'settled' | 'cancelled'; // 状态
   settled_at: Date | null; // 结算时间
@@ -34,7 +34,7 @@ class Commission extends Model<CommissionAttributes, CommissionCreationAttribute
   public amount!: number;
   public commission_rate!: number;
   public source_amount!: number;
-  public source_type!: 'recharge' | 'consume';
+  public source_type!: 'recharge' | 'consume' | 'course' | 'membership';
   public source_id!: number | null;
   public status!: 'pending' | 'settled' | 'cancelled';
   public settled_at!: Date | null;
@@ -99,9 +99,9 @@ Commission.init(
       comment: '来源金额'
     },
     source_type: {
-      type: DataTypes.ENUM('recharge', 'consume'),
+      type: DataTypes.ENUM('recharge', 'consume', 'course', 'membership'),
       allowNull: false,
-      comment: '来源类型：recharge-充值, consume-消费'
+      comment: '来源类型：recharge-充值, consume-消费, course-课程购买, membership-会员购买'
     },
     source_id: {
       type: DataTypes.BIGINT,

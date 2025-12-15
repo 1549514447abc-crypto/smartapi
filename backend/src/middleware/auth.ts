@@ -48,6 +48,30 @@ export const authenticate = (
 };
 
 /**
+ * Optional auth middleware - doesn't require token but will decode if present
+ */
+export const optionalAuth = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  try {
+    const authHeader = req.headers.authorization;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      const decoded = verifyToken(token);
+      req.user = decoded;
+    }
+
+    next();
+  } catch (error) {
+    // Token invalid, but we continue without user
+    next();
+  }
+};
+
+/**
  * Middleware to check if user is admin
  */
 export const requireAdmin = (

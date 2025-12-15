@@ -7,12 +7,16 @@ import VideoExtract from './pages/VideoExtract';
 import WorkflowStore from './pages/WorkflowStore';
 import PluginMarket from './pages/PluginMarket';
 import PluginDetail from './pages/PluginMarket/PluginDetail';
+import PromptMarket from './pages/PromptMarket';
 import Recharge from './pages/Recharge';
 import Profile from './pages/Profile';
-import Course from './pages/Course';
+import CourseLanding from './pages/Course/CourseLanding';
+import CourseTrial from './pages/Course';
 import Preview from './pages/Course/Preview';
 import Payment from './pages/Course/Payment';
 import Referral from './pages/Referral';
+import JianyingHelper from './pages/JianyingHelper';
+import MarketDetail from './pages/MarketDetail';
 
 export const router = createBrowserRouter([
   {
@@ -40,6 +44,10 @@ export const router = createBrowserRouter([
         element: <PluginDetail />
       },
       {
+        path: 'prompt-market',
+        element: <PromptMarket />
+      },
+      {
         path: 'recharge',
         element: <Recharge />
       },
@@ -49,7 +57,11 @@ export const router = createBrowserRouter([
       },
       {
         path: 'course',
-        element: <Course />
+        element: <CourseLanding />
+      },
+      {
+        path: 'course/trial',
+        element: <CourseTrial />
       },
       {
         path: 'course/preview',
@@ -70,6 +82,14 @@ export const router = createBrowserRouter([
       {
         path: 'referral',
         element: <Referral />
+      },
+      {
+        path: 'jianying-helper',
+        element: <JianyingHelper />
+      },
+      {
+        path: 'market/:slug',
+        element: <MarketDetail />
       },
       {
         path: '*',

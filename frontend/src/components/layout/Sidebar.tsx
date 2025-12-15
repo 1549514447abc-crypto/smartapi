@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   Home,
   Video,
@@ -8,7 +8,10 @@ import {
   User,
   GraduationCap,
   Gift,
-  LogOut
+  LogOut,
+  X,
+  MessageSquareText,
+  Clapperboard
 } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 
@@ -18,21 +21,31 @@ interface NavItemProps {
   label: string;
   tag?: 'hot' | 'new' | 'soon';
   requireAuth?: boolean;
+  onClick?: () => void;
 }
 
-const NavItem = ({ to, icon, label, tag, requireAuth }: NavItemProps) => {
+const NavItem = ({ to, icon, label, tag, requireAuth, onClick }: NavItemProps) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
   const isActive = location.pathname === to || location.pathname.startsWith(to + '/');
 
-  // 如果需要登录但未登录，显示灰色
-  const isDisabled = requireAuth && !isAuthenticated;
+  // 如果需要登录但未登录，点击时跳转到登录页
+  const needsAuth = requireAuth && !isAuthenticated;
 
   return (
     <NavLink
-      to={isDisabled ? '#' : to}
-      className={`nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 ${isActive ? 'active' : ''} ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-      onClick={(e) => isDisabled && e.preventDefault()}
+      to={to}
+      className={`nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 ${isActive ? 'active' : ''}`}
+      onClick={(e) => {
+        if (needsAuth) {
+          e.preventDefault();
+          // 跳转到登录页，并记录原始目标页面
+          navigate('/login', { state: { from: to } });
+        } else {
+          onClick?.();
+        }
+      }}
     >
       {icon}
       <span className="font-medium">{label}</span>
@@ -43,7 +56,12 @@ const NavItem = ({ to, icon, label, tag, requireAuth }: NavItemProps) => {
   );
 };
 
-export const Sidebar = () => {
+interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export const Sidebar = ({ isOpen = true, onClose }: SidebarProps) => {
   const { user, isAuthenticated, logout } = useAuthStore();
 
   const handleLogout = () => {
@@ -51,18 +69,43 @@ export const Sidebar = () => {
     window.location.href = '/smartapi/login';
   };
 
+  const handleNavClick = () => {
+    // 移动端点击导航后关闭侧边栏
+    if (window.innerWidth < 1024) {
+      onClose?.();
+    }
+  };
+
   return (
-    <aside className="sidebar w-64 min-h-screen fixed left-0 top-0 z-50 flex flex-col">
+    <>
+      {/* 移动端遮罩层 */}
+      {isOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black/50 z-40"
+          onClick={onClose}
+        />
+      )}
+
+      <aside className={`lg:hidden sidebar w-64 min-h-screen fixed left-0 top-0 z-50 flex flex-col transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
       {/* Logo区域 */}
       <div className="p-5 border-b border-orange-200/70">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-300 to-pink-400 flex items-center justify-center text-white font-black text-lg">
-            S
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-300 to-pink-400 flex items-center justify-center text-white font-black text-lg">
+              S
+            </div>
+            <div>
+              <h1 className="font-bold text-lg text-slate-900">SmartAPI</h1>
+              <p className="text-xs text-slate-500">智能API服务平台</p>
+            </div>
           </div>
-          <div>
-            <h1 className="font-bold text-lg text-slate-900">SmartAPI</h1>
-            <p className="text-xs text-slate-500">智能API服务平台</p>
-          </div>
+          {/* 移动端关闭按钮 */}
+          <button
+            onClick={onClose}
+            className="lg:hidden p-2 rounded-lg hover:bg-slate-100 text-slate-500"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
       </div>
 
@@ -72,6 +115,7 @@ export const Sidebar = () => {
           to="/"
           icon={<Home className="w-5 h-5" />}
           label="首页"
+          onClick={handleNavClick}
         />
 
         <div className="pt-5 pb-2">
@@ -83,21 +127,37 @@ export const Sidebar = () => {
         <NavItem
           to="/video-extract"
           icon={<Video className="w-5 h-5" />}
-          label="视频提取"
+          label="视频文案提取"
           tag="hot"
           requireAuth
+          onClick={handleNavClick}
+        />
+        <NavItem
+          to="/prompt-market"
+          icon={<MessageSquareText className="w-5 h-5" />}
+          label="提示词市场"
+          tag="new"
+          onClick={handleNavClick}
         />
         <NavItem
           to="/plugin-market"
           icon={<Puzzle className="w-5 h-5" />}
           label="插件市场"
-          tag="new"
+          onClick={handleNavClick}
         />
         <NavItem
           to="/workflow-store"
           icon={<Store className="w-5 h-5" />}
           label="工作流商店"
           tag="soon"
+          onClick={handleNavClick}
+        />
+        <NavItem
+          to="/jianying-helper"
+          icon={<Clapperboard className="w-5 h-5" />}
+          label="剪映小助手"
+          tag="new"
+          onClick={handleNavClick}
         />
 
         <div className="pt-5 pb-2">
@@ -110,6 +170,7 @@ export const Sidebar = () => {
           to="/course"
           icon={<GraduationCap className="w-5 h-5" />}
           label="课程中心"
+          onClick={handleNavClick}
         />
 
         <div className="pt-5 pb-2">
@@ -123,18 +184,21 @@ export const Sidebar = () => {
           icon={<Wallet className="w-5 h-5" />}
           label="充值中心"
           requireAuth
+          onClick={handleNavClick}
         />
         <NavItem
           to="/referral"
           icon={<Gift className="w-5 h-5" />}
           label="推广返佣"
           requireAuth
+          onClick={handleNavClick}
         />
         <NavItem
           to="/profile"
           icon={<User className="w-5 h-5" />}
           label="个人中心"
           requireAuth
+          onClick={handleNavClick}
         />
       </nav>
 
@@ -184,5 +248,6 @@ export const Sidebar = () => {
         )}
       </div>
     </aside>
+    </>
   );
 };

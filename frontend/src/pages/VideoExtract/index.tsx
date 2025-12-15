@@ -368,9 +368,9 @@ const VideoExtract = () => {
   };
 
   return (
-    <div className="flex gap-6 h-[calc(100vh-140px)]">
-      {/* 左侧历史栏 */}
-      <div className="w-72 flex-shrink-0 card p-4 flex flex-col">
+    <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 lg:h-[calc(100vh-140px)]">
+      {/* 左侧历史栏 - 移动端可折叠 */}
+      <div className="w-full lg:w-72 lg:flex-shrink-0 card p-4 flex flex-col max-h-64 lg:max-h-none">
         <div className="mb-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-semibold text-slate-900 flex items-center gap-2">
@@ -507,8 +507,8 @@ const VideoExtract = () => {
             disabled={extracting}
           />
 
-          <div className="flex items-center justify-between mt-4">
-            <div className="flex items-center gap-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-4 gap-4">
+            <div className="flex flex-wrap items-center gap-4 sm:gap-6">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
@@ -550,15 +550,15 @@ const VideoExtract = () => {
               <button
                 onClick={handleExport}
                 disabled={!currentResult}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-medium border border-slate-200 hover:bg-slate-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-medium border border-slate-200 hover:bg-slate-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
               >
                 <Download className="w-4 h-4" />
-                导出文案
+                导出
               </button>
               <button
                 onClick={handleExtract}
                 disabled={extracting || !videoUrls.trim()}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-sky-400 to-emerald-400 text-white font-semibold shadow-lg shadow-sky-200 hover:shadow-xl transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 rounded-xl bg-gradient-to-r from-sky-400 to-emerald-400 text-white font-semibold shadow-lg shadow-sky-200 hover:shadow-xl transition-shadow disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
               >
                 <Sparkles className="w-4 h-4" />
                 {extracting ? '提取中...' : '开始提取'}
@@ -571,19 +571,19 @@ const VideoExtract = () => {
         <div className="card p-6 flex-1">
           {currentResult ? (
             <>
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
                 <h2 className="text-lg font-semibold text-slate-900">提取结果</h2>
-                <div className="flex items-center gap-4 text-sm text-slate-500">
-                  <span className="flex items-center gap-1.5">
-                    <Clock className="w-4 h-4" />
+                <div className="flex items-center gap-3 sm:gap-4 text-xs sm:text-sm text-slate-500">
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
                     {currentResult.audio_duration ? Number(currentResult.audio_duration).toFixed(1) : '0.0'}秒
                   </span>
-                  <span className="flex items-center gap-1.5">
-                    <Coins className="w-4 h-4" />
+                  <span className="flex items-center gap-1">
+                    <Coins className="w-3 h-3 sm:w-4 sm:h-4" />
                     {currentResult.cost ? Number(currentResult.cost).toFixed(2) : '0.00'}点
                   </span>
-                  <span className="flex items-center gap-1.5">
-                    <FileText className="w-4 h-4" />
+                  <span className="flex items-center gap-1">
+                    <FileText className="w-3 h-3 sm:w-4 sm:h-4" />
                     {(enableCorrection && currentResult.corrected_transcript
                       ? currentResult.corrected_transcript
                       : currentResult.transcript
@@ -607,25 +607,25 @@ const VideoExtract = () => {
         </div>
 
         {/* 计费说明 */}
-        <div className="card p-6">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
-            <Coins className="w-5 h-5 text-amber-500" />
+        <div className="card p-4 sm:p-6">
+          <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-3 sm:mb-4 flex items-center gap-2">
+            <Coins className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500" />
             计费标准
           </h3>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-              <p className="text-sm text-slate-500 mb-1">非会员</p>
-              <p className="text-2xl font-bold text-slate-900">0.02 <span className="text-sm font-normal text-slate-500">点/秒</span></p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+            <div className="p-3 sm:p-4 rounded-xl bg-slate-50 border border-slate-100">
+              <p className="text-xs sm:text-sm text-slate-500 mb-1">非会员</p>
+              <p className="text-xl sm:text-2xl font-bold text-slate-900">0.02 <span className="text-xs sm:text-sm font-normal text-slate-500">点/秒</span></p>
               <p className="text-xs text-slate-400 mt-1">按实际音频时长计费</p>
             </div>
-            <div className="p-4 rounded-xl bg-sky-50 border border-sky-100">
-              <p className="text-sm text-sky-600 mb-1">月度会员</p>
-              <p className="text-2xl font-bold text-sky-700">0.018 <span className="text-sm font-normal text-sky-500">点/秒</span></p>
+            <div className="p-3 sm:p-4 rounded-xl bg-sky-50 border border-sky-100">
+              <p className="text-xs sm:text-sm text-sky-600 mb-1">月度会员</p>
+              <p className="text-xl sm:text-2xl font-bold text-sky-700">0.018 <span className="text-xs sm:text-sm font-normal text-sky-500">点/秒</span></p>
               <p className="text-xs text-sky-400 mt-1">享受 10% 折扣</p>
             </div>
-            <div className="p-4 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-100">
-              <p className="text-sm text-amber-600 mb-1">年度会员</p>
-              <p className="text-2xl font-bold text-amber-700">0.015 <span className="text-sm font-normal text-amber-500">点/秒</span></p>
+            <div className="p-3 sm:p-4 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-100">
+              <p className="text-xs sm:text-sm text-amber-600 mb-1">年度会员</p>
+              <p className="text-xl sm:text-2xl font-bold text-amber-700">0.015 <span className="text-xs sm:text-sm font-normal text-amber-500">点/秒</span></p>
               <p className="text-xs text-amber-400 mt-1">享受 25% 折扣</p>
             </div>
           </div>
@@ -634,8 +634,8 @@ const VideoExtract = () => {
 
       {/* 进度弹窗 */}
       {extracting && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="card p-8 w-[400px] relative">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="card p-6 sm:p-8 w-full max-w-[400px] relative">
             <button
               onClick={() => setExtracting(false)}
               className="absolute top-4 right-4 p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"

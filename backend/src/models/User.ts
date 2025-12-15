@@ -16,6 +16,7 @@ export interface UserAttributes {
   last_login_at: Date | null;
   last_login_ip: string | null;
   balance: number; // 账户余额
+  points: number; // 推广积分（用于抵扣消费）
   referral_level: number; // 推广等级：1-新手(30%), 2-进阶(40%), 3-高级(50%)
   total_recharged: number; // 累计充值
   total_consumed: number; // 累计消费
@@ -31,7 +32,7 @@ export interface UserAttributes {
 interface UserCreationAttributes extends Optional<UserAttributes,
   'id' | 'email' | 'phone' | 'avatar_url' | 'nickname' | 'status' |
   'user_type' | 'metadata' | 'last_login_at' | 'last_login_ip' |
-  'balance' | 'referral_level' | 'total_recharged' | 'total_consumed' |
+  'balance' | 'points' | 'referral_level' | 'total_recharged' | 'total_consumed' |
   'workflow_member_status' | 'workflow_member_expire' |
   'ai_content_member_status' | 'ai_content_member_expire' |
   'created_at' | 'updated_at'> {}
@@ -51,6 +52,7 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
   public last_login_at!: Date | null;
   public last_login_ip!: string | null;
   public balance!: number;
+  public points!: number;
   public referral_level!: number;
   public total_recharged!: number;
   public total_consumed!: number;
@@ -153,6 +155,12 @@ User.init(
       allowNull: false,
       defaultValue: 0,
       comment: '账户余额'
+    },
+    points: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+      defaultValue: 0,
+      comment: '推广积分（用于抵扣消费）'
     },
     referral_level: {
       type: DataTypes.INTEGER,
