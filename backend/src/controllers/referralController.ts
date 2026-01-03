@@ -3,23 +3,27 @@ import { Op } from 'sequelize';
 import UserReferral from '../models/UserReferral';
 import Commission from '../models/Commission';
 import User from '../models/User';
+import SystemConfig, { ConfigKey } from '../models/SystemConfig';
 
 /**
- * 新的积分返利规则：
- * - 课程购买：10% 返积分
- * - 会员购买：10% 返积分
- * - 充值：不返积分
- * - 插件购买：不返积分
+ * 获取课程佣金比例（从系统配置读取）
  */
-const POINTS_COMMISSION_RATE = 10; // 固定10%返利比例
+const getCourseCommissionRate = async (): Promise<number> => {
+  return await SystemConfig.getNumberConfig(ConfigKey.COMMISSION_RATE_COURSE) || 10;
+};
 
 /**
- * 等级转佣金比例映射（旧系统，保留兼容）
- * @deprecated 使用 POINTS_COMMISSION_RATE 替代
+ * 获取会员佣金比例（从系统配置读取）
  */
-const getLevelCommissionRate = (level: number): number => {
-  // 新规则：统一返10%积分
-  return POINTS_COMMISSION_RATE;
+const getMembershipCommissionRate = async (): Promise<number> => {
+  return await SystemConfig.getNumberConfig(ConfigKey.COMMISSION_RATE_MEMBERSHIP) || 10;
+};
+
+/**
+ * 获取通用佣金比例（从系统配置读取）
+ */
+const getGeneralCommissionRate = async (): Promise<number> => {
+  return await SystemConfig.getNumberConfig(ConfigKey.COMMISSION_RATE) || 25;
 };
 
 /**
@@ -80,8 +84,10 @@ export const getReferralStats = async (req: Request, res: Response): Promise<voi
       }
     });
 
-    // 新规则：固定10%返利比例
-    const commission_rate = POINTS_COMMISSION_RATE;
+    // 从系统配置读取佣金比例
+    const courseCommissionRate = await getCourseCommissionRate();
+    const membershipCommissionRate = await getMembershipCommissionRate();
+    const generalCommissionRate = await getGeneralCommissionRate();
 
     res.json({
       success: true,
@@ -90,11 +96,12 @@ export const getReferralStats = async (req: Request, res: Response): Promise<voi
         active_referrals: activeReferrals,
         total_commission: totalPointsEarned || 0, // 兼容前端字段名
         pending_commission: pendingPoints || 0,
-        commission_rate: commission_rate,
+        commission_rate: generalCommissionRate, // 通用比例（兼容）
+        commission_rate_course: courseCommissionRate, // 课程佣金比例
+        commission_rate_membership: membershipCommissionRate, // 会员佣金比例
         referral_level: 1, // 新规则不再使用等级
         // 新增字段
-        total_points: user.points || 0,
-        points_commission_rate: POINTS_COMMISSION_RATE
+        total_points: user.points || 0
       }
     });
   } catch (error) {
@@ -274,17 +281,17 @@ export const handleRechargeCommission = async (userId: number, amount: number): 
       return undefined;
     }
 
-    // 检查并升级推广人等级
+    // 检查并升级推广人等级（新规则已废弃等级系统）
     const totalReferrals = await UserReferral.count({
       where: { referrer_id: referral.referrer_id }
     });
     await checkAndUpgradeLevel(referral.referrer_id, totalReferrals);
 
-    // 重新加载推广人信息（可能已升级）
+    // 重新加载推广人信息
     await referrer.reload();
 
-    // 从用户表获取当前佣金比例
-    const commissionRate = getLevelCommissionRate(referrer.referral_level);
+    // 从系统配置获取通用佣金比例
+    const commissionRate = await getGeneralCommissionRate();
 
     // 计算佣金金额
     const commissionAmount = (amount * commissionRate) / 100;
@@ -359,8 +366,13 @@ export const handlePurchasePointsCommission = async (
       return undefined;
     }
 
-    // 计算积分（固定10%）
-    const pointsAmount = Math.floor((amount * POINTS_COMMISSION_RATE) / 100);
+    // 根据购买类型获取对应的佣金比例
+    const commissionRate = sourceType === 'course'
+      ? await getCourseCommissionRate()
+      : await getMembershipCommissionRate();
+
+    // 计算积分
+    const pointsAmount = Math.floor((amount * commissionRate) / 100);
 
     // 创建佣金记录
     const commission = await Commission.create({
@@ -368,25 +380,25 @@ export const handlePurchasePointsCommission = async (
       referee_id: userId,
       referral_id: referral.id,
       amount: pointsAmount,
-      commission_rate: POINTS_COMMISSION_RATE,
+      commission_rate: commissionRate,
       source_amount: amount,
       source_type: sourceType,
       source_id: sourceId || null,
       status: 'settled',
       settled_at: new Date(),
-      notes: `${sourceType === 'course' ? '课程购买' : '会员购买'}返积分`
+      notes: `${sourceType === 'course' ? '课程购买' : '会员购买'}返赠送金 (${commissionRate}%)`
     });
 
-    // 更新推广人积分（而不是余额）
-    await User.increment('points', {
+    // 更新推广人赠送金
+    await User.increment('bonus_balance', {
       by: pointsAmount,
       where: { id: referral.referrer_id }
     });
 
-    console.log(`✅ 积分返利成功: 推广人 ${referral.referrer_id} 获得 ${pointsAmount} 积分 (来源: ${sourceType}, 金额: ¥${amount})`);
+    console.log(`✅ 推广返利成功: 推广人 ${referral.referrer_id} 获得 ${pointsAmount} 元赠送金 (来源: ${sourceType}, 金额: ¥${amount}, 比例: ${commissionRate}%)`);
     return commission;
   } catch (error) {
-    console.error('处理购买积分返利失败:', error);
+    console.error('处理推广返利失败:', error);
     return undefined;
   }
 };

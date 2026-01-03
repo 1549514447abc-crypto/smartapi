@@ -154,16 +154,20 @@ export const createRechargeOrder = async (req: Request, res: Response) => {
         try {
           const transaction = await sequelize.transaction();
 
-          // 更新用户余额
+          // 更新用户余额（充值金写入balance，赠金写入bonus_balance）
           const oldBalance = parseFloat(user.balance?.toString() || '0');
-          const newBalance = oldBalance + totalAmount;
+          const oldBonusBalance = parseFloat(user.bonus_balance?.toString() || '0');
+          const newBalance = oldBalance + amount;  // 充值金
+          const newBonusBalance = oldBonusBalance + bonusAmount;  // 赠金
 
           await user.update({
             balance: newBalance,
+            bonus_balance: newBonusBalance,
             total_recharged: parseFloat((user.total_recharged || 0).toString()) + amount
           }, { transaction });
 
-          // 更新订单状态
+          // 更新订单状态（balance_after 记录总余额）
+          const totalBalanceAfter = newBalance + newBonusBalance;
           await sequelize.query(
             `UPDATE recharge_records
              SET status = 'success',
@@ -171,7 +175,7 @@ export const createRechargeOrder = async (req: Request, res: Response) => {
                  completed_at = NOW()
              WHERE order_no = ?`,
             {
-              replacements: [newBalance, orderNo],
+              replacements: [totalBalanceAfter, orderNo],
               transaction
             }
           );
@@ -185,24 +189,24 @@ export const createRechargeOrder = async (req: Request, res: Response) => {
             {
               replacements: [
                 userId,
-                totalAmount,
+                amount,  // 只记录充值金
                 oldBalance,
                 newBalance,
-                `充值 ¥${amount} (赠送 ¥${bonusAmount})`
+                `充值 ¥${amount}` + (bonusAmount > 0 ? ` (赠送 ¥${bonusAmount} 到赠金账户)` : '')
               ],
               transaction
             }
           );
 
-          // 同步到Supabase
+          // 同步到Supabase（同步总余额）
           try {
-            await supabaseService.syncBalance(userId, newBalance);
+            await supabaseService.syncBalance(userId, totalBalanceAfter);
           } catch (syncError) {
             console.error('Supabase同步失败:', syncError);
           }
 
           await transaction.commit();
-          console.log(`✅ 模拟支付完成: ${orderNo}, 新余额: ¥${newBalance}`);
+          console.log(`✅ 模拟支付完成: ${orderNo}, 充值金: ¥${newBalance}, 赠金: ¥${newBonusBalance}`);
         } catch (error) {
           console.error('自动模拟支付失败:', error);
         }
@@ -285,13 +289,20 @@ export const mockPay = async (req: Request, res: Response) => {
       });
     }
 
-    const oldBalance = parseFloat(user.balance?.toString() || '0');
-    const newBalance = oldBalance + parseFloat(order.amount_received.toString());
+    const amountPaid = parseFloat(order.amount_paid.toString());
+    const bonusAmount = parseFloat(order.bonus_amount?.toString() || '0');
 
-    // 1. 更新用户余额
+    const oldBalance = parseFloat(user.balance?.toString() || '0');
+    const oldBonusBalance = parseFloat(user.bonus_balance?.toString() || '0');
+    const newBalance = oldBalance + amountPaid;  // 充值金
+    const newBonusBalance = oldBonusBalance + bonusAmount;  // 赠金
+    const totalBalanceAfter = newBalance + newBonusBalance;
+
+    // 1. 更新用户余额（分开存储）
     await user.update({
       balance: newBalance,
-      total_recharged: parseFloat((user.total_recharged || 0).toString()) + parseFloat(order.amount_paid.toString())
+      bonus_balance: newBonusBalance,
+      total_recharged: parseFloat((user.total_recharged || 0).toString()) + amountPaid
     }, { transaction });
 
     // 2. 更新订单状态
@@ -302,7 +313,7 @@ export const mockPay = async (req: Request, res: Response) => {
            completed_at = NOW()
        WHERE order_no = ?`,
       {
-        replacements: [newBalance, orderNo],
+        replacements: [totalBalanceAfter, orderNo],
         transaction
       }
     );
@@ -316,10 +327,10 @@ export const mockPay = async (req: Request, res: Response) => {
       {
         replacements: [
           order.user_id,
-          order.amount_received,
+          amountPaid,
           oldBalance,
           newBalance,
-          `充值订单: ${orderNo}${order.bonus_amount > 0 ? `, 赠送: ¥${order.bonus_amount}` : ''}`
+          `充值订单: ${orderNo}` + (bonusAmount > 0 ? ` (赠送 ¥${bonusAmount} 到赠金账户)` : '')
         ],
         transaction
       }
@@ -328,11 +339,11 @@ export const mockPay = async (req: Request, res: Response) => {
     await transaction.commit();
 
     // 4. 异步同步到 Supabase（不阻塞响应）
-    supabaseService.syncBalance(order.user_id, newBalance).catch(err => {
+    supabaseService.syncBalance(order.user_id, totalBalanceAfter).catch(err => {
       console.error('Supabase 同步余额失败:', err);
     });
 
-    console.log(`✅ 充值成功: 用户 ${order.user_id}, 订单 ${orderNo}, 余额 ${oldBalance} -> ${newBalance}`);
+    console.log(`✅ 充值成功: 用户 ${order.user_id}, 订单 ${orderNo}, 充值金: ¥${newBalance}, 赠金: ¥${newBonusBalance}`);
 
     return res.json({
       success: true,
@@ -340,7 +351,10 @@ export const mockPay = async (req: Request, res: Response) => {
         orderNo,
         oldBalance,
         newBalance,
-        rechargeAmount: order.amount_received
+        bonusBalance: newBonusBalance,
+        totalBalance: totalBalanceAfter,
+        rechargeAmount: amountPaid,
+        bonusAmount
       },
       message: '支付成功'
     });

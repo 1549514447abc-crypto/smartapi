@@ -23,15 +23,9 @@ interface ReferralStats {
   total_commission: number;
   pending_commission: number;
   commission_rate: number;
+  commission_rate_course: number;
+  commission_rate_membership: number;
 }
-
-// 新的返积分规则说明
-const COMMISSION_RULES = [
-  { type: '课程购买', rate: '10%', enabled: true },
-  { type: '会员购买', rate: '10%', enabled: true },
-  { type: '充值', rate: '-', enabled: false },
-  { type: '插件购买', rate: '-', enabled: false }
-];
 
 const Referral = () => {
   const navigate = useNavigate();
@@ -39,6 +33,18 @@ const Referral = () => {
   const [stats, setStats] = useState<ReferralStats | null>(null);
   const [referralCode, setReferralCode] = useState('');
   const [copied, setCopied] = useState<'link' | 'code' | null>(null);
+
+  // 获取佣金比例（从后端获取，默认10%）
+  const courseRate = stats?.commission_rate_course || 10;
+  const membershipRate = stats?.commission_rate_membership || 10;
+
+  // 佣金规则配置
+  const COMMISSION_RULES = [
+    { type: '课程购买', rate: `${courseRate}%`, enabled: true },
+    { type: '会员购买', rate: `${membershipRate}%`, enabled: true },
+    { type: '充值金额', rate: '-', enabled: false },
+    { type: '购买插件', rate: '-', enabled: false },
+  ];
 
   useEffect(() => {
     if (user) {
@@ -121,16 +127,16 @@ const Referral = () => {
         <div className="relative">
           <div className="flex items-center gap-2 mb-3 sm:mb-4">
             <span className="tag tag-hot">HOT</span>
-            <span className="text-xs sm:text-sm text-slate-500">推广返积分计划</span>
+            <span className="text-xs sm:text-sm text-slate-500">推广返利计划</span>
           </div>
           <h1 className="text-xl sm:text-3xl font-bold text-slate-900 mb-2 sm:mb-3">
-            推荐好友购课，赚取平台积分！
+            推荐好友购课，赚取赠送金！
           </h1>
           <p className="text-sm sm:text-lg text-slate-600 mb-2">
-            好友购买课程/会员，你获得 <span className="text-lg sm:text-2xl font-bold text-orange-500 relative z-10">10%</span> 积分返利
+            好友购买课程/会员，你获得 <span className="text-lg sm:text-2xl font-bold text-orange-500 relative z-10">{courseRate}%</span> 赠送金返利
           </p>
           <p className="text-xs sm:text-sm text-slate-500 mb-4 sm:mb-6">
-            积分可用于调用插件、购买平台产品，邀请越多，积分越多！
+            赠送金可用于调用插件、购买平台产品，邀请越多，赠送金越多！
           </p>
 
           {/* Commission Rules */}
@@ -151,7 +157,7 @@ const Referral = () => {
                   {rule.type}
                 </div>
                 <div className={`text-[10px] sm:text-xs mt-1 ${rule.enabled ? 'text-emerald-600' : 'text-slate-400'}`}>
-                  {rule.enabled ? '返积分' : '不返积分'}
+                  {rule.enabled ? '返赠送金' : '不返利'}
                 </div>
               </div>
             ))}
@@ -186,9 +192,9 @@ const Referral = () => {
             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center">
               <Wallet className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div className="text-xs sm:text-sm text-slate-500">累计积分</div>
+            <div className="text-xs sm:text-sm text-slate-500">累计赠送金</div>
           </div>
-          <div className="text-xl sm:text-2xl font-bold text-orange-600">{(stats?.total_commission || 0).toFixed(0)} <span className="text-xs sm:text-sm font-normal text-slate-400">积分</span></div>
+          <div className="text-xl sm:text-2xl font-bold text-orange-600">¥{(stats?.total_commission || 0).toFixed(2)} </div>
         </div>
 
         <div className="card p-4 sm:p-5 bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200">
@@ -198,9 +204,9 @@ const Referral = () => {
             </div>
             <div className="text-xs sm:text-sm text-slate-500">返利比例</div>
           </div>
-          <div className="text-xl sm:text-2xl font-bold text-emerald-600">10%</div>
+          <div className="text-xl sm:text-2xl font-bold text-emerald-600">{courseRate}%</div>
           <div className="text-[10px] sm:text-xs text-emerald-500 mt-1">
-            课程/会员购买
+            课程{courseRate !== membershipRate ? ` / 会员${membershipRate}%` : '/会员购买'}
           </div>
         </div>
       </div>
@@ -262,46 +268,46 @@ const Referral = () => {
           <div className="p-3 sm:p-4 rounded-xl bg-emerald-50 border border-emerald-200">
             <p className="text-xs sm:text-sm text-emerald-700 flex items-start gap-2">
               <Lightbulb className="w-4 h-4 mt-0.5 flex-shrink-0" />
-              分享推广链接给好友，好友购买课程或会员后，您将自动获得10%积分返利！
+              分享推广链接给好友，好友购买课程或会员后，您将自动获得{courseRate}%赠送金返利！
             </p>
           </div>
         </div>
       </div>
 
-      {/* 积分返利规则 */}
+      {/* 返利规则 */}
       <div className="card p-4 sm:p-6">
         <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-3 sm:mb-4 flex items-center gap-2">
           <Wallet className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-500" />
-          积分返利规则
+          赠送金返利规则
         </h3>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-          {/* 返积分场景 */}
+          {/* 返赠送金场景 */}
           <div className="p-4 sm:p-5 rounded-xl border-2 border-emerald-400 bg-gradient-to-br from-emerald-50 to-teal-50">
             <div className="flex items-center gap-2 mb-3">
               <Check className="w-5 h-5 text-emerald-500" />
-              <span className="font-semibold text-slate-900">返积分场景</span>
+              <span className="font-semibold text-slate-900">返赠送金场景</span>
             </div>
             <div className="space-y-3">
               <div className="flex items-center justify-between p-3 rounded-lg bg-white">
                 <span className="text-sm text-slate-700">好友购买课程</span>
-                <span className="text-lg font-bold text-emerald-600">10%</span>
+                <span className="text-lg font-bold text-emerald-600">{courseRate}%</span>
               </div>
               <div className="flex items-center justify-between p-3 rounded-lg bg-white">
                 <span className="text-sm text-slate-700">好友购买会员</span>
-                <span className="text-lg font-bold text-emerald-600">10%</span>
+                <span className="text-lg font-bold text-emerald-600">{membershipRate}%</span>
               </div>
             </div>
             <p className="text-xs text-emerald-600 mt-3">
-              例：好友购买¥999课程，你获得99积分
+              例：好友购买¥999课程，你获得¥{Math.floor(999 * courseRate / 100)}赠送金
             </p>
           </div>
 
-          {/* 不返积分场景 */}
+          {/* 不返利场景 */}
           <div className="p-4 sm:p-5 rounded-xl border-2 border-slate-200 bg-slate-50">
             <div className="flex items-center gap-2 mb-3">
               <span className="w-5 h-5 rounded-full bg-slate-300 flex items-center justify-center text-white text-xs">-</span>
-              <span className="font-semibold text-slate-500">不返积分场景</span>
+              <span className="font-semibold text-slate-500">不返利场景</span>
             </div>
             <div className="space-y-3">
               <div className="flex items-center justify-between p-3 rounded-lg bg-white/50">
@@ -314,16 +320,16 @@ const Referral = () => {
               </div>
             </div>
             <p className="text-xs text-slate-400 mt-3">
-              这些场景暂不参与积分返利
+              这些场景暂不参与返利
             </p>
           </div>
         </div>
 
-        {/* 积分用途说明 */}
+        {/* 赠送金用途说明 */}
         <div className="mt-4 p-4 rounded-xl bg-sky-50 border border-sky-200">
           <h4 className="font-semibold text-slate-900 mb-2 flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-sky-500" />
-            积分用途
+            赠送金用途
           </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div className="flex items-center gap-2 text-sm text-slate-600">
@@ -350,19 +356,19 @@ const Referral = () => {
             {
               icon: Rocket,
               title: 'AI课程正当时',
-              desc: '现在推广=踩在风口上赚积分！AI工具市场正在爆发',
+              desc: '现在推广=踩在风口上赚钱！AI工具市场正在爆发',
               color: 'sky'
             },
             {
               icon: Lightbulb,
               title: '分享即收益',
-              desc: '零学习成本，人人都能推！会分享就能赚积分',
+              desc: '零学习成本，人人都能推！会分享就能赚赠送金',
               color: 'amber'
             },
             {
               icon: Wallet,
-              title: '积分即刻可用',
-              desc: '积分自动到账，可直接用于平台消费抵扣',
+              title: '赠送金即刻可用',
+              desc: '赠送金自动到账，可直接用于平台消费抵扣',
               color: 'emerald'
             },
             {

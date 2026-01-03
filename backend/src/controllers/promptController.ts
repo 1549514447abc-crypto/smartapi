@@ -5,6 +5,7 @@ import User from '../models/User';
 import PromptCategory from '../models/PromptCategory';
 import sequelize from '../config/database';
 import { Op } from 'sequelize';
+import supabaseService from '../services/SupabaseService';
 
 // 检查用户是否是有效会员
 const isValidMember = (user: User): boolean => {
@@ -199,8 +200,11 @@ export const purchasePrompt = async (req: Request, res: Response) => {
     } else {
       // 非会员需要付费
       const price = Number(prompt.price);
+      const currentBalance = Number(user.balance) || 0;
+      const currentBonusBalance = Number(user.bonus_balance) || 0;
+      const totalBalance = currentBalance + currentBonusBalance;
 
-      if (Number(user.balance) < price) {
+      if (totalBalance < price) {
         await transaction.rollback();
         return res.status(400).json({
           success: false,
@@ -208,9 +212,23 @@ export const purchasePrompt = async (req: Request, res: Response) => {
         });
       }
 
-      // 扣除余额
+      // 扣除余额（优先扣充值金，不足时扣赠金）
+      let newBalance = currentBalance;
+      let newBonusBalance = currentBonusBalance;
+
+      if (currentBalance >= price) {
+        // 充值金足够，只扣充值金
+        newBalance = currentBalance - price;
+      } else {
+        // 充值金不足，先扣完充值金，再扣赠金
+        const remaining = price - currentBalance;
+        newBalance = 0;
+        newBonusBalance = currentBonusBalance - remaining;
+      }
+
       await user.update({
-        balance: Number(user.balance) - price,
+        balance: newBalance,
+        bonus_balance: newBonusBalance,
         total_consumed: Number(user.total_consumed || 0) + price
       }, { transaction });
 
@@ -230,13 +248,28 @@ export const purchasePrompt = async (req: Request, res: Response) => {
 
     await transaction.commit();
 
+    // Sync balance to Supabase (async, don't block) - only for paid purchases
+    if (!isMember) {
+      // 重新加载用户获取最新余额
+      await user.reload();
+      const totalBalance = Number(user.balance) + Number(user.bonus_balance);
+      supabaseService.syncBalance(userId, totalBalance).catch(err => {
+        console.error('Supabase sync failed:', err.message);
+      });
+    }
+
+    // 重新加载用户获取最新余额用于返回
+    await user.reload();
+
     // 返回完整提示词内容
     return res.json({
       success: true,
       message: isMember ? '会员免费获取成功' : '购买成功',
       data: {
         prompt: prompt.toJSON(),
-        new_balance: isMember ? Number(user.balance) : Number(user.balance) - Number(prompt.price)
+        balance: Number(user.balance),
+        bonus_balance: Number(user.bonus_balance),
+        total_balance: Number(user.balance) + Number(user.bonus_balance)
       }
     });
   } catch (err) {

@@ -8,6 +8,8 @@ export interface UserAttributes {
   email: string | null;
   phone: string | null;
   password_hash: string;
+  wechat_openid: string | null;
+  wechat_unionid: string | null;
   avatar_url: string | null;
   nickname: string | null;
   status: 'active' | 'suspended';
@@ -15,15 +17,19 @@ export interface UserAttributes {
   metadata: object | null;
   last_login_at: Date | null;
   last_login_ip: string | null;
-  balance: number; // 账户余额
-  points: number; // 推广积分（用于抵扣消费）
-  referral_level: number; // 推广等级：1-新手(30%), 2-进阶(40%), 3-高级(50%)
-  total_recharged: number; // 累计充值
-  total_consumed: number; // 累计消费
-  workflow_member_status: string | null; // 工作流会员状态
-  workflow_member_expire: Date | null; // 工作流会员到期
-  ai_content_member_status: string | null; // 降AI率会员状态
-  ai_content_member_expire: Date | null; // 降AI率会员到期
+  balance: number;
+  bonus_balance: number;
+  points: number;
+  referral_level: number;
+  total_recharged: number;
+  total_consumed: number;
+  workflow_member_status: string | null;
+  workflow_member_expire: Date | null;
+  ai_content_member_status: string | null;
+  ai_content_member_expire: Date | null;
+  membership_type: string | null;
+  membership_expiry: Date | null;
+  is_course_student: boolean;
   created_at: Date;
   updated_at: Date;
 }
@@ -32,9 +38,11 @@ export interface UserAttributes {
 interface UserCreationAttributes extends Optional<UserAttributes,
   'id' | 'email' | 'phone' | 'avatar_url' | 'nickname' | 'status' |
   'user_type' | 'metadata' | 'last_login_at' | 'last_login_ip' |
-  'balance' | 'points' | 'referral_level' | 'total_recharged' | 'total_consumed' |
+  'balance' | 'bonus_balance' | 'points' | 'referral_level' | 'total_recharged' | 'total_consumed' |
   'workflow_member_status' | 'workflow_member_expire' |
   'ai_content_member_status' | 'ai_content_member_expire' |
+  'wechat_openid' | 'wechat_unionid' |
+  'membership_type' | 'membership_expiry' | 'is_course_student' |
   'created_at' | 'updated_at'> {}
 
 // User model class
@@ -44,6 +52,8 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
   public email!: string | null;
   public phone!: string | null;
   public password_hash!: string;
+  public wechat_openid!: string | null;
+  public wechat_unionid!: string | null;
   public avatar_url!: string | null;
   public nickname!: string | null;
   public status!: 'active' | 'suspended';
@@ -52,6 +62,7 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
   public last_login_at!: Date | null;
   public last_login_ip!: string | null;
   public balance!: number;
+  public bonus_balance!: number;
   public points!: number;
   public referral_level!: number;
   public total_recharged!: number;
@@ -60,6 +71,9 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
   public workflow_member_expire!: Date | null;
   public ai_content_member_status!: string | null;
   public ai_content_member_expire!: Date | null;
+  public membership_type!: string | null;
+  public membership_expiry!: Date | null;
+  public is_course_student!: boolean;
   public readonly created_at!: Date;
   public readonly updated_at!: Date;
 
@@ -102,6 +116,17 @@ User.init(
       type: DataTypes.STRING(255),
       allowNull: false,
       comment: '密码哈希'
+    },
+    wechat_openid: {
+      type: DataTypes.STRING(64),
+      allowNull: true,
+      unique: true,
+      comment: '微信OpenID'
+    },
+    wechat_unionid: {
+      type: DataTypes.STRING(64),
+      allowNull: true,
+      comment: '微信UnionID'
     },
     avatar_url: {
       type: DataTypes.STRING(500),
@@ -154,19 +179,25 @@ User.init(
       type: DataTypes.DECIMAL(10, 4),
       allowNull: false,
       defaultValue: 0,
-      comment: '账户余额'
+      comment: '账户余额（充值金）'
+    },
+    bonus_balance: {
+      type: DataTypes.DECIMAL(10, 4),
+      allowNull: false,
+      defaultValue: 0,
+      comment: '赠金余额'
     },
     points: {
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false,
       defaultValue: 0,
-      comment: '推广积分（用于抵扣消费）'
+      comment: '推广积分'
     },
     referral_level: {
       type: DataTypes.INTEGER,
       allowNull: false,
       defaultValue: 1,
-      comment: '推广等级：1-新手(30%), 2-进阶(40%), 3-高级(50%)'
+      comment: '推广等级'
     },
     total_recharged: {
       type: DataTypes.DECIMAL(10, 4),
@@ -199,6 +230,22 @@ User.init(
       type: DataTypes.DATE,
       allowNull: true,
       comment: '降AI率会员到期时间'
+    },
+    membership_type: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+      comment: '会员类型'
+    },
+    membership_expiry: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: '会员到期时间'
+    },
+    is_course_student: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      comment: '是否为课程学员'
     }
   },
   {
@@ -211,7 +258,8 @@ User.init(
       { fields: ['username'] },
       { fields: ['email'] },
       { fields: ['phone'] },
-      { fields: ['status'] }
+      { fields: ['status'] },
+      { fields: ['wechat_openid'] }
     ]
   }
 );

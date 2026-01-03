@@ -13,7 +13,8 @@ import {
   Check,
   Sparkles,
   QrCode,
-  X
+  X,
+  PenLine
 } from 'lucide-react';
 
 interface BonusRule {
@@ -55,6 +56,10 @@ const Recharge = () => {
   const [currentOrder, setCurrentOrder] = useState<RechargeOrder | null>(null);
   const [pollingTimer, setPollingTimer] = useState<ReturnType<typeof setInterval> | null>(null);
 
+  // 自定义金额相关状态
+  const [isCustomAmount, setIsCustomAmount] = useState(false);
+  const [customAmountInput, setCustomAmountInput] = useState('');
+
   // 从全局 store 获取余额
   const userBalance = user?.balance || 0;
 
@@ -92,21 +97,76 @@ const Recharge = () => {
   };
 
 
+  // 计算赠金（根据金额匹配最高档位）
   const calculateBonus = (amount: number): number => {
-    if (!config) return 0;
-    for (const rule of config.bonusRules) {
+    if (!config || !amount) return 0;
+    const sortedRules = [...config.bonusRules].sort((a, b) => b.amount - a.amount);
+    for (const rule of sortedRules) {
       if (amount >= rule.amount) {
+        if (rule.bonusRate > 0) {
+          return amount * rule.bonusRate;
+        }
         return rule.bonusAmount;
       }
     }
     return 0;
   };
 
+  // 选择预设金额
+  const handleSelectPreset = (amount: number) => {
+    setSelectedAmount(amount);
+    setIsCustomAmount(false);
+    setCustomAmountInput('');
+  };
+
+  // 选择自定义金额
+  const handleSelectCustom = () => {
+    setIsCustomAmount(true);
+    setSelectedAmount(null);
+  };
+
+  // 处理自定义金额输入
+  const handleCustomAmountChange = (value: string) => {
+    const cleaned = value.replace(/[^\d.]/g, '');
+    const parts = cleaned.split('.');
+    const formatted = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : cleaned;
+    setCustomAmountInput(formatted);
+    const numValue = parseFloat(formatted);
+    if (!isNaN(numValue) && numValue > 0) {
+      setSelectedAmount(numValue);
+    } else {
+      setSelectedAmount(null);
+    }
+  };
+
+  // 获取实际充值金额
+  const getRechargeAmount = (): number | null => {
+    if (isCustomAmount) {
+      const amount = parseFloat(customAmountInput);
+      return isNaN(amount) ? null : amount;
+    }
+    return selectedAmount;
+  };
+
+  // 验证金额
+  const validateAmount = (): string | null => {
+    const amount = getRechargeAmount();
+    if (!amount) return '请输入充值金额';
+    if (config) {
+      if (amount < config.minAmount) return `最低充值金额为${config.minAmount}元`;
+      if (amount > config.maxAmount) return `单次最高充值${config.maxAmount}元`;
+    }
+    return null;
+  };
+
   const handleRecharge = async () => {
-    if (!selectedAmount) {
-      message.warning('请选择充值金额');
+    const error = validateAmount();
+    if (error) {
+      message.warning(error);
       return;
     }
+    const amount = getRechargeAmount();
+    if (!amount) return;
 
     setLoading(true);
     try {
@@ -114,7 +174,7 @@ const Recharge = () => {
         success: boolean;
         data: RechargeOrder;
       }>('/recharge/create', {
-        amount: selectedAmount,
+        amount: amount,
         paymentMethod: selectedMethod
       });
 
@@ -192,6 +252,9 @@ const Recharge = () => {
     );
   }
 
+  const displayAmount = getRechargeAmount();
+  const displayBonus = displayAmount ? calculateBonus(displayAmount) : 0;
+
   return (
     <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
       {/* 标题区域 */}
@@ -229,14 +292,14 @@ const Recharge = () => {
           {config.bonusRules.map((rule, index) => (
             <button
               key={`${rule.amount}-${index}`}
-              onClick={() => setSelectedAmount(rule.amount)}
+              onClick={() => handleSelectPreset(rule.amount)}
               className={`relative p-2.5 sm:p-4 rounded-xl border-2 transition-all ${
-                selectedAmount === rule.amount
+                !isCustomAmount && selectedAmount === rule.amount
                   ? 'border-sky-400 bg-sky-50 shadow-lg shadow-sky-100'
                   : 'border-slate-200 hover:border-sky-200 hover:bg-slate-50'
               }`}
             >
-              {selectedAmount === rule.amount && (
+              {!isCustomAmount && selectedAmount === rule.amount && (
                 <div className="absolute -top-1.5 -right-1.5 sm:-top-2 sm:-right-2 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-sky-500 text-white flex items-center justify-center">
                   <Check className="w-3 h-3 sm:w-4 sm:h-4" />
                 </div>
@@ -250,7 +313,53 @@ const Recharge = () => {
               )}
             </button>
           ))}
+          {/* 自定义金额按钮 */}
+          <button
+            onClick={handleSelectCustom}
+            className={`relative p-2.5 sm:p-4 rounded-xl border-2 transition-all ${
+              isCustomAmount
+                ? 'border-sky-400 bg-sky-50 shadow-lg shadow-sky-100'
+                : 'border-slate-200 hover:border-sky-200 hover:bg-slate-50'
+            }`}
+          >
+            {isCustomAmount && (
+              <div className="absolute -top-1.5 -right-1.5 sm:-top-2 sm:-right-2 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-sky-500 text-white flex items-center justify-center">
+                <Check className="w-3 h-3 sm:w-4 sm:h-4" />
+              </div>
+            )}
+            <div className="flex flex-col items-center justify-center">
+              <PenLine className="w-5 h-5 sm:w-6 sm:h-6 text-slate-600 mb-1" />
+              <div className="text-sm sm:text-base font-semibold text-slate-700">自定义</div>
+            </div>
+          </button>
         </div>
+        {/* 自定义金额输入框 */}
+        {isCustomAmount && (
+          <div className="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
+            <div className="flex items-center gap-3">
+              <span className="text-lg font-bold text-slate-700">¥</span>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={customAmountInput}
+                onChange={(e) => handleCustomAmountChange(e.target.value)}
+                placeholder={`输入金额（${config.minAmount}-${config.maxAmount}元）`}
+                className="flex-1 text-xl font-bold text-slate-900 bg-transparent border-none outline-none placeholder:text-slate-400 placeholder:text-base placeholder:font-normal"
+                autoFocus
+              />
+            </div>
+            <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
+              <span>最低{config.minAmount}元起充</span>
+              <span>单次最高{config.maxAmount}元</span>
+            </div>
+            {displayAmount && displayBonus > 0 && (
+              <div className="mt-2 flex items-center gap-1 text-sm text-orange-600">
+                <Gift className="w-4 h-4" />
+                <span>可获赠 ¥{displayBonus.toFixed(0)}</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 支付方式选择 */}
@@ -302,23 +411,23 @@ const Recharge = () => {
       </div>
 
       {/* 充值汇总 */}
-      {selectedAmount && (
+      {displayAmount && displayAmount > 0 && (
         <div className="card p-4 sm:p-6 bg-gradient-to-r from-slate-50 to-sky-50">
           <div className="grid grid-cols-3 gap-2 sm:gap-6">
             <div className="text-center">
               <p className="text-xs sm:text-sm text-slate-500 mb-1">充值金额</p>
-              <p className="text-lg sm:text-2xl font-bold text-slate-900">¥{selectedAmount}</p>
+              <p className="text-lg sm:text-2xl font-bold text-slate-900">¥{displayAmount}</p>
             </div>
             <div className="text-center border-x border-slate-200">
               <p className="text-xs sm:text-sm text-slate-500 mb-1">赠送金额</p>
               <p className="text-lg sm:text-2xl font-bold text-orange-500">
-                +¥{calculateBonus(selectedAmount).toFixed(0)}
+                +¥{displayBonus.toFixed(0)}
               </p>
             </div>
             <div className="text-center">
               <p className="text-xs sm:text-sm text-slate-500 mb-1">实际到账</p>
               <p className="text-lg sm:text-2xl font-bold text-emerald-600">
-                ¥{(selectedAmount + calculateBonus(selectedAmount)).toFixed(0)}
+                ¥{(displayAmount + displayBonus).toFixed(0)}
               </p>
             </div>
           </div>
@@ -329,7 +438,7 @@ const Recharge = () => {
       <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
         <button
           onClick={handleRecharge}
-          disabled={!selectedAmount || loading}
+          disabled={!displayAmount || loading}
           className="flex-1 flex items-center justify-center gap-2 py-3 sm:py-4 rounded-xl bg-gradient-to-r from-sky-400 to-emerald-400 text-white font-semibold text-base sm:text-lg shadow-lg shadow-sky-200 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? (
@@ -357,6 +466,7 @@ const Recharge = () => {
         <ul className="text-sm text-amber-700 space-y-1">
           <li>• 充值金额将实时到账，可在个人中心查看余额</li>
           <li>• 赠送金额与充值金额使用规则相同</li>
+          <li>• 自定义金额同样享受对应档位的赠金优惠</li>
           <li>• 如遇支付问题，请联系客服处理</li>
         </ul>
       </div>
