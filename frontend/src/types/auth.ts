@@ -9,7 +9,13 @@ export interface User {
   phone?: string;
   avatar_url?: string;
   balance?: number | string;
+  bonus_balance?: number | string; // 赠金余额
   user_type: UserType;
+  membership_type?: 'none' | 'yearly' | 'course' | null;
+  membership_expiry?: string | null;
+  is_course_student?: boolean;
+  wechat_openid?: string | null;
+  referral_code?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -30,6 +36,7 @@ export interface LoginResponse {
 export interface RegisterRequest {
   username: string;
   password: string;
+  confirm: string;  // 密码确认
   email?: string;
   phone?: string;
   nickname?: string;

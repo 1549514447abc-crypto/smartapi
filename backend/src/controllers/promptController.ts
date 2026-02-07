@@ -7,12 +7,14 @@ import sequelize from '../config/database';
 import { Op } from 'sequelize';
 import supabaseService from '../services/SupabaseService';
 
-// 检查用户是否是有效会员
-const isValidMember = (user: User): boolean => {
-  if (!user.workflow_member_status) return false;
-  if (user.workflow_member_status !== 'active') return false;
-  if (!user.workflow_member_expire) return false;
-  return new Date(user.workflow_member_expire) > new Date();
+// 检查用户是否是有效的年度会员（只有年度会员才能免费查看提示词）
+// 注意：课程学员不能免费查看提示词，需要购买
+const isYearlyMember = (user: User): boolean => {
+  // 只有 yearly（年度会员）才能免费查看，course（课程学员）不行
+  if (user.membership_type !== 'yearly') return false;
+  // 检查会员是否过期
+  if (!user.membership_expiry) return false;
+  return new Date(user.membership_expiry) > new Date();
 };
 
 // 获取提示词列表
@@ -48,7 +50,7 @@ export const getPromptList = async (req: Request, res: Response) => {
     if (userId) {
       const user = await User.findByPk(userId);
       if (user) {
-        isMember = isValidMember(user);
+        isMember = isYearlyMember(user);
       }
 
       const userPrompts = await UserPrompt.findAll({
@@ -77,7 +79,7 @@ export const getPromptList = async (req: Request, res: Response) => {
         total: count,
         page: Number(page),
         pageSize: Number(pageSize),
-        is_member: isMember
+        is_yearly_member: isMember
       }
     });
   } catch (err) {
@@ -112,7 +114,7 @@ export const getPromptDetail = async (req: Request, res: Response) => {
     if (userId) {
       const user = await User.findByPk(userId);
       if (user) {
-        isMember = isValidMember(user);
+        isMember = isYearlyMember(user);
       }
 
       const userPrompt = await UserPrompt.findOne({
@@ -128,8 +130,8 @@ export const getPromptDetail = async (req: Request, res: Response) => {
       data: {
         ...promptData,
         is_owned: isOwned,
-        is_member: isMember,
-        // 非会员且未购买时隐藏完整内容
+        is_yearly_member: isMember,
+        // 非年度会员且未购买时隐藏完整内容
         content: isOwned ? promptData.content : promptData.content.substring(0, 50) + '...'
       }
     });
@@ -186,17 +188,23 @@ export const purchasePrompt = async (req: Request, res: Response) => {
       });
     }
 
-    // 检查是否是会员
-    const isMember = isValidMember(user);
+    // 检查是否是年度会员
+    const isYearly = isYearlyMember(user);
 
-    if (isMember) {
-      // 会员免费获取
-      await UserPrompt.create({
-        user_id: userId,
-        prompt_id: Number(id),
-        purchase_type: 'member_free',
-        price_paid: 0
-      }, { transaction });
+    if (isYearly) {
+      // 年度会员可以直接查看，不需要购买，也不创建购买记录
+      await transaction.rollback();
+      return res.json({
+        success: true,
+        message: '您是年度会员，可直接查看所有提示词',
+        data: {
+          prompt: prompt.toJSON(),
+          balance: Number(user.balance),
+          bonus_balance: Number(user.bonus_balance),
+          total_balance: Number(user.balance) + Number(user.bonus_balance),
+          is_yearly_member: true
+        }
+      });
     } else {
       // 非会员需要付费
       const price = Number(prompt.price);
@@ -239,6 +247,23 @@ export const purchasePrompt = async (req: Request, res: Response) => {
         purchase_type: 'paid',
         price_paid: price
       }, { transaction });
+
+      // 记录消费日志到 balance_logs
+      await sequelize.query(
+        `INSERT INTO balance_logs (user_id, change_type, change_amount, balance_before, balance_after, source, service_name, description, created_at)
+         VALUES (?, 'consumption', ?, ?, ?, 'prompt_purchase', ?, ?, NOW())`,
+        {
+          replacements: [
+            userId,
+            -price,
+            currentBalance + currentBonusBalance,
+            newBalance + newBonusBalance,
+            `prompt_${id}`,
+            `购买提示词: ${prompt.title || id}`
+          ],
+          transaction
+        }
+      );
     }
 
     // 更新提示词购买计数
@@ -249,27 +274,24 @@ export const purchasePrompt = async (req: Request, res: Response) => {
     await transaction.commit();
 
     // Sync balance to Supabase (async, don't block) - only for paid purchases
-    if (!isMember) {
-      // 重新加载用户获取最新余额
-      await user.reload();
-      const totalBalance = Number(user.balance) + Number(user.bonus_balance);
-      supabaseService.syncBalance(userId, totalBalance).catch(err => {
-        console.error('Supabase sync failed:', err.message);
-      });
-    }
-
-    // 重新加载用户获取最新余额用于返回
+    // 重新加载用户获取最新余额
     await user.reload();
+    const totalBalance = Number(user.balance) + Number(user.bonus_balance);
+
+    // 同步余额到 Supabase
+    supabaseService.syncBalance(userId, totalBalance).catch(err => {
+      console.error('Supabase sync failed:', err.message);
+    });
 
     // 返回完整提示词内容
     return res.json({
       success: true,
-      message: isMember ? '会员免费获取成功' : '购买成功',
+      message: '购买成功',
       data: {
         prompt: prompt.toJSON(),
         balance: Number(user.balance),
         bonus_balance: Number(user.bonus_balance),
-        total_balance: Number(user.balance) + Number(user.bonus_balance)
+        total_balance: totalBalance
       }
     });
   } catch (err) {
@@ -282,17 +304,19 @@ export const purchasePrompt = async (req: Request, res: Response) => {
   }
 };
 
-// 获取用户已购买的提示词
+// 获取用户的提示词
+// - 年度会员：返回所有提示词（会员期间可免费查看全部）
+// - 非年度会员：只返回已购买的提示词（购买记录永久有效）
 export const getMyPrompts = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.userId;
     const { page = 1, pageSize = 20 } = req.query;
 
     const user = await User.findByPk(userId);
-    const isMember = user ? isValidMember(user) : false;
+    const isYearly = user ? isYearlyMember(user) : false;
 
-    // 如果是会员，返回所有提示词
-    if (isMember) {
+    // 如果是年度会员，返回所有提示词（可免费查看）
+    if (isYearly) {
       const { rows: prompts, count } = await Prompt.findAndCountAll({
         where: { is_active: true },
         order: [['sort_order', 'DESC'], ['created_at', 'DESC']],
@@ -303,16 +327,16 @@ export const getMyPrompts = async (req: Request, res: Response) => {
       return res.json({
         success: true,
         data: {
-          list: prompts.map(p => ({ ...p.toJSON(), is_owned: true, purchase_type: 'member_free' })),
+          list: prompts.map(p => ({ ...p.toJSON(), is_owned: true, access_type: 'yearly_member' })),
           total: count,
           page: Number(page),
           pageSize: Number(pageSize),
-          is_member: true
+          is_yearly_member: true
         }
       });
     }
 
-    // 非会员只返回已购买的
+    // 非年度会员只返回已购买的（购买记录永久有效）
     const { rows: userPrompts, count } = await UserPrompt.findAndCountAll({
       where: { user_id: userId },
       order: [['created_at', 'DESC']],
@@ -344,7 +368,7 @@ export const getMyPrompts = async (req: Request, res: Response) => {
         total: count,
         page: Number(page),
         pageSize: Number(pageSize),
-        is_member: false
+        is_yearly_member: false
       }
     });
   } catch (err) {

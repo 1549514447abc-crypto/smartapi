@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartAPI 首页预览</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+
+    /* 轮播图样式 */
+    .carousel {
+      position: relative;
+      overflow: hidden;
+    }
+    .carousel-inner {
+      display: flex;
+      transition: transform 0.5s ease-in-out;
+    }
+    .carousel-item {
+      min-width: 100%;
+      flex-shrink: 0;
+    }
+    .carousel-dots {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+    }
+    .carousel-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.5);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .carousel-dot.active {
+      background: white;
+      width: 30px;
+      border-radius: 5px;
+    }
+
+    /* 功能滑动展示 */
+    .feature-scroll {
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .feature-scroll::-webkit-scrollbar {
+      display: none;
+    }
+    .feature-card {
+      scroll-snap-align: start;
+      flex-shrink: 0;
+    }
+
+    /* 动画效果 */
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    .float-animation {
+      animation: float 3s ease-in-out infinite;
+    }
+
+    /* 渐变背景 */
+    .gradient-bg {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .gradient-bg-2 {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    .gradient-bg-3 {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+    .gradient-bg-4 {
+      background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    }
+
+    /* ===== 动画效果 ===== */
+
+    /* 滚动触发动画 - 初始状态 */
+    .animate-on-scroll {
+      opacity: 0;
+      transform: translateY(40px);
+      transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .animate-on-scroll.animated {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* 从左滑入 */
+    .slide-in-left {
+      opacity: 0;
+      transform: translateX(-60px);
+      transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .slide-in-left.animated {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    /* 从右滑入 */
+    .slide-in-right {
+      opacity: 0;
+      transform: translateX(60px);
+      transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .slide-in-right.animated {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    /* 缩放渐入 */
+    .scale-in {
+      opacity: 0;
+      transform: scale(0.8);
+      transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .scale-in.animated {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    /* 卡片悬浮增强 */
+    .card-hover {
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .card-hover:hover {
+      transform: translateY(-8px) scale(1.02);
+      box-shadow: 0 20px 40px -10px rgba(0,0,0,0.15);
+    }
+
+    /* 图标弹跳 */
+    .icon-bounce:hover .icon-inner {
+      animation: iconBounce 0.6s ease;
+    }
+    @keyframes iconBounce {
+      0%, 100% { transform: scale(1); }
+      30% { transform: scale(1.2); }
+      50% { transform: scale(0.95); }
+      70% { transform: scale(1.1); }
+    }
+
+    /* 脉冲发光 */
+    .pulse-glow {
+      animation: pulseGlow 2s ease-in-out infinite;
+    }
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 20px rgba(124, 58, 237, 0.3); }
+      50% { box-shadow: 0 0 40px rgba(124, 58, 237, 0.6); }
+    }
+
+    /* 数字计数器 */
+    .counter {
+      display: inline-block;
+    }
+
+    /* 视频播放按钮动画 */
+    .video-container {
+      position: relative;
+    }
+    .video-container::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.3);
+      opacity: 1;
+      transition: opacity 0.3s;
+      z-index: 1;
+      pointer-events: none;
+      border-radius: inherit;
+    }
+    .video-container:hover::before {
+      opacity: 0;
+    }
+    .play-btn {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 70px;
+      height: 70px;
+      background: rgba(255,255,255,0.95);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+    .play-btn:hover {
+      transform: translate(-50%, -50%) scale(1.1);
+      box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+    }
+    .play-btn svg {
+      width: 28px;
+      height: 28px;
+      fill: #7c3aed;
+      margin-left: 4px;
+    }
+    .video-container.playing .play-btn,
+    .video-container.playing::before {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* 闪光效果 */
+    .shimmer {
+      position: relative;
+      overflow: hidden;
+    }
+    .shimmer::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      animation: shimmer 3s infinite;
+    }
+    @keyframes shimmer {
+      0% { left: -100%; }
+      100% { left: 100%; }
+    }
+
+    /* 渐变文字 */
+    .gradient-text {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* 延迟动画 */
+    .delay-100 { transition-delay: 0.1s; }
+    .delay-200 { transition-delay: 0.2s; }
+    .delay-300 { transition-delay: 0.3s; }
+    .delay-400 { transition-delay: 0.4s; }
+    .delay-500 { transition-delay: 0.5s; }
+  </style>
+</head>
+<body class="bg-gray-50">
+
+  <!-- 顶部导航 -->
+  <nav class="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <div class="flex items-center gap-2">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+          </div>
+          <span class="text-xl font-bold text-gray-900">SmartAPI</span>
+        </div>
+        <div class="hidden md:flex items-center gap-6">
+          <a href="#" class="text-gray-600 hover:text-violet-600 transition">首页</a>
+          <a href="#" class="text-gray-600 hover:text-violet-600 transition">插件市场</a>
+          <a href="#" class="text-gray-600 hover:text-violet-600 transition">提示词</a>
+          <a href="#" class="text-gray-600 hover:text-violet-600 transition">课程</a>
+          <button class="px-4 py-2 rounded-lg bg-violet-600 text-white font-medium hover:bg-violet-700 transition">
+            登录/注册
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="pt-16">
+
+    <!-- 轮播图区域 -->
+    <section class="carousel h-[400px] sm:h-[500px]">
+      <div class="carousel-inner h-full" id="carouselInner">
+        <!-- 轮播项 1 -->
+        <div class="carousel-item gradient-bg">
+          <div class="h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center">
+            <div class="grid md:grid-cols-2 gap-8 items-center w-full">
+              <div class="text-white">
+                <div class="inline-block px-3 py-1 rounded-full bg-white/20 text-sm mb-4">
+                  🔥 限时优惠
+                </div>
+                <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">
+                  AI智能体开发插件
+                </h1>
+                <p class="text-lg sm:text-xl text-white/80 mb-6">
+                  为 Coze、Dify 等平台提供强大的扩展能力<br>
+                  轻松获取第三方平台数据
+                </p>
+                <div class="flex flex-wrap gap-3">
+                  <button class="px-6 py-3 rounded-xl bg-white text-violet-600 font-semibold hover:bg-gray-100 transition">
+                    立即体验
+                  </button>
+                  <button class="px-6 py-3 rounded-xl bg-white/20 text-white font-semibold hover:bg-white/30 transition">
+                    了解更多
+                  </button>
+                </div>
+              </div>
+              <div class="hidden md:flex justify-center">
+                <div class="w-80 h-64 bg-white/10 rounded-2xl flex items-center justify-center float-animation">
+                  <span class="text-white/60 text-lg">轮播图 1 - 占位图</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 轮播项 2 -->
+        <div class="carousel-item gradient-bg-2">
+          <div class="h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center">
+            <div class="grid md:grid-cols-2 gap-8 items-center w-full">
+              <div class="text-white">
+                <div class="inline-block px-3 py-1 rounded-full bg-white/20 text-sm mb-4">
+                  📚 精品课程
+                </div>
+                <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">
+                  Coze实战训练营
+                </h1>
+                <p class="text-lg sm:text-xl text-white/80 mb-6">
+                  从零基础到商业落地<br>
+                  100节系统课程 + 31个实战项目
+                </p>
+                <div class="flex flex-wrap gap-3">
+                  <button class="px-6 py-3 rounded-xl bg-white text-pink-600 font-semibold hover:bg-gray-100 transition">
+                    ¥199 立即购买
+                  </button>
+                  <button class="px-6 py-3 rounded-xl bg-white/20 text-white font-semibold hover:bg-white/30 transition">
+                    免费试听
+                  </button>
+                </div>
+              </div>
+              <div class="hidden md:flex justify-center">
+                <div class="w-80 h-64 bg-white/10 rounded-2xl flex items-center justify-center float-animation">
+                  <span class="text-white/60 text-lg">轮播图 2 - 占位图</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 轮播项 3 -->
+        <div class="carousel-item gradient-bg-3">
+          <div class="h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center">
+            <div class="grid md:grid-cols-2 gap-8 items-center w-full">
+              <div class="text-white">
+                <div class="inline-block px-3 py-1 rounded-full bg-white/20 text-sm mb-4">
+                  ✨ 新功能上线
+                </div>
+                <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">
+                  提示词市场
+                </h1>
+                <p class="text-lg sm:text-xl text-white/80 mb-6">
+                  精选优质提示词模板<br>
+                  一键复制，快速提升AI效率
+                </p>
+                <div class="flex flex-wrap gap-3">
+                  <button class="px-6 py-3 rounded-xl bg-white text-cyan-600 font-semibold hover:bg-gray-100 transition">
+                    浏览市场
+                  </button>
+                </div>
+              </div>
+              <div class="hidden md:flex justify-center">
+                <div class="w-80 h-64 bg-white/10 rounded-2xl flex items-center justify-center float-animation">
+                  <span class="text-white/60 text-lg">轮播图 3 - 占位图</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 轮播指示器 -->
+      <div class="carousel-dots">
+        <div class="carousel-dot active" data-index="0"></div>
+        <div class="carousel-dot" data-index="1"></div>
+        <div class="carousel-dot" data-index="2"></div>
+      </div>
+
+      <!-- 轮播箭头 -->
+      <button class="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center text-white transition" onclick="prevSlide()">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+        </svg>
+      </button>
+      <button class="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center text-white transition" onclick="nextSlide()">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+      </button>
+    </section>
+
+    <!-- 数据统计 -->
+    <section class="py-12 bg-white">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+          <div class="scale-in delay-100">
+            <p class="text-3xl sm:text-4xl font-bold gradient-text">
+              <span class="counter" data-target="180" data-suffix="w+">0</span>
+            </p>
+            <p class="text-gray-600 mt-1">智能体接入</p>
+          </div>
+          <div class="scale-in delay-200">
+            <p class="text-3xl sm:text-4xl font-bold gradient-text">
+              <span class="counter" data-target="1" data-suffix="亿+">0</span>
+            </p>
+            <p class="text-gray-600 mt-1">API调用量</p>
+          </div>
+          <div class="scale-in delay-300">
+            <p class="text-3xl sm:text-4xl font-bold gradient-text">
+              <span class="counter" data-target="15" data-suffix="w+">0</span>
+            </p>
+            <p class="text-gray-600 mt-1">智能体构建师</p>
+          </div>
+          <div class="scale-in delay-400">
+            <p class="text-3xl sm:text-4xl font-bold gradient-text">
+              <span class="counter" data-target="99" data-suffix=".9%">0</span>
+            </p>
+            <p class="text-gray-600 mt-1">服务稳定性</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 产品视频展示区 -->
+    <section class="py-16 bg-gray-50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
+
+        <!-- 推广挣钱 - 右视频左内容 -->
+        <div class="grid md:grid-cols-2 gap-8 items-center">
+          <div class="slide-in-left">
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-4">推广挣钱</h3>
+            <p class="text-gray-600 mb-6">
+              成为速推AIGC分销合伙人，共享AI创新红利。推荐客户购买速推AIGC产品，享受高额佣金返利。
+              官方代理授权，助力您轻松开启AI副业之旅。让每一次分享都成为收入。
+            </p>
+            <div class="flex flex-wrap gap-3 mb-6">
+              <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-100 text-orange-700 text-sm">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 576 512">
+                  <path d="M0 112.5L0 422.3c0 18 10.1 35 27 41.3c87 32.5 174 10.3 261-11.9c79.8-20.3 159.6-40.7 239.3-18.9c23 6.3 48.7-9.5 48.7-33.4l0-309.9c0-18-10.1-35-27-41.3C462 15.9 375 38.1 288 60.3C208.2 80.6 128.4 100.9 48.7 79.1C25.6 72.8 0 88.6 0 112.5zM288 352c-44.2 0-80-43-80-96s35.8-96 80-96s80 43 80 96s-35.8 96-80 96z"/>
+                </svg>
+                高额佣金
+              </span>
+              <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-100 text-blue-700 text-sm">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 640 512">
+                  <path d="M323.4 85.2l-96.8 78.4c-16.1 13-19.2 36.4-7 53.1c12.9 17.8 38 21.3 55.3 7.8l99.3-77.2c7-5.4 17-4.2 22.5 2.8s4.2 17-2.8 22.5l-20.9 16.2L512 316.8 512 128l-.7 0-3.9-2.5L434.8 79c-15.3-9.8-33.2-15-51.4-15c-21.8 0-43 7.5-60 21.2z"/>
+                </svg>
+                官方授权
+              </span>
+              <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-100 text-purple-700 text-sm">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 512 512">
+                  <path d="M64 64c0-17.7-14.3-32-32-32S0 46.3 0 64L0 400c0 44.2 35.8 80 80 80l400 0c17.7 0 32-14.3 32-32s-14.3-32-32-32L80 416c-8.8 0-16-7.2-16-16L64 64zm406.6 86.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L320 210.7l-57.4-57.4c-12.5-12.5-32.8-12.5-45.3 0l-112 112c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L240 221.3l57.4 57.4c12.5 12.5 32.8 12.5 45.3 0l128-128z"/>
+                </svg>
+                被动收入
+              </span>
+            </div>
+            <a href="#/referral" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 text-white font-semibold hover:shadow-lg transition btn-ripple shimmer">
+              立即加入
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 448 512">
+                <path d="M438.6 278.6c12.5-12.5 12.5-32.8 0-45.3l-160-160c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L338.8 224 32 224c-17.7 0-32 14.3-32 32s14.3 32 32 32l306.7 0L233.4 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l160-160z"/>
+              </svg>
+            </a>
+          </div>
+          <div class="slide-in-right">
+            <div class="video-container aspect-video bg-gray-900 rounded-2xl overflow-hidden shadow-xl">
+              <video class="w-full h-full object-cover" loop playsinline muted
+                poster="https://video-translate-web.oss-cn-beijing.aliyuncs.com/image/logo.png"
+                src="https://video-translate-web.oss-cn-beijing.aliyuncs.com/image/tuiguang.mp4">
+              </video>
+              <div class="play-btn">
+                <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 剪映小助手 - 左视频右内容 -->
+        <div class="grid md:grid-cols-2 gap-8 items-center">
+          <div class="order-2 md:order-1 slide-in-left">
+            <div class="video-container aspect-video bg-gray-900 rounded-2xl overflow-hidden shadow-xl">
+              <video class="w-full h-full object-cover" loop playsinline muted
+                poster="https://video-translate-web.oss-cn-beijing.aliyuncs.com/image/logo.png"
+                src="https://video-translate-web.oss-cn-beijing.aliyuncs.com/image/xiaozhushou.mp4">
+              </video>
+              <div class="play-btn">
+                <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              </div>
+            </div>
+          </div>
+          <div class="order-1 md:order-2 slide-in-right">
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-4">剪映小助手</h3>
+            <p class="text-gray-600 mb-6">
+              一键将AI生成的视频内容导入剪映，快速完成剪辑与合成，支持本地草稿与云端MP4。
+              智能化一键生成剪映草稿，与本地剪映无缝对接，让创作效率倍增。
+            </p>
+            <div class="flex flex-wrap gap-3 mb-6">
+              <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-violet-100 text-violet-700 text-sm">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 512 512">
+                  <path d="M156.6 384.9L125.7 354c-8.5-8.5-11.5-20.8-7.7-32.2c3-8.9 7-20.5 11.8-33.8L24 288c-8.6 0-16.6-4.6-20.9-12.1s-4.2-16.7 .2-24.1l52.5-88.5c13-21.9 36.5-35.3 61.9-35.3l82.3 0c2.4-4 4.8-7.7 7.2-11.3C289.1-4.1 411.1-8.1 483.9 5.3c11.6 2.1 20.6 11.2 22.8 22.8c13.4 72.9 9.3 194.8-111.4 276.7c-3.5 2.4-7.3 4.8-11.3 7.2l0 82.3c0 25.4-13.4 49-35.3 61.9l-88.5 52.5c-7.4 4.4-16.6 4.5-24.1 .2s-12.1-12.2-12.1-20.9l0-107.2c-14.1 4.9-26.4 8.9-35.7 11.9c-11.2 3.6-23.4 .5-31.8-7.8zM384 168a40 40 0 1 0 0-80 40 40 0 1 0 0 80z"/>
+                </svg>
+                极速导入
+              </span>
+              <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-pink-100 text-pink-700 text-sm">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 512 512">
+                  <path d="M14.1 463.3c-18.7-18.7-18.7-49.1 0-67.9L395.4 14.1c18.7-18.7 49.1-18.7 67.9 0l34.6 34.6c18.7 18.7 18.7 49.1 0 67.9L116.5 497.9c-18.7 18.7-49.1 18.7-67.9 0L14.1 463.3z"/>
+                </svg>
+                智能合成
+              </span>
+              <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-sky-100 text-sky-700 text-sm">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 640 512">
+                  <path d="M0 336c0 79.5 64.5 144 144 144l368 0c70.7 0 128-57.3 128-128c0-61.9-44-113.6-102.4-125.4c4.1-10.7 6.4-22.4 6.4-34.6c0-53-43-96-96-96c-19.7 0-38.1 6-53.3 16.2C367 64.2 315.3 32 256 32C167.6 32 96 103.6 96 192c0 2.7 .1 5.4 .2 8.1C40.2 219.8 0 273.2 0 336z"/>
+                </svg>
+                云端渲染
+              </span>
+            </div>
+            <a href="#/cozeToJianyin" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-white font-semibold hover:shadow-lg transition">
+              前往下载
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 448 512">
+                <path d="M438.6 278.6c12.5-12.5 12.5-32.8 0-45.3l-160-160c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L338.8 224 32 224c-17.7 0-32 14.3-32 32s14.3 32 32 32l306.7 0L233.4 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l160-160z"/>
+              </svg>
+            </a>
+          </div>
+        </div>
+
+        <!-- 速推学堂 - 右视频左内容 -->
+        <div class="grid md:grid-cols-2 gap-8 items-center">
+          <div class="slide-in-left">
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-4">速推学堂</h3>
+            <p class="text-gray-600 mb-6">
+              从入门到精通，一站式AI智能体创建与管理学习平台。零基础入门，快速上手AI工作流，
+              实用案例教程，解锁AI创作潜能。定期更新，掌握最新AI技术动态。
+            </p>
+            <div class="flex flex-wrap gap-3 mb-6">
+              <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-700 text-sm">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 512 512">
+                  <path d="M156.6 384.9L125.7 354c-8.5-8.5-11.5-20.8-7.7-32.2c3-8.9 7-20.5 11.8-33.8L24 288c-8.6 0-16.6-4.6-20.9-12.1s-4.2-16.7 .2-24.1l52.5-88.5c13-21.9 36.5-35.3 61.9-35.3l82.3 0c2.4-4 4.8-7.7 7.2-11.3C289.1-4.1 411.1-8.1 483.9 5.3c11.6 2.1 20.6 11.2 22.8 22.8c13.4 72.9 9.3 194.8-111.4 276.7c-3.5 2.4-7.3 4.8-11.3 7.2l0 82.3c0 25.4-13.4 49-35.3 61.9l-88.5 52.5c-7.4 4.4-16.6 4.5-24.1 .2s-12.1-12.2-12.1-20.9l0-107.2c-14.1 4.9-26.4 8.9-35.7 11.9c-11.2 3.6-23.4 .5-31.8-7.8zM384 168a40 40 0 1 0 0-80 40 40 0 1 0 0 80z"/>
+                </svg>
+                零基础入门
+              </span>
+              <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-100 text-amber-700 text-sm">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 384 512">
+                  <path d="M272 384c9.6-31.9 29.5-59.1 49.2-86.2c0 0 0 0 0 0c5.2-7.1 10.4-14.2 15.4-21.4c19.8-28.5 31.4-63 31.4-100.3C368 78.8 289.2 0 192 0S16 78.8 16 176c0 37.3 11.6 71.9 31.4 100.3c5 7.2 10.2 14.3 15.4 21.4c0 0 0 0 0 0c19.8 27.1 39.7 54.4 49.2 86.2l160 0zM192 512c44.2 0 80-35.8 80-80l0-16-160 0 0 16c0 44.2 35.8 80 80 80z"/>
+                </svg>
+                实用案例
+              </span>
+              <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-cyan-100 text-cyan-700 text-sm">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 512 512">
+                  <path d="M156.6 384.9L125.7 354c-8.5-8.5-11.5-20.8-7.7-32.2c3-8.9 7-20.5 11.8-33.8L24 288c-8.6 0-16.6-4.6-20.9-12.1s-4.2-16.7 .2-24.1l52.5-88.5c13-21.9 36.5-35.3 61.9-35.3l82.3 0c2.4-4 4.8-7.7 7.2-11.3C289.1-4.1 411.1-8.1 483.9 5.3c11.6 2.1 20.6 11.2 22.8 22.8c13.4 72.9 9.3 194.8-111.4 276.7c-3.5 2.4-7.3 4.8-11.3 7.2l0 82.3c0 25.4-13.4 49-35.3 61.9l-88.5 52.5c-7.4 4.4-16.6 4.5-24.1 .2s-12.1-12.2-12.1-20.9l0-107.2c-14.1 4.9-26.4 8.9-35.7 11.9c-11.2 3.6-23.4 .5-31.8-7.8zM384 168a40 40 0 1 0 0-80 40 40 0 1 0 0 80z"/>
+                </svg>
+                快速上手
+              </span>
+            </div>
+            <a href="#/cozeTutorial" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold hover:shadow-lg transition btn-ripple shimmer">
+              立即学习
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 448 512">
+                <path d="M438.6 278.6c12.5-12.5 12.5-32.8 0-45.3l-160-160c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L338.8 224 32 224c-17.7 0-32 14.3-32 32s14.3 32 32 32l306.7 0L233.4 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l160-160z"/>
+              </svg>
+            </a>
+          </div>
+          <div class="slide-in-right">
+            <div class="video-container aspect-video bg-gray-900 rounded-2xl overflow-hidden shadow-xl">
+              <video class="w-full h-full object-cover" loop playsinline muted
+                poster="https://video-translate-web.oss-cn-beijing.aliyuncs.com/image/logo.png"
+                src="https://video-translate-web.oss-cn-beijing.aliyuncs.com/image/kechengyindao.mp4">
+              </video>
+              <div class="play-btn">
+                <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 海量插件 - 左视频右内容 -->
+        <div class="grid md:grid-cols-2 gap-8 items-center">
+          <div class="order-2 md:order-1 slide-in-left">
+            <div class="video-container aspect-video bg-gray-900 rounded-2xl overflow-hidden shadow-xl">
+              <video class="w-full h-full object-cover" loop playsinline muted
+                poster="https://video-translate-web.oss-cn-beijing.aliyuncs.com/image/logo.png"
+                src="https://video-translate-web.oss-cn-beijing.aliyuncs.com/image/chajian.mp4">
+              </video>
+              <div class="play-btn">
+                <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              </div>
+            </div>
+          </div>
+          <div class="order-1 md:order-2 slide-in-right">
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-4">海量插件</h3>
+            <p class="text-gray-600 mb-6">
+              提供丰富多样的高效能插件，包含视频合成、视频转音频、全平台视频下载、图生视频、声音克隆、
+              获取第三方平台数据等插件。满足您各种AI智能体开发需求。
+            </p>
+            <div class="flex flex-wrap gap-3 mb-6">
+              <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-100 text-red-700 text-sm">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 384 512">
+                  <path d="M64 0C28.7 0 0 28.7 0 64L0 448c0 35.3 28.7 64 64 64l256 0c35.3 0 64-28.7 64-64l0-288-128 0c-17.7 0-32-14.3-32-32L224 0 64 0zM256 0l0 128 128 0L256 0zM64 288c0-17.7 14.3-32 32-32l96 0c17.7 0 32 14.3 32 32l0 96c0 17.7-14.3 32-32 32l-96 0c-17.7 0-32-14.3-32-32l0-96z"/>
+                </svg>
+                视频合成
+              </span>
+              <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-100 text-indigo-700 text-sm">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 512 512">
+                  <path d="M499.1 6.3c8.1 6 12.9 15.6 12.9 25.7l0 72 0 264c0 44.2-43 80-96 80s-96-35.8-96-80s43-80 96-80c11.2 0 22 1.6 32 4.6L448 147 192 223.8 192 432c0 44.2-43 80-96 80s-96-35.8-96-80s43-80 96-80c11.2 0 22 1.6 32 4.6L128 200l0-72c0-14.1 9.3-26.6 22.8-30.7l320-96c9.7-2.9 20.2-1.1 28.3 5z"/>
+                </svg>
+                声音克隆
+              </span>
+              <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-100 text-green-700 text-sm">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 448 512">
+                  <path d="M448 80l0 48c0 44.2-100.3 80-224 80S0 172.2 0 128L0 80C0 35.8 100.3 0 224 0S448 35.8 448 80z"/>
+                </svg>
+                平台数据获取
+              </span>
+            </div>
+            <a href="https://www.coze.cn/user/3778360647354254?access_entrance=bot_detail&sub_tab=plugins&tab=user_product" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-red-600 to-pink-600 text-white font-semibold hover:shadow-lg transition btn-ripple shimmer">
+              前往查看
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 448 512">
+                <path d="M438.6 278.6c12.5-12.5 12.5-32.8 0-45.3l-160-160c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L338.8 224 32 224c-17.7 0-32 14.3-32 32s14.3 32 32 32l306.7 0L233.4 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l160-160z"/>
+              </svg>
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 海量插件和工作流 - 网格布局 -->
+    <section class="py-16 bg-white">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-12 animate-on-scroll">
+          <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">海量插件和工作流</h2>
+          <p class="text-gray-600">200+核心插件，1000+工作流，满足企业级AI Agent的调用，支持企业与个人按需订阅</p>
+        </div>
+
+        <!-- 插件网格 -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+          <!-- 视频合成 -->
+          <div class="bg-white rounded-2xl p-5 sm:p-6 shadow-sm hover:shadow-lg transition border border-gray-100 group cursor-pointer card-hover scale-in delay-100 icon-bounce">
+            <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center mb-4 text-white group-hover:scale-110 transition icon-inner">
+              <svg class="w-6 h-6 sm:w-7 sm:h-7" fill="currentColor" viewBox="0 0 512 512">
+                <path d="M0 256a256 256 0 1 1 512 0A256 256 0 1 1 0 256zM188.3 147.1c-7.6 4.2-12.3 12.3-12.3 20.9l0 176c0 8.7 4.7 16.7 12.3 20.9s16.8 4.1 24.3-.5l144-88c7.1-4.4 11.5-12.1 11.5-20.5s-4.4-16.1-11.5-20.5l-144-88c-7.4-4.5-16.7-4.7-24.3-.5z"/>
+              </svg>
+            </div>
+            <h3 class="font-bold text-gray-900 mb-2 text-sm sm:text-base">视频合成</h3>
+            <p class="text-xs sm:text-sm text-gray-600 line-clamp-3">可将视频素材、图片素材合成视频，支持BGM、配音、转场动画、贴纸等</p>
+          </div>
+
+          <!-- 视频转音频 -->
+          <div class="bg-white rounded-2xl p-5 sm:p-6 shadow-sm hover:shadow-lg transition border border-gray-100 group cursor-pointer card-hover scale-in delay-200 icon-bounce">
+            <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-sky-500 to-cyan-600 flex items-center justify-center mb-4 text-white group-hover:scale-110 transition icon-inner">
+              <svg class="w-6 h-6 sm:w-7 sm:h-7" fill="currentColor" viewBox="0 0 640 512">
+                <path d="M392.8 1.2c-17-4.9-34.7 5-39.6 22l-128 448c-4.9 17 5 34.7 22 39.6s34.7-5 39.6-22l128-448c4.9-17-5-34.7-22-39.6zm80.6 120.1c-12.5 12.5-12.5 32.8 0 45.3L562.7 256l-89.4 89.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l112-112c12.5-12.5 12.5-32.8 0-45.3l-112-112c-12.5-12.5-32.8-12.5-45.3 0zm-306.7 0c-12.5-12.5-32.8-12.5-45.3 0l-112 112c-12.5 12.5-12.5 32.8 0 45.3l112 112c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L77.3 256l89.4-89.4c12.5-12.5 12.5-32.8 0-45.3z"/>
+              </svg>
+            </div>
+            <h3 class="font-bold text-gray-900 mb-2 text-sm sm:text-base">视频转音频</h3>
+            <p class="text-xs sm:text-sm text-gray-600 line-clamp-3">可将视频中的音频提取出来，支持多种音频格式</p>
+          </div>
+
+          <!-- 图生视频 -->
+          <div class="bg-white rounded-2xl p-5 sm:p-6 shadow-sm hover:shadow-lg transition border border-gray-100 group cursor-pointer card-hover scale-in delay-300 icon-bounce">
+            <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center mb-4 text-white group-hover:scale-110 transition icon-inner">
+              <svg class="w-6 h-6 sm:w-7 sm:h-7" fill="currentColor" viewBox="0 0 512 512">
+                <path d="M14.1 463.3c-18.7-18.7-18.7-49.1 0-67.9L395.4 14.1c18.7-18.7 49.1-18.7 67.9 0l34.6 34.6c18.7 18.7 18.7 49.1 0 67.9L116.5 497.9c-18.7 18.7-49.1 18.7-67.9 0L14.1 463.3z"/>
+              </svg>
+            </div>
+            <h3 class="font-bold text-gray-900 mb-2 text-sm sm:text-base">图生视频</h3>
+            <p class="text-xs sm:text-sm text-gray-600 line-clamp-3">包含豆包、海螺、vidu、万相、可灵即梦等图生视频</p>
+          </div>
+
+          <!-- 字幕音频对齐 -->
+          <div class="bg-white rounded-2xl p-5 sm:p-6 shadow-sm hover:shadow-lg transition border border-gray-100 group cursor-pointer card-hover scale-in delay-400 icon-bounce">
+            <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mb-4 text-white group-hover:scale-110 transition icon-inner">
+              <svg class="w-6 h-6 sm:w-7 sm:h-7" fill="currentColor" viewBox="0 0 576 512">
+                <path d="M0 96C0 60.7 28.7 32 64 32l448 0c35.3 0 64 28.7 64 64l0 320c0 35.3-28.7 64-64 64L64 480c-35.3 0-64-28.7-64-64L0 96zM200 208c14.2 0 27 6.1 35.8 16c8.8 9.9 24 10.7 33.9 1.9s10.7-24 1.9-33.9c-17.5-19.6-43.1-32-71.5-32c-53 0-96 43-96 96s43 96 96 96c28.4 0 54-12.4 71.5-32c8.8-9.9 8-25-1.9-33.9s-25-8-33.9 1.9c-8.8 9.9-21.6 16-35.8 16c-26.5 0-48-21.5-48-48s21.5-48 48-48z"/>
+              </svg>
+            </div>
+            <h3 class="font-bold text-gray-900 mb-2 text-sm sm:text-base">字幕音频对齐</h3>
+            <p class="text-xs sm:text-sm text-gray-600 line-clamp-3">智能同步字幕与音频，精准校准时间轴，打造专业视听体验</p>
+          </div>
+
+          <!-- 声音克隆 -->
+          <div class="bg-white rounded-2xl p-5 sm:p-6 shadow-sm hover:shadow-lg transition border border-gray-100 group cursor-pointer card-hover scale-in delay-100 icon-bounce">
+            <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center mb-4 text-white group-hover:scale-110 transition icon-inner">
+              <svg class="w-6 h-6 sm:w-7 sm:h-7" fill="currentColor" viewBox="0 0 512 512">
+                <path d="M0 96C0 60.7 28.7 32 64 32l384 0c35.3 0 64 28.7 64 64l0 320c0 35.3-28.7 64-64 64L64 480c-35.3 0-64-28.7-64-64L0 96zM323.8 202.5c-4.5-6.6-11.9-10.5-19.8-10.5s-15.4 3.9-19.8 10.5l-87 127.6L170.7 297c-4.6-5.7-11.5-9-18.7-9s-14.2 3.3-18.7 9l-64 80c-5.8 7.2-6.9 17.1-2.9 25.4s12.4 13.6 21.6 13.6l96 0 32 0 208 0c8.9 0 17.1-4.9 21.2-12.8s3.6-17.4-1.4-24.7l-120-176zM112 192a48 48 0 1 0 0-96 48 48 0 1 0 0 96z"/>
+              </svg>
+            </div>
+            <h3 class="font-bold text-gray-900 mb-2 text-sm sm:text-base">声音克隆</h3>
+            <p class="text-xs sm:text-sm text-gray-600 line-clamp-3">克隆声音，生成属于你的专属声音</p>
+          </div>
+
+          <!-- 视频搜索 -->
+          <div class="bg-white rounded-2xl p-5 sm:p-6 shadow-sm hover:shadow-lg transition border border-gray-100 group cursor-pointer card-hover scale-in delay-200 icon-bounce">
+            <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-red-500 to-pink-600 flex items-center justify-center mb-4 text-white group-hover:scale-110 transition icon-inner">
+              <svg class="w-6 h-6 sm:w-7 sm:h-7" fill="currentColor" viewBox="0 0 384 512">
+                <path d="M64 0C28.7 0 0 28.7 0 64L0 448c0 35.3 28.7 64 64 64l256 0c35.3 0 64-28.7 64-64l0-288-128 0c-17.7 0-32-14.3-32-32L224 0 64 0zM256 0l0 128 128 0L256 0zM64 288c0-17.7 14.3-32 32-32l96 0c17.7 0 32 14.3 32 32l0 96c0 17.7-14.3 32-32 32l-96 0c-17.7 0-32-14.3-32-32l0-96z"/>
+              </svg>
+            </div>
+            <h3 class="font-bold text-gray-900 mb-2 text-sm sm:text-base">视频搜索</h3>
+            <p class="text-xs sm:text-sm text-gray-600 line-clamp-3">支持抖音、快手、小红书、B站等平台视频搜索</p>
+          </div>
+
+          <!-- 视频全平台下载 -->
+          <div class="bg-white rounded-2xl p-5 sm:p-6 shadow-sm hover:shadow-lg transition border border-gray-100 group cursor-pointer card-hover scale-in delay-300 icon-bounce">
+            <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center mb-4 text-white group-hover:scale-110 transition icon-inner">
+              <svg class="w-6 h-6 sm:w-7 sm:h-7" fill="currentColor" viewBox="0 0 512 512">
+                <path d="M288 32c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 242.7-73.4-73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0l128-128c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L288 274.7 288 32zM64 352c-35.3 0-64 28.7-64 64l0 32c0 35.3 28.7 64 64 64l384 0c35.3 0 64-28.7 64-64l0-32c0-35.3-28.7-64-64-64l-101.5 0-45.3 45.3c-25 25-65.5 25-90.5 0L165.5 352 64 352z"/>
+              </svg>
+            </div>
+            <h3 class="font-bold text-gray-900 mb-2 text-sm sm:text-base">视频全平台下载</h3>
+            <p class="text-xs sm:text-sm text-gray-600 line-clamp-3">支持抖音、快手、小红书、B站等平台视频资源下载</p>
+          </div>
+
+          <!-- 获取第三方平台数据 -->
+          <div class="bg-white rounded-2xl p-5 sm:p-6 shadow-sm hover:shadow-lg transition border border-gray-100 group cursor-pointer card-hover scale-in delay-400 icon-bounce">
+            <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center mb-4 text-white group-hover:scale-110 transition icon-inner">
+              <svg class="w-6 h-6 sm:w-7 sm:h-7" fill="currentColor" viewBox="0 0 448 512">
+                <path d="M448 80l0 48c0 44.2-100.3 80-224 80S0 172.2 0 128L0 80C0 35.8 100.3 0 224 0S448 35.8 448 80zM393.2 214.7c20.8-7.4 39.9-16.9 54.8-28.6L448 288c0 44.2-100.3 80-224 80S0 332.2 0 288L0 186.1c14.9 11.8 34 21.2 54.8 28.6C99.7 230.7 159.5 240 224 240s124.3-9.3 169.2-25.3zM0 346.1c14.9 11.8 34 21.2 54.8 28.6C99.7 390.7 159.5 400 224 400s124.3-9.3 169.2-25.3c20.8-7.4 39.9-16.9 54.8-28.6l0 85.9c0 44.2-100.3 80-224 80S0 476.2 0 432l0-85.9z"/>
+              </svg>
+            </div>
+            <h3 class="font-bold text-gray-900 mb-2 text-sm sm:text-base">获取第三方平台数据</h3>
+            <p class="text-xs sm:text-sm text-gray-600 line-clamp-3">连接各大平台数据源，可获取淘宝、京东、拼多多、抖音等</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA 区域 -->
+    <section class="py-20 gradient-bg">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h2 class="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-4 animate-on-scroll">
+          开始构建你的 AI 智能体
+        </h2>
+        <p class="text-lg text-white/80 mb-8 animate-on-scroll delay-100">
+          加入我们，和数万开发者一起探索 AI 的无限可能
+        </p>
+        <div class="flex flex-wrap justify-center gap-4 animate-on-scroll delay-200">
+          <button class="px-8 py-3 rounded-xl bg-white text-violet-600 font-semibold hover:bg-gray-100 transition btn-ripple pulse-glow">
+            免费开始
+          </button>
+          <button class="px-8 py-3 rounded-xl bg-white/20 text-white font-semibold hover:bg-white/30 transition btn-ripple">
+            查看文档
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 底部 -->
+    <footer class="bg-gray-900 text-gray-400 py-12">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div>
+            <div class="flex items-center gap-2 mb-4">
+              <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+              </div>
+              <span class="text-xl font-bold text-white">SmartAPI</span>
+            </div>
+            <p class="text-sm">为 AI 智能体开发者提供强大的工具和服务</p>
+          </div>
+          <div>
+            <h4 class="font-semibold text-white mb-4">产品</h4>
+            <ul class="space-y-2 text-sm">
+              <li><a href="#" class="hover:text-white transition">插件市场</a></li>
+              <li><a href="#" class="hover:text-white transition">提示词市场</a></li>
+              <li><a href="#" class="hover:text-white transition">视频提取</a></li>
+              <li><a href="#" class="hover:text-white transition">精品课程</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="font-semibold text-white mb-4">支持</h4>
+            <ul class="space-y-2 text-sm">
+              <li><a href="#" class="hover:text-white transition">使用文档</a></li>
+              <li><a href="#" class="hover:text-white transition">API 文档</a></li>
+              <li><a href="#" class="hover:text-white transition">常见问题</a></li>
+              <li><a href="#" class="hover:text-white transition">联系我们</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="font-semibold text-white mb-4">联系方式</h4>
+            <ul class="space-y-2 text-sm">
+              <li>微信：OTR4936</li>
+              <li>邮箱：support@smartapi.com</li>
+            </ul>
+          </div>
+        </div>
+        <div class="border-t border-gray-800 mt-8 pt-8 text-center text-sm">
+          <p>© 2024 SmartAPI. All rights reserved.</p>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+  <script>
+    // 轮播图逻辑
+    let currentSlide = 0;
+    const totalSlides = 3;
+    const carouselInner = document.getElementById('carouselInner');
+    const dots = document.querySelectorAll('.carousel-dot');
+
+    function updateCarousel() {
+      carouselInner.style.transform = `translateX(-${currentSlide * 100}%)`;
+      dots.forEach((dot, index) => {
+        dot.classList.toggle('active', index === currentSlide);
+      });
+    }
+
+    function nextSlide() {
+      currentSlide = (currentSlide + 1) % totalSlides;
+      updateCarousel();
+    }
+
+    function prevSlide() {
+      currentSlide = (currentSlide - 1 + totalSlides) % totalSlides;
+      updateCarousel();
+    }
+
+    // 点击指示器切换
+    dots.forEach((dot, index) => {
+      dot.addEventListener('click', () => {
+        currentSlide = index;
+        updateCarousel();
+      });
+    });
+
+    // 自动轮播
+    setInterval(nextSlide, 5000);
+
+    // ===== 滚动动画 =====
+    const observerOptions = {
+      root: null,
+      rootMargin: '0px',
+      threshold: 0.15
+    };
+
+    const animationObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('animated');
+          // 如果是数字计数器，启动计数
+          if (entry.target.classList.contains('counter')) {
+            animateCounter(entry.target);
+          }
+        }
+      });
+    }, observerOptions);
+
+    // 监听所有需要动画的元素
+    document.querySelectorAll('.animate-on-scroll, .slide-in-left, .slide-in-right, .scale-in, .counter').forEach(el => {
+      animationObserver.observe(el);
+    });
+
+    // ===== 数字递增动画 =====
+    function animateCounter(el) {
+      const target = parseInt(el.getAttribute('data-target')) || 0;
+      const suffix = el.getAttribute('data-suffix') || '';
+      const duration = 2000;
+      const step = target / (duration / 16);
+      let current = 0;
+
+      const timer = setInterval(() => {
+        current += step;
+        if (current >= target) {
+          current = target;
+          clearInterval(timer);
+        }
+        el.textContent = Math.floor(current).toLocaleString() + suffix;
+      }, 16);
+    }
+
+    // ===== 视频悬浮播放 =====
+    document.querySelectorAll('.video-container').forEach(container => {
+      const video = container.querySelector('video');
+      const playBtn = container.querySelector('.play-btn');
+
+      if (video && playBtn) {
+        // 点击播放按钮
+        playBtn.addEventListener('click', () => {
+          if (video.paused) {
+            video.play();
+            container.classList.add('playing');
+          }
+        });
+
+        // 视频暂停时显示按钮
+        video.addEventListener('pause', () => {
+          container.classList.remove('playing');
+        });
+
+        // 视频播放时隐藏按钮
+        video.addEventListener('play', () => {
+          container.classList.add('playing');
+        });
+
+        // 鼠标悬浮播放
+        container.addEventListener('mouseenter', () => {
+          if (video.paused) {
+            video.play().catch(() => {});
+          }
+        });
+
+        container.addEventListener('mouseleave', () => {
+          video.pause();
+        });
+      }
+    });
+
+    // ===== 按钮波纹效果 =====
+    document.querySelectorAll('.btn-ripple').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        const rect = this.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        const ripple = document.createElement('span');
+        ripple.style.cssText = `
+          position: absolute;
+          background: rgba(255,255,255,0.5);
+          border-radius: 50%;
+          transform: scale(0);
+          animation: ripple 0.6s linear;
+          pointer-events: none;
+          left: ${x}px;
+          top: ${y}px;
+          width: 100px;
+          height: 100px;
+          margin-left: -50px;
+          margin-top: -50px;
+        `;
+        this.style.position = 'relative';
+        this.style.overflow = 'hidden';
+        this.appendChild(ripple);
+
+        setTimeout(() => ripple.remove(), 600);
+      });
+    });
+
+    // 添加波纹动画样式
+    const style = document.createElement('style');
+    style.textContent = `@keyframes ripple { to { transform: scale(4); opacity: 0; } }`;
+    document.head.appendChild(style);
+  </script>
+
+</body>
+</html>

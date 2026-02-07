@@ -1,0 +1,7 @@
+外网面板地址: https://119.29.37.208:17907/821e8ddf
+ 内网面板地址: https://10.1.24.12:17907/821e8ddf
+ username: cfi7rblh
+ password: be985d9e
+
+ api接口
+ T094Sxqg50766WKtjIOQZeg5xAxIua95

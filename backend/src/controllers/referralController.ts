@@ -3,37 +3,7 @@ import { Op } from 'sequelize';
 import UserReferral from '../models/UserReferral';
 import Commission from '../models/Commission';
 import User from '../models/User';
-import SystemConfig, { ConfigKey } from '../models/SystemConfig';
-
-/**
- * 获取课程佣金比例（从系统配置读取）
- */
-const getCourseCommissionRate = async (): Promise<number> => {
-  return await SystemConfig.getNumberConfig(ConfigKey.COMMISSION_RATE_COURSE) || 10;
-};
-
-/**
- * 获取会员佣金比例（从系统配置读取）
- */
-const getMembershipCommissionRate = async (): Promise<number> => {
-  return await SystemConfig.getNumberConfig(ConfigKey.COMMISSION_RATE_MEMBERSHIP) || 10;
-};
-
-/**
- * 获取通用佣金比例（从系统配置读取）
- */
-const getGeneralCommissionRate = async (): Promise<number> => {
-  return await SystemConfig.getNumberConfig(ConfigKey.COMMISSION_RATE) || 25;
-};
-
-/**
- * 检查并升级用户推广等级（只升不降）
- * @deprecated 新规则不再使用等级系统
- */
-const checkAndUpgradeLevel = async (userId: number, totalReferrals: number): Promise<void> => {
-  // 新规则下不再升级等级，但保留函数兼容性
-  return;
-};
+import commissionService from '../services/CommissionService';
 
 /**
  * 获取推广统计数据
@@ -84,10 +54,11 @@ export const getReferralStats = async (req: Request, res: Response): Promise<voi
       }
     });
 
-    // 从系统配置读取佣金比例
-    const courseCommissionRate = await getCourseCommissionRate();
-    const membershipCommissionRate = await getMembershipCommissionRate();
-    const generalCommissionRate = await getGeneralCommissionRate();
+    // 获取用户的实际佣金比例（基于用户分类和自定义设置）
+    const courseRateDecimal = await commissionService.getCommissionRateForUser(user, 'course');
+    const membershipRateDecimal = await commissionService.getCommissionRateForUser(user, 'membership');
+    const courseCommissionRate = courseRateDecimal * 100; // 转换为百分比
+    const membershipCommissionRate = membershipRateDecimal * 100; // 转换为百分比
 
     res.json({
       success: true,
@@ -96,7 +67,7 @@ export const getReferralStats = async (req: Request, res: Response): Promise<voi
         active_referrals: activeReferrals,
         total_commission: totalPointsEarned || 0, // 兼容前端字段名
         pending_commission: pendingPoints || 0,
-        commission_rate: generalCommissionRate, // 通用比例（兼容）
+        commission_rate: courseCommissionRate, // 使用课程比例作为通用比例
         commission_rate_course: courseCommissionRate, // 课程佣金比例
         commission_rate_membership: membershipCommissionRate, // 会员佣金比例
         referral_level: 1, // 新规则不再使用等级
@@ -281,20 +252,12 @@ export const handleRechargeCommission = async (userId: number, amount: number): 
       return undefined;
     }
 
-    // 检查并升级推广人等级（新规则已废弃等级系统）
-    const totalReferrals = await UserReferral.count({
-      where: { referrer_id: referral.referrer_id }
-    });
-    await checkAndUpgradeLevel(referral.referrer_id, totalReferrals);
-
-    // 重新加载推广人信息
-    await referrer.reload();
-
-    // 从系统配置获取通用佣金比例
-    const commissionRate = await getGeneralCommissionRate();
+    // 获取推广人的佣金比例（从 user_categories 表获取）
+    const commissionRateDecimal = await commissionService.getCommissionRateForUser(referrer, 'course');
+    const commissionRate = commissionRateDecimal * 100; // 转换为百分比
 
     // 计算佣金金额
-    const commissionAmount = (amount * commissionRate) / 100;
+    const commissionAmount = amount * commissionRateDecimal;
 
     // 创建佣金记录
     const commission = await Commission.create({
@@ -315,7 +278,7 @@ export const handleRechargeCommission = async (userId: number, amount: number): 
       where: { id: referral.referrer_id }
     });
 
-    console.log(`佣金结算成功: ${commissionAmount} 元，等级: ${referrer.referral_level}, 比例: ${commissionRate}%`);
+    console.log(`佣金结算成功: ${commissionAmount.toFixed(2)} 元，用户分类: ${referrer.user_category || 'normal'}, 比例: ${commissionRate}%`);
     return commission;
   } catch (error) {
     console.error('处理充值佣金失败:', error);
@@ -366,13 +329,15 @@ export const handlePurchasePointsCommission = async (
       return undefined;
     }
 
-    // 根据购买类型获取对应的佣金比例
-    const commissionRate = sourceType === 'course'
-      ? await getCourseCommissionRate()
-      : await getMembershipCommissionRate();
+    // 获取推广人的实际佣金比例（基于用户分类和自定义设置）
+    const commissionRateDecimal = await commissionService.getCommissionRateForUser(
+      referrer,
+      sourceType
+    );
+    const commissionRate = commissionRateDecimal * 100; // 转换为百分比
 
     // 计算积分
-    const pointsAmount = Math.floor((amount * commissionRate) / 100);
+    const pointsAmount = Math.floor(amount * commissionRateDecimal);
 
     // 创建佣金记录
     const commission = await Commission.create({

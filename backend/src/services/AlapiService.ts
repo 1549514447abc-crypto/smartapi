@@ -24,6 +24,55 @@ class AlapiService {
   private serviceName = 'video_parser';
 
   /**
+   * Clean video URL by removing unnecessary query parameters
+   * This helps ALAPI parse the video correctly
+   */
+  private cleanVideoUrl(url: string): string {
+    try {
+      const urlObj = new URL(url);
+
+      // B站链接：移除所有参数，只保留视频路径
+      if (urlObj.hostname.includes('bilibili.com')) {
+        // 提取 BV 或 av 号
+        const pathMatch = urlObj.pathname.match(/\/(video\/(BV[\w]+|av\d+))/);
+        if (pathMatch) {
+          return `https://www.bilibili.com/${pathMatch[1]}`;
+        }
+        // 如果是短链接或其他格式，只移除参数
+        urlObj.search = '';
+        urlObj.hash = '';
+        return urlObj.toString().replace(/\/$/, ''); // 移除末尾斜杠
+      }
+
+      // 抖音链接：保持原样，已经可以正常工作
+      if (urlObj.hostname.includes('douyin.com')) {
+        return url;
+      }
+
+      // 快手链接：移除参数
+      if (urlObj.hostname.includes('kuaishou.com') || urlObj.hostname.includes('gifshow.com')) {
+        urlObj.search = '';
+        urlObj.hash = '';
+        return urlObj.toString();
+      }
+
+      // 小红书链接：移除参数
+      if (urlObj.hostname.includes('xiaohongshu.com') || urlObj.hostname.includes('xhslink.com')) {
+        urlObj.search = '';
+        urlObj.hash = '';
+        return urlObj.toString();
+      }
+
+      // 其他平台：保持原样
+      return url;
+    } catch (error) {
+      // 如果URL解析失败，返回原始URL
+      console.warn('Failed to parse URL for cleaning:', error);
+      return url;
+    }
+  }
+
+  /**
    * Get configuration value by key
    */
   private async getConfig(key: string): Promise<string | null> {
@@ -121,11 +170,17 @@ class AlapiService {
     const endpoint = await this.getConfig('api_endpoint') || 'https://v3.alapi.cn/api/video/url';
     const startTime = Date.now();
 
+    // Clean URL to remove unnecessary parameters
+    const cleanedUrl = this.cleanVideoUrl(videoUrl);
+    if (cleanedUrl !== videoUrl) {
+      console.log(`🔗 URL cleaned: ${videoUrl.substring(0, 50)}... → ${cleanedUrl}`);
+    }
+
     // Get current token
     let { token, type } = await this.getCurrentToken();
 
     // First attempt
-    const requestParams = { token, url: videoUrl };
+    const requestParams = { token, url: cleanedUrl };
 
     try {
       const response = await axios.post<AlapiVideoResponse>(

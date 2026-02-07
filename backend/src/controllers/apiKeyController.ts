@@ -18,7 +18,7 @@ export const getApiKey = async (req: Request, res: Response): Promise<void> => {
 
     const userId = req.user.userId;
 
-    const apiKeys: any[] = await sequelize.query(
+    let apiKeys: any[] = await sequelize.query(
       `SELECT api_key, key_name, status, created_at, last_used_at, total_calls
        FROM api_keys
        WHERE user_id = ?
@@ -30,9 +30,44 @@ export const getApiKey = async (req: Request, res: Response): Promise<void> => {
       }
     );
 
+    // 如果没有密钥，自动创建一个
     if (apiKeys.length === 0) {
-      errorResponse(res, 'No API key found', 404);
-      return;
+      console.log(`用户 ${userId} 没有API密钥，自动创建...`);
+      const newApiKey = generateApiKey();
+      const keyName = '默认密钥';
+
+      await sequelize.query(
+        `INSERT INTO api_keys (api_key, user_id, key_name, status)
+         VALUES (?, ?, ?, 'active')`,
+        {
+          replacements: [newApiKey, userId, keyName]
+        }
+      );
+
+      // 获取用户余额用于同步
+      const users: any[] = await sequelize.query(
+        `SELECT balance FROM users WHERE id = ?`,
+        { replacements: [userId], type: QueryTypes.SELECT }
+      );
+      const balance = users.length > 0 ? parseFloat(users[0].balance) : 0;
+
+      // 同步到 Supabase
+      supabaseService.syncUser(userId, balance).then(() => {
+        return supabaseService.syncApiKey(newApiKey, userId, keyName);
+      }).catch(err => {
+        console.error('Supabase 同步失败:', err);
+      });
+
+      apiKeys = [{
+        api_key: newApiKey,
+        key_name: keyName,
+        status: 'active',
+        created_at: new Date(),
+        last_used_at: null,
+        total_calls: 0
+      }];
+
+      console.log(`✅ 用户 ${userId} API密钥创建成功: ${newApiKey}`);
     }
 
     successResponse(res, apiKeys[0], 'API key retrieved successfully');

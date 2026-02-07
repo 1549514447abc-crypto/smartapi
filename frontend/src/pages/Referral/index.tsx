@@ -17,26 +17,35 @@ import {
   Sparkles
 } from 'lucide-react';
 
-interface ReferralStats {
-  total_referrals: number;
-  active_referrals: number;
-  total_commission: number;
-  pending_commission: number;
-  commission_rate: number;
-  commission_rate_course: number;
-  commission_rate_membership: number;
+interface CommissionStats {
+  totalReferrals: number;
+  activeReferrals: number;
+  totalCommission: number;
+  pendingCommission: number;
+  availableBalance: number;
+  pendingBalance: number; // 待结算余额（15天内）
+  totalEarned: number; // 累计获得佣金
+  totalWithdrawn: number; // 累计提现佣金
+  commissionRate: number;
+  commissionRateCourse: number;
+  commissionRateMembership: number;
+}
+
+interface ReferralInfo {
+  referralCode: string;
+  shareUrl: string;
 }
 
 const Referral = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const [stats, setStats] = useState<ReferralStats | null>(null);
-  const [referralCode, setReferralCode] = useState('');
+  const [stats, setStats] = useState<CommissionStats | null>(null);
+  const [referralInfo, setReferralInfo] = useState<ReferralInfo | null>(null);
   const [copied, setCopied] = useState<'link' | 'code' | null>(null);
 
   // 获取佣金比例（从后端获取，默认10%）
-  const courseRate = stats?.commission_rate_course || 10;
-  const membershipRate = stats?.commission_rate_membership || 10;
+  const courseRate = stats?.commissionRateCourse || 10;
+  const membershipRate = stats?.commissionRateMembership || 10;
 
   // 佣金规则配置
   const COMMISSION_RULES = [
@@ -49,20 +58,39 @@ const Referral = () => {
   useEffect(() => {
     if (user) {
       fetchReferralStats();
-      generateReferralCode();
+      fetchReferralCode();
     }
   }, [user]);
 
-  const generateReferralCode = () => {
-    if (user?.id) {
-      const code = btoa(`ref_${user.id}`);
-      setReferralCode(code);
+  // 监听页面可见性，当用户切换回页面时自动刷新数据
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user) {
+        fetchReferralStats();
+        fetchReferralCode();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [user]);
+
+  const fetchReferralCode = async () => {
+    try {
+      const response = await api.get<{ success: boolean; data: ReferralInfo }>('/commission/referral-code');
+      if (response.success) {
+        setReferralInfo(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch referral code:', error);
     }
   };
 
   const fetchReferralStats = async () => {
     try {
-      const response = await api.get<{ success: boolean; data: ReferralStats }>('/referral/stats');
+      const response = await api.get<{ success: boolean; data: CommissionStats }>('/commission/stats');
       if (response.success) {
         setStats(response.data);
       }
@@ -72,15 +100,16 @@ const Referral = () => {
   };
 
   const copyReferralLink = () => {
-    const link = `${window.location.origin}/smartapi/register?ref=${referralCode}`;
-    navigator.clipboard.writeText(link);
+    if (!referralInfo) return;
+    navigator.clipboard.writeText(referralInfo.shareUrl);
     message.success('推广链接已复制到剪贴板');
     setCopied('link');
     setTimeout(() => setCopied(null), 2000);
   };
 
   const copyReferralCode = () => {
-    navigator.clipboard.writeText(referralCode);
+    if (!referralInfo) return;
+    navigator.clipboard.writeText(referralInfo.referralCode);
     message.success('推广码已复制到剪贴板');
     setCopied('code');
     setTimeout(() => setCopied(null), 2000);
@@ -174,7 +203,7 @@ const Referral = () => {
             </div>
             <div className="text-xs sm:text-sm text-slate-500">累计推广</div>
           </div>
-          <div className="text-xl sm:text-2xl font-bold text-slate-900">{stats?.total_referrals || 0} <span className="text-xs sm:text-sm font-normal text-slate-400">人</span></div>
+          <div className="text-xl sm:text-2xl font-bold text-slate-900">{stats?.totalReferrals || 0} <span className="text-xs sm:text-sm font-normal text-slate-400">人</span></div>
         </div>
 
         <div className="card p-4 sm:p-5">
@@ -184,7 +213,7 @@ const Referral = () => {
             </div>
             <div className="text-xs sm:text-sm text-slate-500">已购课用户</div>
           </div>
-          <div className="text-xl sm:text-2xl font-bold text-slate-900">{stats?.active_referrals || 0} <span className="text-xs sm:text-sm font-normal text-slate-400">人</span></div>
+          <div className="text-xl sm:text-2xl font-bold text-slate-900">{stats?.activeReferrals || 0} <span className="text-xs sm:text-sm font-normal text-slate-400">人</span></div>
         </div>
 
         <div className="card p-4 sm:p-5">
@@ -194,7 +223,7 @@ const Referral = () => {
             </div>
             <div className="text-xs sm:text-sm text-slate-500">累计赠送金</div>
           </div>
-          <div className="text-xl sm:text-2xl font-bold text-orange-600">¥{(stats?.total_commission || 0).toFixed(2)} </div>
+          <div className="text-xl sm:text-2xl font-bold text-orange-600">¥{(stats?.totalCommission || 0).toFixed(2)} </div>
         </div>
 
         <div className="card p-4 sm:p-5 bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200">
@@ -224,7 +253,7 @@ const Referral = () => {
             <div className="flex flex-col sm:flex-row gap-2">
               <input
                 type="text"
-                value={`${window.location.origin}/smartapi/register?ref=${referralCode}`}
+                value={referralInfo?.shareUrl || ''}
                 readOnly
                 className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border border-slate-200 bg-slate-50 text-xs sm:text-sm text-slate-700 truncate"
               />
@@ -247,9 +276,9 @@ const Referral = () => {
             <div className="flex flex-col sm:flex-row gap-2">
               <input
                 type="text"
-                value={referralCode}
+                value={referralInfo?.referralCode || ''}
                 readOnly
-                className="flex-1 sm:flex-none sm:w-64 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border border-slate-200 bg-slate-50 text-xs sm:text-sm text-slate-700 font-mono"
+                className="flex-1 sm:flex-none sm:w-64 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border border-slate-200 bg-slate-50 text-xs sm:text-sm text-slate-700 font-mono tracking-widest"
               />
               <button
                 onClick={copyReferralCode}

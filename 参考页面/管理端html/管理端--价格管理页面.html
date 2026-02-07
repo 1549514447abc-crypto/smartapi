@@ -1,0 +1,2322 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商品价格设置 - 创作魔方管理后台</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            .modal {
+                width: 95%;
+                padding: 20px;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: #f5f7fa;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .header {
+            background: white;
+            padding: 0 30px;
+            height: 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+            position: relative;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .back-btn {
+            padding: 8px 16px;
+            background: #f5f5f5;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: #666;
+            text-decoration: none;
+        }
+        
+        .back-btn:hover {
+            background: #e0e0e0;
+            color: #333;
+        }
+        
+        .page-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .breadcrumb {
+            color: #999;
+            font-size: 14px;
+        }
+        
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .save-status {
+            padding: 6px 12px;
+            background: #e8f5e8;
+            color: #2e7d32;
+            border-radius: 15px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .save-status.unsaved {
+            background: #fff3e0;
+            color: #e65100;
+        }
+        
+        .admin-avatar {
+            width: 36px;
+            height: 36px;
+            background: #667eea;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .main-container {
+            display: flex;
+            height: calc(100vh - 60px);
+        }
+        
+        .sidebar {
+            width: 280px;
+            background: white;
+            border-right: 1px solid #e0e0e0;
+            overflow-y: auto;
+        }
+        
+        .sidebar-header {
+            padding: 25px 20px 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .sidebar-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .sidebar-subtitle {
+            font-size: 12px;
+            color: #999;
+        }
+        
+        .menu-section {
+            padding: 15px 0;
+        }
+        
+        .menu-group {
+            margin-bottom: 20px;
+        }
+        
+        .menu-group-title {
+            padding: 0 20px 10px;
+            font-size: 12px;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: #666;
+            position: relative;
+        }
+        
+        .menu-item:hover {
+            background: #f8f9ff;
+            color: #667eea;
+        }
+        
+        .menu-item.active {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .menu-item.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 3px;
+            height: 100%;
+            background: #667eea;
+        }
+        
+        .menu-icon {
+            width: 20px;
+            margin-right: 12px;
+            font-size: 16px;
+        }
+        
+        .menu-text {
+            flex: 1;
+            font-size: 14px;
+        }
+        
+        .menu-badge {
+            background: #ff4444;
+            color: white;
+            border-radius: 10px;
+            padding: 2px 6px;
+            font-size: 10px;
+            min-width: 16px;
+            text-align: center;
+        }
+        
+        .menu-badge.new {
+            background: #4caf50;
+        }
+        
+        .content-area {
+            flex: 1;
+            overflow-y: auto;
+            background: #f5f7fa;
+        }
+        
+        .content-section {
+            display: none;
+            padding: 30px;
+            max-width: 1200px;
+        }
+        
+        .content-section.active {
+            display: block;
+        }
+        
+        .section-header {
+            margin-bottom: 30px;
+        }
+        
+        .section-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .section-description {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card-title-icon {
+            font-size: 20px;
+        }
+        
+        .card-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5a6fd8;
+            transform: translateY(-1px);
+        }
+        
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #666;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .btn-secondary:hover {
+            background: #e8e8e8;
+        }
+        
+        .btn-success {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #45a049;
+        }
+        
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #da190b;
+        }
+        
+        .btn-warning {
+            background: #ff9800;
+            color: white;
+        }
+        
+        .btn-warning:hover {
+            background: #f57c00;
+        }
+        
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+        
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+        }
+        
+        .product-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            transition: all 0.3s;
+        }
+        
+        .product-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.15);
+        }
+        
+        .product-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+        
+        .product-info {
+            flex: 1;
+        }
+        
+        .product-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .product-category {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 10px;
+        }
+        
+        .product-status {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        
+        .status-active {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+        
+        .status-hot {
+            background: #fff3e0;
+            color: #e65100;
+        }
+        
+        .status-new {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .price-section {
+            margin: 15px 0;
+        }
+        
+        .price-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .price-input-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .price-label {
+            font-size: 12px;
+            color: #666;
+            min-width: 40px;
+        }
+        
+        .price-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .price-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .price-unit {
+            font-size: 12px;
+            color: #999;
+        }
+        
+        .description-textarea {
+            width: 100%;
+            min-height: 80px;
+            padding: 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            resize: vertical;
+            font-family: inherit;
+            font-size: 14px;
+            margin-bottom: 15px;
+            transition: border-color 0.3s;
+        }
+        
+        .description-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .product-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+        
+        .coupon-generator {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+        
+        .generator-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .coupon-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .form-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .form-input, .form-select {
+            padding: 10px 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+            color: #333;
+        }
+        
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+        }
+        
+        .generator-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        
+        .generator-tip {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 12px;
+            margin-left: auto;
+        }
+        
+        .coupon-list {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .coupon-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.3s;
+        }
+        
+        .coupon-item:last-child {
+            border-bottom: none;
+        }
+        
+        .coupon-item:hover {
+            background: #f8f9ff;
+        }
+        
+        .coupon-info {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .coupon-code {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            color: #667eea;
+            background: #f8f9ff;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 14px;
+            display: inline-block;
+        }
+        
+        .coupon-discount {
+            font-weight: 600;
+            color: #f44336;
+            font-size: 14px;
+        }
+        
+        .coupon-meta {
+            font-size: 12px;
+            color: #999;
+            display: flex;
+            gap: 15px;
+        }
+        
+        .coupon-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .promotion-card {
+            border: 2px dashed #667eea;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #f8f9ff 0%, #ffffff 100%);
+            transition: all 0.3s;
+        }
+        
+        .promotion-card:hover {
+            border-color: #5a6fd8;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.1);
+        }
+        
+        .promotion-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .promotion-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #667eea;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .promotion-status {
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        
+        .promotion-details {
+            margin-bottom: 15px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .promotion-details p {
+            margin-bottom: 8px;
+            color: #555;
+        }
+        
+        .promotion-details strong {
+            color: #333;
+            font-weight: 600;
+        }
+        
+        .promotion-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .table-container {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .table th,
+        .table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .table th {
+            background: #f8f9ff;
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+        
+        .table td {
+            color: #555;
+            font-size: 14px;
+        }
+        
+        .table tr:hover td {
+            background: #f8f9ff;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: #4caf50;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            opacity: 0;
+            transform: translateX(300px);
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+        
+        .notification.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        .notification.error {
+            background: #f44336;
+        }
+        
+        .notification.warning {
+            background: #ff9800;
+        }
+        
+        .batch-tools {
+            background: #f8f9ff;
+            border: 1px solid #e0e6ff;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .batch-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .adjustment-type {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .radio-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .radio-group input[type="radio"] {
+            margin: 0;
+        }
+        
+        .add-product-form {
+            background: #f8f9ff;
+            border: 2px dashed #667eea;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+        
+        .add-product-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .product-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+        
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        
+        .empty-state-text {
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal-overlay.show {
+            display: flex;
+        }
+        
+        .modal {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+        
+        .modal-close:hover {
+            color: #333;
+        }
+        
+        .modal-form {
+            display: grid;
+            gap: 20px;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .form-row.full {
+            grid-template-columns: 1fr;
+        }
+        
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #f0f0f0;
+        }
+        
+        .activity-preview {
+            background: #f8f9ff;
+            border: 1px solid #e0e6ff;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 15px;
+        }
+        
+        .activity-preview-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .activity-preview-content {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: auto;
+                border-right: none;
+                border-bottom: 1px solid #e0e0e0;
+            }
+            
+            .content-section {
+                padding: 20px;
+            }
+            
+            .product-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .coupon-form {
+                grid-template-columns: 1fr;
+            }
+            
+            .batch-form {
+                grid-template-columns: 1fr;
+            }
+            
+            .product-form {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <a href="index.html" class="back-btn">← 返回</a>
+            <div>
+                <div class="page-title">商品价格设置</div>
+                <div class="breadcrumb">管理后台 > 商品价格设置</div>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="save-status" id="saveStatus">
+                <span>●</span> 已保存
+            </div>
+            <div class="admin-avatar">管</div>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-title">价格管理中心</div>
+                <div class="sidebar-subtitle">全面管理产品定价策略</div>
+            </div>
+            
+            <div class="menu-section">
+                <div class="menu-group">
+                    <div class="menu-group-title">产品管理</div>
+                    <div class="menu-item active" data-section="product-pricing">
+                        <div class="menu-icon">💰</div>
+                        <div class="menu-text">产品价格管理</div>
+                    </div>
+                    <div class="menu-item" data-section="batch-pricing">
+                        <div class="menu-icon">📊</div>
+                        <div class="menu-text">批量价格调整</div>
+                    </div>
+                    <div class="menu-item" data-section="price-history">
+                        <div class="menu-icon">📈</div>
+                        <div class="menu-text">价格变更历史</div>
+                    </div>
+                </div>
+
+                <div class="menu-group">
+                    <div class="menu-group-title">优惠营销</div>
+                    <div class="menu-item" data-section="coupon-system">
+                        <div class="menu-icon">🎫</div>
+                        <div class="menu-text">优惠码系统</div>
+                        <div class="menu-badge">15</div>
+                    </div>
+                    <div class="menu-item" data-section="promotion-activity">
+                        <div class="menu-icon">🎉</div>
+                        <div class="menu-text">促销活动</div>
+                        <div class="menu-badge new">3</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-area">
+            <!-- 产品价格管理 -->
+            <div id="product-pricing" class="content-section active">
+                <div class="section-header">
+                    <h1 class="section-title">产品价格管理</h1>
+                    <p class="section-description">管理所有产品线的价格设置，包括功能会员和工作流商店商品的定价策略</p>
+                </div>
+
+                <!-- 新增产品 -->
+                <div class="add-product-form" id="addProductForm" style="display: none;">
+                    <div class="add-product-title">
+                        <span>➕</span>
+                        新增产品
+                    </div>
+                    <div class="product-form">
+                        <div class="form-group">
+                            <label class="form-label" style="color: #666;">产品名称</label>
+                            <input type="text" class="form-input" id="newProductName" placeholder="例：视频剪辑工具">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" style="color: #666;">产品分类</label>
+                            <select class="form-select" id="newProductCategory">
+                                <option value="功能会员">功能会员</option>
+                                <option value="工作流商店">工作流商店</option>
+                                <option value="AI智能服务">AI智能服务</option>
+                                <option value="视频工具">视频工具</option>
+                                <option value="内容创作">内容创作</option>
+                                <option value="自动化工具">自动化工具</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" style="color: #666;">月付价格</label>
+                            <input type="number" class="form-input" id="newProductMonthly" placeholder="99">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" style="color: #666;">年付价格</label>
+                            <input type="number" class="form-input" id="newProductYearly" placeholder="950">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" style="color: #666;">产品状态</label>
+                            <select class="form-select" id="newProductStatus">
+                                <option value="正常销售">正常销售</option>
+                                <option value="热销中">热销中</option>
+                                <option value="推荐">推荐</option>
+                                <option value="新品">新品</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" style="color: #666;">产品介绍</label>
+                        <textarea class="description-textarea" id="newProductDescription" placeholder="请输入产品功能介绍..."></textarea>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-primary" onclick="saveNewProduct()">保存产品</button>
+                        <button class="btn btn-secondary" onclick="cancelAddProduct()">取消</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <span class="card-title-icon">🎯</span>
+                            功能会员服务定价
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn btn-success" onclick="showAddProductForm()">➕ 新增产品</button>
+                            <button class="btn btn-secondary">批量编辑</button>
+                            <button class="btn btn-primary">保存全部</button>
+                        </div>
+                    </div>
+                    
+                    <div class="product-grid" id="memberProductGrid">
+                        <div class="product-card">
+                            <div class="product-header">
+                                <div class="product-info">
+                                    <div class="product-name">文案降AI率</div>
+                                    <div class="product-category">AI智能服务</div>
+                                </div>
+                                <div class="product-status status-hot">热销中</div>
+                            </div>
+                            <div class="price-section">
+                                <div class="price-inputs">
+                                    <div class="price-input-group">
+                                        <span class="price-label">月付</span>
+                                        <input type="number" class="price-input" value="99" data-field="monthly">
+                                        <span class="price-unit">元/月</span>
+                                    </div>
+                                    <div class="price-input-group">
+                                        <span class="price-label">年付</span>
+                                        <input type="number" class="price-input" value="950" data-field="yearly">
+                                        <span class="price-unit">元/年</span>
+                                    </div>
+                                </div>
+                                <textarea class="description-textarea" placeholder="产品介绍">解锁AI降重功能使用权限，通过朱雀、zerogpt等检测，保留原文质量与逻辑，批量处理功能，优先处理队列</textarea>
+                            </div>
+                            <div class="product-actions">
+                                <button class="btn btn-secondary btn-sm">预览</button>
+                                <button class="btn btn-primary btn-sm">保存</button>
+                                <button class="btn btn-danger btn-sm">删除</button>
+                            </div>
+                        </div>
+
+                        <div class="product-card">
+                            <div class="product-header">
+                                <div class="product-info">
+                                    <div class="product-name">短视频文案提取</div>
+                                    <div class="product-category">视频工具</div>
+                                </div>
+                                <div class="product-status status-active">正常销售</div>
+                            </div>
+                            <div class="price-section">
+                                <div class="price-inputs">
+                                    <div class="price-input-group">
+                                        <span class="price-label">月付</span>
+                                        <input type="number" class="price-input" value="29" data-field="monthly">
+                                        <span class="price-unit">元/月</span>
+                                    </div>
+                                    <div class="price-input-group">
+                                        <span class="price-label">年付</span>
+                                        <input type="number" class="price-input" value="278" data-field="yearly">
+                                        <span class="price-unit">元/年</span>
+                                    </div>
+                                </div>
+                                <textarea class="description-textarea" placeholder="产品介绍">解锁视频文案提取功能权限，抖音、小红书、B站文案提取，批量URL处理，智能排版功能，Word文档导出</textarea>
+                            </div>
+                            <div class="product-actions">
+                                <button class="btn btn-secondary btn-sm">预览</button>
+                                <button class="btn btn-primary btn-sm">保存</button>
+                                <button class="btn btn-danger btn-sm">删除</button>
+                            </div>
+                        </div>
+
+                        <div class="product-card">
+                            <div class="product-header">
+                                <div class="product-info">
+                                    <div class="product-name">解锁所有智能体</div>
+                                    <div class="product-category">AI智能服务</div>
+                                </div>
+                                <div class="product-status status-active">推荐</div>
+                            </div>
+                            <div class="price-section">
+                                <div class="price-inputs">
+                                    <div class="price-input-group">
+                                        <span class="price-label">月付</span>
+                                        <input type="number" class="price-input" value="59" data-field="monthly">
+                                        <span class="price-unit">元/月</span>
+                                    </div>
+                                    <div class="price-input-group">
+                                        <span class="price-label">年付</span>
+                                        <input type="number" class="price-input" value="566" data-field="yearly">
+                                        <span class="price-unit">元/年</span>
+                                    </div>
+                                </div>
+                                <textarea class="description-textarea" placeholder="产品介绍">解锁全部AI智能体工具权限，电商选品AI助手，直播话术生成器，营销方案AI规划，商业决策支持</textarea>
+                            </div>
+                            <div class="product-actions">
+                                <button class="btn btn-secondary btn-sm">预览</button>
+                                <button class="btn btn-primary btn-sm">保存</button>
+                                <button class="btn btn-danger btn-sm">删除</button>
+                            </div>
+                        </div>
+
+                        <div class="product-card">
+                            <div class="product-header">
+                                <div class="product-info">
+                                    <div class="product-name">小说推文效号</div>
+                                    <div class="product-category">内容创作</div>
+                                </div>
+                                <div class="product-status status-hot">热销中</div>
+                            </div>
+                            <div class="price-section">
+                                <div class="price-inputs">
+                                    <div class="price-input-group">
+                                        <span class="price-label">月付</span>
+                                        <input type="number" class="price-input" value="99" data-field="monthly">
+                                        <span class="price-unit">元/月</span>
+                                    </div>
+                                    <div class="price-input-group">
+                                        <span class="price-label">年付</span>
+                                        <input type="number" class="price-input" value="950" data-field="yearly">
+                                        <span class="price-unit">元/年</span>
+                                    </div>
+                                </div>
+                                <textarea class="description-textarea" placeholder="产品介绍">解锁小说推文功能权限，100%过AI检测，文字图片生成，视频推荐例创建，一键生成推文视频</textarea>
+                            </div>
+                            <div class="product-actions">
+                                <button class="btn btn-secondary btn-sm">预览</button>
+                                <button class="btn btn-primary btn-sm">保存</button>
+                                <button class="btn btn-danger btn-sm">删除</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <span class="card-title-icon">⚙️</span>
+                            工作流商店会员定价
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn btn-success" onclick="showAddProductForm()">➕ 新增商品</button>
+                            <button class="btn btn-primary">保存全部</button>
+                        </div>
+                    </div>
+                    
+                    <div class="product-grid">
+                        <div class="product-card">
+                            <div class="product-header">
+                                <div class="product-info">
+                                    <div class="product-name">Coze工作流</div>
+                                    <div class="product-category">自动化工具</div>
+                                </div>
+                                <div class="product-status status-active">专业版</div>
+                            </div>
+                            <div class="price-section">
+                                <div class="price-inputs">
+                                    <div class="price-input-group">
+                                        <span class="price-label">年付</span>
+                                        <input type="number" class="price-input" value="299" data-field="yearly">
+                                        <span class="price-unit">元/年</span>
+                                    </div>
+                                    <div class="price-input-group">
+                                        <span class="price-label">终身</span>
+                                        <input type="number" class="price-input" value="899" data-field="lifetime">
+                                        <span class="price-unit">元</span>
+                                    </div>
+                                </div>
+                                <textarea class="description-textarea" placeholder="产品介绍">Coze平台专业工作流，精选实用自动化模板，定期更新最新流程，详细使用教程，专属技术支持</textarea>
+                            </div>
+                            <div class="product-actions">
+                                <button class="btn btn-secondary btn-sm">预览</button>
+                                <button class="btn btn-primary btn-sm">保存</button>
+                                <button class="btn btn-danger btn-sm">删除</button>
+                            </div>
+                        </div>
+
+                        <div class="product-card">
+                            <div class="product-header">
+                                <div class="product-info">
+                                    <div class="product-name">Make工作流</div>
+                                    <div class="product-category">自动化工具</div>
+                                </div>
+                                <div class="product-status status-active">企业版</div>
+                            </div>
+                            <div class="price-section">
+                                <div class="price-inputs">
+                                    <div class="price-input-group">
+                                        <span class="price-label">年付</span>
+                                        <input type="number" class="price-input" value="399" data-field="yearly">
+                                        <span class="price-unit">元/年</span>
+                                    </div>
+                                    <div class="price-input-group">
+                                        <span class="price-label">终身</span>
+                                        <input type="number" class="price-input" value="1199" data-field="lifetime">
+                                        <span class="price-unit">元</span>
+                                    </div>
+                                </div>
+                                <textarea class="description-textarea" placeholder="产品介绍">Make平台自动化方案，企业级工作流模板，复杂业务流程自动化，可视化流程设计，高级集成方案</textarea>
+                            </div>
+                            <div class="product-actions">
+                                <button class="btn btn-secondary btn-sm">预览</button>
+                                <button class="btn btn-primary btn-sm">保存</button>
+                                <button class="btn btn-danger btn-sm">删除</button>
+                            </div>
+                        </div>
+
+                        <div class="product-card">
+                            <div class="product-header">
+                                <div class="product-info">
+                                    <div class="product-name">N8N工作流</div>
+                                    <div class="product-category">自动化工具</div>
+                                </div>
+                                <div class="product-status status-new">旗舰版</div>
+                            </div>
+                            <div class="price-section">
+                                <div class="price-inputs">
+                                    <div class="price-input-group">
+                                        <span class="price-label">年付</span>
+                                        <input type="number" class="price-input" value="599" data-field="yearly">
+                                        <span class="price-unit">元/年</span>
+                                    </div>
+                                    <div class="price-input-group">
+                                        <span class="price-label">终身</span>
+                                        <input type="number" class="price-input" value="1799" data-field="lifetime">
+                                        <span class="price-unit">元</span>
+                                    </div>
+                                </div>
+                                <textarea class="description-textarea" placeholder="产品介绍">N8N开源自动化平台，高级定制工作流，开发者级别方案，源码级别支持，私有化部署方案</textarea>
+                            </div>
+                            <div class="product-actions">
+                                <button class="btn btn-secondary btn-sm">预览</button>
+                                <button class="btn btn-primary btn-sm">保存</button>
+                                <button class="btn btn-danger btn-sm">删除</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 批量价格调整 -->
+            <div id="batch-pricing" class="content-section">
+                <div class="section-header">
+                    <h1 class="section-title">批量价格调整</h1>
+                    <p class="section-description">快速批量调整多个产品的价格，支持按比例或固定金额调整</p>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <span class="card-title-icon">⚙️</span>
+                            批量调整工具
+                        </div>
+                    </div>
+                    
+                    <div class="batch-tools">
+                        <div class="batch-form">
+                            <div class="form-group">
+                                <label class="form-label" style="color: #666;">选择产品分类</label>
+                                <select class="form-select" id="batchCategory">
+                                    <option value="all">全部产品</option>
+                                    <option value="功能会员">功能会员服务</option>
+                                    <option value="工作流商店">工作流商店</option>
+                                    <option value="AI智能服务">AI智能服务</option>
+                                    <option value="视频工具">视频工具</option>
+                                    <option value="内容创作">内容创作</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" style="color: #666;">价格类型</label>
+                                <select class="form-select" id="batchPriceType">
+                                    <option value="monthly">月付价格</option>
+                                    <option value="yearly">年付价格</option>
+                                    <option value="lifetime">终身价格</option>
+                                    <option value="all">全部价格</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="adjustment-type">
+                            <label style="font-weight: 600; color: #333; margin-right: 20px;">调整方式：</label>
+                            <div class="radio-group">
+                                <input type="radio" name="adjustType" value="percentage" id="percentageAdj" checked>
+                                <label for="percentageAdj">按比例调整</label>
+                            </div>
+                            <div class="radio-group">
+                                <input type="radio" name="adjustType" value="fixed" id="fixedAdj">
+                                <label for="fixedAdj">固定金额调整</label>
+                            </div>
+                        </div>
+                        
+                        <div class="batch-form">
+                            <div class="form-group">
+                                <label class="form-label" style="color: #666;">调整值</label>
+                                <input type="number" class="form-input" id="adjustValue" placeholder="例：10（增加10%或10元）">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" style="color: #666;">调整方向</label>
+                                <select class="form-select" id="adjustDirection">
+                                    <option value="increase">增加</option>
+                                    <option value="decrease">减少</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div style="display: flex; gap: 15px; align-items: center;">
+                            <button class="btn btn-primary" onclick="previewBatchAdjustment()">预览调整结果</button>
+                            <button class="btn btn-success" onclick="applyBatchAdjustment()">应用调整</button>
+                            <span style="color: #666; font-size: 14px;">💡 建议先预览调整结果再应用</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <span class="card-title-icon">📋</span>
+                            当前产品价格列表
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn btn-secondary">导出价格表</button>
+                        </div>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
+                                    <th>产品名称</th>
+                                    <th>分类</th>
+                                    <th>月付价格</th>
+                                    <th>年付价格</th>
+                                    <th>终身价格</th>
+                                    <th>状态</th>
+                                    <th>最后更新</th>
+                                </tr>
+                            </thead>
+                            <tbody id="productPriceTable">
+                                <tr>
+                                    <td><input type="checkbox" class="product-checkbox" data-product="ai-reduce"></td>
+                                    <td>文案降AI率</td>
+                                    <td>AI智能服务</td>
+                                    <td>¥99/月</td>
+                                    <td>¥950/年</td>
+                                    <td>-</td>
+                                    <td><span class="product-status status-hot">热销中</span></td>
+                                    <td>2025-09-15 14:30</td>
+                                </tr>
+                                <tr>
+                                    <td><input type="checkbox" class="product-checkbox" data-product="video-extract"></td>
+                                    <td>短视频文案提取</td>
+                                    <td>视频工具</td>
+                                    <td>¥29/月</td>
+                                    <td>¥278/年</td>
+                                    <td>-</td>
+                                    <td><span class="product-status status-active">正常销售</span></td>
+                                    <td>2025-09-14 10:15</td>
+                                </tr>
+                                <tr>
+                                    <td><input type="checkbox" class="product-checkbox" data-product="all-agents"></td>
+                                    <td>解锁所有智能体</td>
+                                    <td>AI智能服务</td>
+                                    <td>¥59/月</td>
+                                    <td>¥566/年</td>
+                                    <td>-</td>
+                                    <td><span class="product-status status-active">推荐</span></td>
+                                    <td>2025-09-13 16:45</td>
+                                </tr>
+                                <tr>
+                                    <td><input type="checkbox" class="product-checkbox" data-product="novel-promo"></td>
+                                    <td>小说推文效号</td>
+                                    <td>内容创作</td>
+                                    <td>¥99/月</td>
+                                    <td>¥950/年</td>
+                                    <td>-</td>
+                                    <td><span class="product-status status-hot">热销中</span></td>
+                                    <td>2025-09-12 09:20</td>
+                                </tr>
+                                <tr>
+                                    <td><input type="checkbox" class="product-checkbox" data-product="coze-workflow"></td>
+                                    <td>Coze工作流</td>
+                                    <td>自动化工具</td>
+                                    <td>-</td>
+                                    <td>¥299/年</td>
+                                    <td>¥899</td>
+                                    <td><span class="product-status status-active">专业版</span></td>
+                                    <td>2025-09-11 11:30</td>
+                                </tr>
+                                <tr>
+                                    <td><input type="checkbox" class="product-checkbox" data-product="make-workflow"></td>
+                                    <td>Make工作流</td>
+                                    <td>自动化工具</td>
+                                    <td>-</td>
+                                    <td>¥399/年</td>
+                                    <td>¥1199</td>
+                                    <td><span class="product-status status-active">企业版</span></td>
+                                    <td>2025-09-10 15:20</td>
+                                </tr>
+                                <tr>
+                                    <td><input type="checkbox" class="product-checkbox" data-product="n8n-workflow"></td>
+                                    <td>N8N工作流</td>
+                                    <td>自动化工具</td>
+                                    <td>-</td>
+                                    <td>¥599/年</td>
+                                    <td>¥1799</td>
+                                    <td><span class="product-status status-new">旗舰版</span></td>
+                                    <td>2025-09-09 13:15</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 价格变更历史 -->
+            <div id="price-history" class="content-section">
+                <div class="section-header">
+                    <h1 class="section-title">价格变更历史</h1>
+                    <p class="section-description">查看所有产品的价格变更记录，追踪价格调整历史</p>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <span class="card-title-icon">📈</span>
+                            价格变更记录
+                        </div>
+                        <div class="card-actions">
+                            <select class="btn btn-secondary" style="padding: 8px 12px;">
+                                <option>全部产品</option>
+                                <option>文案降AI率</option>
+                                <option>短视频文案提取</option>
+                                <option>解锁所有智能体</option>
+                            </select>
+                            <button class="btn btn-secondary">导出记录</button>
+                        </div>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>变更时间</th>
+                                    <th>产品名称</th>
+                                    <th>价格类型</th>
+                                    <th>原价格</th>
+                                    <th>新价格</th>
+                                    <th>变更幅度</th>
+                                    <th>操作人</th>
+                                    <th>变更原因</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>2025-09-15 14:30</td>
+                                    <td>文案降AI率</td>
+                                    <td>月付价格</td>
+                                    <td>¥89</td>
+                                    <td>¥99</td>
+                                    <td style="color: #f44336;">+11.2%</td>
+                                    <td>管理员</td>
+                                    <td>市场调研后价格优化</td>
+                                </tr>
+                                <tr>
+                                    <td>2025-09-14 10:15</td>
+                                    <td>短视频文案提取</td>
+                                    <td>年付价格</td>
+                                    <td>¥300</td>
+                                    <td>¥278</td>
+                                    <td style="color: #4caf50;">-7.3%</td>
+                                    <td>管理员</td>
+                                    <td>促销活动价格调整</td>
+                                </tr>
+                                <tr>
+                                    <td>2025-09-13 16:45</td>
+                                    <td>解锁所有智能体</td>
+                                    <td>月付价格</td>
+                                    <td>¥49</td>
+                                    <td>¥59</td>
+                                    <td style="color: #f44336;">+20.4%</td>
+                                    <td>管理员</td>
+                                    <td>功能升级后价格调整</td>
+                                </tr>
+                                <tr>
+                                    <td>2025-09-12 09:20</td>
+                                    <td>小说推文效号</td>
+                                    <td>年付价格</td>
+                                    <td>¥999</td>
+                                    <td>¥950</td>
+                                    <td style="color: #4caf50;">-4.9%</td>
+                                    <td>管理员</td>
+                                    <td>整数定价策略调整</td>
+                                </tr>
+                                <tr>
+                                    <td>2025-09-11 11:30</td>
+                                    <td>Coze工作流</td>
+                                    <td>年付价格</td>
+                                    <td>¥199</td>
+                                    <td>¥299</td>
+                                    <td style="color: #f44336;">+50.3%</td>
+                                    <td>管理员</td>
+                                    <td>产品定位升级调整</td>
+                                </tr>
+                                <tr>
+                                    <td>2025-09-10 15:20</td>
+                                    <td>Make工作流</td>
+                                    <td>终身价格</td>
+                                    <td>¥999</td>
+                                    <td>¥1199</td>
+                                    <td style="color: #f44336;">+20.0%</td>
+                                    <td>管理员</td>
+                                    <td>成本上升价格调整</td>
+                                </tr>
+                                <tr>
+                                    <td>2025-09-09 13:15</td>
+                                    <td>N8N工作流</td>
+                                    <td>年付价格</td>
+                                    <td>¥499</td>
+                                    <td>¥599</td>
+                                    <td style="color: #f44336;">+20.0%</td>
+                                    <td>管理员</td>
+                                    <td>新品上市定价调整</td>
+                                </tr>
+                                <tr>
+                                    <td>2025-09-08 08:45</td>
+                                    <td>文案降AI率</td>
+                                    <td>年付价格</td>
+                                    <td>¥888</td>
+                                    <td>¥950</td>
+                                    <td style="color: #f44336;">+7.0%</td>
+                                    <td>管理员</td>
+                                    <td>用户反馈价值调整</td>
+                                </tr>
+                                <tr>
+                                    <td>2025-09-07 14:00</td>
+                                    <td>短视频文案提取</td>
+                                    <td>月付价格</td>
+                                    <td>¥39</td>
+                                    <td>¥29</td>
+                                    <td style="color: #4caf50;">-25.6%</td>
+                                    <td>管理员</td>
+                                    <td>竞争策略价格调整</td>
+                                </tr>
+                                <tr>
+                                    <td>2025-09-06 16:30</td>
+                                    <td>解锁所有智能体</td>
+                                    <td>年付价格</td>
+                                    <td>¥588</td>
+                                    <td>¥566</td>
+                                    <td style="color: #4caf50;">-3.7%</td>
+                                    <td>管理员</td>
+                                    <td>用户体验优化调整</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <span class="card-title-icon">📊</span>
+                            价格变更统计
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                        <div style="text-align: center; padding: 20px; background: #f8f9ff; border-radius: 10px;">
+                            <div style="font-size: 24px; font-weight: 600; color: #667eea; margin-bottom: 5px;">15</div>
+                            <div style="color: #666; font-size: 14px;">本月价格变更次数</div>
+                        </div>
+                        <div style="text-align: center; padding: 20px; background: #f8f9ff; border-radius: 10px;">
+                            <div style="font-size: 24px; font-weight: 600; color: #f44336; margin-bottom: 5px;">8</div>
+                            <div style="color: #666; font-size: 14px;">价格上调次数</div>
+                        </div>
+                        <div style="text-align: center; padding: 20px; background: #f8f9ff; border-radius: 10px;">
+                            <div style="font-size: 24px; font-weight: 600; color: #4caf50; margin-bottom: 5px;">7</div>
+                            <div style="color: #666; font-size: 14px;">价格下调次数</div>
+                        </div>
+                        <div style="text-align: center; padding: 20px; background: #f8f9ff; border-radius: 10px;">
+                            <div style="font-size: 24px; font-weight: 600; color: #ff9800; margin-bottom: 5px;">+12.3%</div>
+                            <div style="color: #666; font-size: 14px;">平均价格涨幅</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 优惠码系统 -->
+            <div id="coupon-system" class="content-section">
+                <div class="section-header">
+                    <h1 class="section-title">优惠码系统</h1>
+                    <p class="section-description">创建和管理优惠码，支持多种折扣类型和使用限制</p>
+                </div>
+
+                <div class="coupon-generator">
+                    <div class="generator-title">🎫 优惠码生成器</div>
+                    <div class="coupon-form">
+                        <div class="form-group">
+                            <label class="form-label">优惠码名称</label>
+                            <input type="text" class="form-input" id="couponName" placeholder="例：新用户专享">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">优惠码</label>
+                            <input type="text" class="form-input" id="couponCode" placeholder="自动生成或手动输入">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">折扣类型</label>
+                            <select class="form-select" id="discountType">
+                                <option value="percentage">百分比折扣</option>
+                                <option value="fixed">固定金额</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">折扣值</label>
+                            <input type="number" class="form-input" id="discountValue" placeholder="例：20 或 50">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">使用次数限制</label>
+                            <input type="number" class="form-input" id="usageLimit" placeholder="0表示无限制">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">有效期至</label>
+                            <input type="date" class="form-input" id="expiryDate">
+                        </div>
+                    </div>
+                    <div class="generator-actions">
+                        <button class="btn btn-success" onclick="generateCoupon()">生成优惠码</button>
+                        <button class="btn btn-secondary" onclick="generateRandomCode()" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3);">随机生成码</button>
+                        <div class="generator-tip">💡 建议使用8-12位字母数字组合</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <span class="card-title-icon">📋</span>
+                            现有优惠码管理
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn btn-secondary">批量操作</button>
+                            <button class="btn btn-secondary">导入优惠码</button>
+                            <button class="btn btn-secondary">导出列表</button>
+                        </div>
+                    </div>
+                    
+                    <div class="coupon-list" id="couponList">
+                        <div class="coupon-item">
+                            <div class="coupon-info">
+                                <div class="coupon-code">WELCOME20</div>
+                                <div class="coupon-discount">20%折扣</div>
+                                <div class="coupon-meta">
+                                    <span>新用户专享</span>
+                                    <span>已使用 15/100</span>
+                                    <span>有效期至 2025-12-31</span>
+                                </div>
+                            </div>
+                            <div class="coupon-actions">
+                                <button class="btn btn-secondary btn-sm">编辑</button>
+                                <button class="btn btn-warning btn-sm">停用</button>
+                                <button class="btn btn-danger btn-sm">删除</button>
+                            </div>
+                        </div>
+                        <div class="coupon-item">
+                            <div class="coupon-info">
+                                <div class="coupon-code">SAVE50</div>
+                                <div class="coupon-discount">减50元</div>
+                                <div class="coupon-meta">
+                                    <span>限时特惠</span>
+                                    <span>已使用 8/50</span>
+                                    <span>有效期至 2025-10-15</span>
+                                </div>
+                            </div>
+                            <div class="coupon-actions">
+                                <button class="btn btn-secondary btn-sm">编辑</button>
+                                <button class="btn btn-warning btn-sm">停用</button>
+                                <button class="btn btn-danger btn-sm">删除</button>
+                            </div>
+                        </div>
+                        <div class="coupon-item">
+                            <div class="coupon-info">
+                                <div class="coupon-code">VIP30</div>
+                                <div class="coupon-discount">30%折扣</div>
+                                <div class="coupon-meta">
+                                    <span>VIP专享</span>
+                                    <span>已使用 0/20</span>
+                                    <span>有效期至 2025-11-30</span>
+                                </div>
+                            </div>
+                            <div class="coupon-actions">
+                                <button class="btn btn-secondary btn-sm">编辑</button>
+                                <button class="btn btn-warning btn-sm">停用</button>
+                                <button class="btn btn-danger btn-sm">删除</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 促销活动 -->
+            <div id="promotion-activity" class="content-section">
+                <div class="section-header">
+                    <h1 class="section-title">促销活动</h1>
+                    <p class="section-description">创建和管理各种促销活动，提升用户转化率和复购率</p>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <span class="card-title-icon">🎉</span>
+                            活动列表
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn btn-primary" onclick="createNewPromotion()">➕ 创建新活动</button>
+                        </div>
+                    </div>
+                    
+                    <div class="promotion-card">
+                        <div class="promotion-header">
+                            <div class="promotion-title">🔥 双十一大促销</div>
+                            <div class="promotion-status status-active">进行中</div>
+                        </div>
+                        <div class="promotion-details">
+                            <p><strong>活动时间：</strong>2025-11-01 00:00 至 2025-11-11 23:59</p>
+                            <p><strong>优惠内容：</strong>全站商品8折优惠，工作流套餐买一年送三个月</p>
+                            <p><strong>目标用户：</strong>所有用户</p>
+                            <p><strong>已参与人数：</strong>156人</p>
+                            <p><strong>预计收益：</strong>+25%</p>
+                        </div>
+                        <div class="promotion-actions">
+                            <button class="btn btn-secondary">编辑活动</button>
+                            <button class="btn btn-primary">查看数据</button>
+                            <button class="btn btn-warning">停止活动</button>
+                        </div>
+                    </div>
+
+                    <div class="promotion-card">
+                        <div class="promotion-header">
+                            <div class="promotion-title">🎁 新用户注册礼</div>
+                            <div class="promotion-status status-active">进行中</div>
+                        </div>
+                        <div class="promotion-details">
+                            <p><strong>活动时间：</strong>长期有效</p>
+                            <p><strong>优惠内容：</strong>新用户注册即送20积分，首次购买9折优惠</p>
+                            <p><strong>目标用户：</strong>新注册用户</p>
+                            <p><strong>已参与人数：</strong>89人</p>
+                            <p><strong>转化率：</strong>32%</p>
+                        </div>
+                        <div class="promotion-actions">
+                            <button class="btn btn-secondary">编辑活动</button>
+                            <button class="btn btn-primary">查看数据</button>
+                            <button class="btn btn-warning">停止活动</button>
+                        </div>
+                    </div>
+
+                    <div class="promotion-card">
+                        <div class="promotion-header">
+                            <div class="promotion-title">🚀 工作流专场</div>
+                            <div class="promotion-status" style="background: #fff3e0; color: #e65100;">待开始</div>
+                        </div>
+                        <div class="promotion-details">
+                            <p><strong>活动时间：</strong>2025-12-01 00:00 至 2025-12-31 23:59</p>
+                            <p><strong>优惠内容：</strong>工作流商店所有套餐7折，购买两年享5折</p>
+                            <p><strong>目标用户：</strong>工作流商店用户</p>
+                            <p><strong>预计参与：</strong>预估200+人</p>
+                            <p><strong>预计收益：</strong>+40%</p>
+                        </div>
+                        <div class="promotion-actions">
+                            <button class="btn btn-secondary">编辑活动</button>
+                            <button class="btn btn-success">立即开始</button>
+                            <button class="btn btn-danger">删除活动</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="notification" id="notification"></div>
+
+    <!-- 创建促销活动模态框 -->
+    <div class="modal-overlay" id="promotionModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">🎉 创建新的促销活动</div>
+                <button class="modal-close" onclick="closePromotionModal()">&times;</button>
+            </div>
+            <div class="modal-form">
+                <div class="form-group">
+                    <label class="form-label" style="color: #666;">活动名称</label>
+                    <input type="text" class="form-input" id="promotionName" placeholder="例：圣诞节特惠活动">
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" style="color: #666;">开始时间</label>
+                        <input type="datetime-local" class="form-input" id="promotionStartTime">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" style="color: #666;">结束时间</label>
+                        <input type="datetime-local" class="form-input" id="promotionEndTime">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" style="color: #666;">活动类型</label>
+                    <select class="form-select" id="promotionType" onchange="updatePromotionForm()">
+                        <option value="discount">折扣活动</option>
+                        <option value="gift">赠品活动</option>
+                        <option value="bundle">套餐优惠</option>
+                        <option value="time-limited">限时特惠</option>
+                        <option value="newuser">新用户专享</option>
+                    </select>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" style="color: #666;">目标用户</label>
+                        <select class="form-select" id="promotionTarget">
+                            <option value="all">所有用户</option>
+                            <option value="new">新用户</option>
+                            <option value="vip">VIP用户</option>
+                            <option value="inactive">流失用户</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" style="color: #666;">适用产品</label>
+                        <select class="form-select" id="promotionProducts">
+                            <option value="all">全部产品</option>
+                            <option value="member">功能会员服务</option>
+                            <option value="workflow">工作流商店</option>
+                            <option value="specific">指定产品</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="discountSettings">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" style="color: #666;">折扣类型</label>
+                            <select class="form-select" id="discountTypePromo">
+                                <option value="percentage">百分比折扣</option>
+                                <option value="fixed">固定金额减免</option>
+                                <option value="buy-get">买X送Y</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" style="color: #666;">折扣值</label>
+                            <input type="number" class="form-input" id="discountValuePromo" placeholder="例：20 (20%折扣或减20元)">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" style="color: #666;">活动描述</label>
+                    <textarea class="description-textarea" id="promotionDescription" placeholder="详细描述活动内容、规则和注意事项..." style="min-height: 100px;"></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" style="color: #666;">参与人数限制</label>
+                        <input type="number" class="form-input" id="promotionLimit" placeholder="0表示无限制">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" style="color: #666;">活动状态</label>
+                        <select class="form-select" id="promotionStatus">
+                            <option value="draft">草稿</option>
+                            <option value="scheduled">定时开始</option>
+                            <option value="active">立即开始</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="activity-preview" id="activityPreview">
+                    <div class="activity-preview-title">活动预览</div>
+                    <div class="activity-preview-content" id="previewContent">
+                        请填写活动信息以查看预览效果
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closePromotionModal()">取消</button>
+                <button class="btn btn-primary" onclick="savePromotion()">创建活动</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 菜单切换
+        document.querySelectorAll('.menu-item').forEach(item => {
+            item.addEventListener('click', function() {
+                // 移除所有active状态
+                document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
+                document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+                
+                // 添加active状态
+                this.classList.add('active');
+                const sectionId = this.getAttribute('data-section');
+                document.getElementById(sectionId).classList.add('active');
+            });
+        });
+
+        // 新增产品功能
+        function showAddProductForm() {
+            document.getElementById('addProductForm').style.display = 'block';
+            document.getElementById('addProductForm').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function cancelAddProduct() {
+            document.getElementById('addProductForm').style.display = 'none';
+            // 清空表单
+            document.getElementById('newProductName').value = '';
+            document.getElementById('newProductDescription').value = '';
+            document.getElementById('newProductMonthly').value = '';
+            document.getElementById('newProductYearly').value = '';
+        }
+
+        function saveNewProduct() {
+            const name = document.getElementById('newProductName').value;
+            const category = document.getElementById('newProductCategory').value;
+            const monthly = document.getElementById('newProductMonthly').value;
+            const yearly = document.getElementById('newProductYearly').value;
+            const status = document.getElementById('newProductStatus').value;
+            const description = document.getElementById('newProductDescription').value;
+
+            if (!name || !description) {
+                showNotification('请填写产品名称和介绍', 'error');
+                return;
+            }
+
+            // 创建新产品卡片
+            const productGrid = document.getElementById('memberProductGrid');
+            const newProductHTML = `
+                <div class="product-card">
+                    <div class="product-header">
+                        <div class="product-info">
+                            <div class="product-name">${name}</div>
+                            <div class="product-category">${category}</div>
+                        </div>
+                        <div class="product-status status-new">${status}</div>
+                    </div>
+                    <div class="price-section">
+                        <div class="price-inputs">
+                            <div class="price-input-group">
+                                <span class="price-label">月付</span>
+                                <input type="number" class="price-input" value="${monthly}" data-field="monthly">
+                                <span class="price-unit">元/月</span>
+                            </div>
+                            <div class="price-input-group">
+                                <span class="price-label">年付</span>
+                                <input type="number" class="price-input" value="${yearly}" data-field="yearly">
+                                <span class="price-unit">元/年</span>
+                            </div>
+                        </div>
+                        <textarea class="description-textarea" placeholder="产品介绍">${description}</textarea>
+                    </div>
+                    <div class="product-actions">
+                        <button class="btn btn-secondary btn-sm">预览</button>
+                        <button class="btn btn-primary btn-sm">保存</button>
+                        <button class="btn btn-danger btn-sm">删除</button>
+                    </div>
+                </div>
+            `;
+            
+            productGrid.insertAdjacentHTML('beforeend', newProductHTML);
+            cancelAddProduct();
+            showNotification('产品添加成功！');
+        }
+
+        // 批量调整功能
+        function previewBatchAdjustment() {
+            const category = document.getElementById('batchCategory').value;
+            const priceType = document.getElementById('batchPriceType').value;
+            const adjustType = document.querySelector('input[name="adjustType"]:checked').value;
+            const adjustValue = document.getElementById('adjustValue').value;
+            const adjustDirection = document.getElementById('adjustDirection').value;
+
+            if (!adjustValue) {
+                showNotification('请输入调整值', 'error');
+                return;
+            }
+
+            showNotification('预览功能开发中，将显示调整后的价格预览', 'warning');
+        }
+
+        function applyBatchAdjustment() {
+            if (confirm('确定要应用批量价格调整吗？此操作不可撤销。')) {
+                showNotification('批量价格调整已应用');
+                // 这里应该实际应用价格调整
+            }
+        }
+
+        function toggleSelectAll() {
+            const selectAll = document.getElementById('selectAll');
+            const checkboxes = document.querySelectorAll('.product-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = selectAll.checked;
+            });
+        }
+
+        // 优惠码生成
+        function generateRandomCode() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let code = '';
+            for (let i = 0; i < 8; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            document.getElementById('couponCode').value = code;
+        }
+
+        function generateCoupon() {
+            const name = document.getElementById('couponName').value;
+            const code = document.getElementById('couponCode').value;
+            const discountType = document.getElementById('discountType').value;
+            const discountValue = document.getElementById('discountValue').value;
+            const usageLimit = document.getElementById('usageLimit').value;
+            const expiryDate = document.getElementById('expiryDate').value;
+
+            if (!name || !code || !discountValue) {
+                showNotification('请填写必要的优惠码信息', 'error');
+                return;
+            }
+
+            // 创建新的优惠码项
+            const couponList = document.getElementById('couponList');
+            const newCouponHTML = `
+                <div class="coupon-item">
+                    <div class="coupon-info">
+                        <div class="coupon-code">${code}</div>
+                        <div class="coupon-discount">${discountType === 'percentage' ? discountValue + '%折扣' : '减' + discountValue + '元'}</div>
+                        <div class="coupon-meta">
+                            <span>${name}</span>
+                            <span>已使用 0/${usageLimit || '∞'}</span>
+                            <span>有效期至 ${expiryDate || '永久'}</span>
+                        </div>
+                    </div>
+                    <div class="coupon-actions">
+                        <button class="btn btn-secondary btn-sm">编辑</button>
+                        <button class="btn btn-warning btn-sm">停用</button>
+                        <button class="btn btn-danger btn-sm">删除</button>
+                    </div>
+                </div>
+            `;
+            
+            couponList.insertAdjacentHTML('afterbegin', newCouponHTML);
+            
+            // 清空表单
+            document.getElementById('couponName').value = '';
+            document.getElementById('couponCode').value = '';
+            document.getElementById('discountValue').value = '';
+            document.getElementById('usageLimit').value = '';
+            document.getElementById('expiryDate').value = '';
+            
+            showNotification('优惠码创建成功！');
+        }
+
+        function createNewPromotion() {
+            document.getElementById('promotionModal').classList.add('show');
+            updatePromotionPreview();
+        }
+
+        function closePromotionModal() {
+            document.getElementById('promotionModal').classList.remove('show');
+            // 清空表单
+            document.getElementById('promotionName').value = '';
+            document.getElementById('promotionStartTime').value = '';
+            document.getElementById('promotionEndTime').value = '';
+            document.getElementById('promotionDescription').value = '';
+            document.getElementById('promotionLimit').value = '';
+            document.getElementById('discountValuePromo').value = '';
+        }
+
+        function updatePromotionForm() {
+            const promotionType = document.getElementById('promotionType').value;
+            const discountSettings = document.getElementById('discountSettings');
+            
+            // 根据活动类型显示不同的设置选项
+            if (promotionType === 'gift') {
+                discountSettings.style.display = 'none';
+            } else {
+                discountSettings.style.display = 'block';
+            }
+            
+            updatePromotionPreview();
+        }
+
+        function updatePromotionPreview() {
+            const name = document.getElementById('promotionName').value || '未命名活动';
+            const startTime = document.getElementById('promotionStartTime').value;
+            const endTime = document.getElementById('promotionEndTime').value;
+            const promotionType = document.getElementById('promotionType').value;
+            const target = document.getElementById('promotionTarget').value;
+            const products = document.getElementById('promotionProducts').value;
+            const discountType = document.getElementById('discountTypePromo').value;
+            const discountValue = document.getElementById('discountValuePromo').value;
+            const description = document.getElementById('promotionDescription').value;
+            
+            let previewText = `<strong>活动名称：</strong>${name}<br>`;
+            
+            if (startTime && endTime) {
+                const start = new Date(startTime).toLocaleString('zh-CN');
+                const end = new Date(endTime).toLocaleString('zh-CN');
+                previewText += `<strong>活动时间：</strong>${start} 至 ${end}<br>`;
+            }
+            
+            const typeMap = {
+                'discount': '折扣活动',
+                'gift': '赠品活动', 
+                'bundle': '套餐优惠',
+                'time-limited': '限时特惠',
+                'newuser': '新用户专享'
+            };
+            previewText += `<strong>活动类型：</strong>${typeMap[promotionType]}<br>`;
+            
+            const targetMap = {
+                'all': '所有用户',
+                'new': '新用户',
+                'vip': 'VIP用户',
+                'inactive': '流失用户'
+            };
+            previewText += `<strong>目标用户：</strong>${targetMap[target]}<br>`;
+            
+            const productsMap = {
+                'all': '全部产品',
+                'member': '功能会员服务',
+                'workflow': '工作流商店',
+                'specific': '指定产品'
+            };
+            previewText += `<strong>适用产品：</strong>${productsMap[products]}<br>`;
+            
+            if (discountValue && promotionType !== 'gift') {
+                let discountText = '';
+                if (discountType === 'percentage') {
+                    discountText = `${discountValue}%折扣`;
+                } else if (discountType === 'fixed') {
+                    discountText = `减${discountValue}元`;
+                } else if (discountType === 'buy-get') {
+                    discountText = `买${discountValue}送1`;
+                }
+                previewText += `<strong>优惠内容：</strong>${discountText}<br>`;
+            }
+            
+            if (description) {
+                previewText += `<strong>活动描述：</strong>${description}`;
+            }
+            
+            document.getElementById('previewContent').innerHTML = previewText;
+        }
+
+        function savePromotion() {
+            const name = document.getElementById('promotionName').value;
+            const startTime = document.getElementById('promotionStartTime').value;
+            const endTime = document.getElementById('promotionEndTime').value;
+            const promotionType = document.getElementById('promotionType').value;
+            const description = document.getElementById('promotionDescription').value;
+            const status = document.getElementById('promotionStatus').value;
+
+            if (!name || !startTime || !endTime || !description) {
+                showNotification('请填写必要的活动信息', 'error');
+                return;
+            }
+
+            if (new Date(startTime) >= new Date(endTime)) {
+                showNotification('结束时间必须晚于开始时间', 'error');
+                return;
+            }
+
+            // 创建新的促销活动卡片
+            const promotionContainer = document.querySelector('#promotion-activity .card:last-child');
+            const startDate = new Date(startTime).toLocaleString('zh-CN');
+            const endDate = new Date(endTime).toLocaleString('zh-CN');
+            
+            const statusMap = {
+                'draft': { text: '草稿', style: 'background: #f5f5f5; color: #666;' },
+                'scheduled': { text: '待开始', style: 'background: #fff3e0; color: #e65100;' },
+                'active': { text: '进行中', style: 'background: #e8f5e8; color: #2e7d32;' }
+            };
+            
+            const typeEmojis = {
+                'discount': '💫',
+                'gift': '🎁',
+                'bundle': '📦',
+                'time-limited': '⏰',
+                'newuser': '🎊'
+            };
+
+            const newPromotionHTML = `
+                <div class="promotion-card">
+                    <div class="promotion-header">
+                        <div class="promotion-title">${typeEmojis[promotionType]} ${name}</div>
+                        <div class="promotion-status" style="${statusMap[status].style}">${statusMap[status].text}</div>
+                    </div>
+                    <div class="promotion-details">
+                        <p><strong>活动时间：</strong>${startDate} 至 ${endDate}</p>
+                        <p><strong>活动描述：</strong>${description}</p>
+                        <p><strong>预计参与：</strong>预估100+人</p>
+                        <p><strong>预计收益：</strong>+15%</p>
+                    </div>
+                    <div class="promotion-actions">
+                        <button class="btn btn-secondary">编辑活动</button>
+                        ${status === 'active' ? '<button class="btn btn-primary">查看数据</button>' : '<button class="btn btn-success">立即开始</button>'}
+                        <button class="btn btn-danger">删除活动</button>
+                    </div>
+                </div>
+            `;
+            
+            promotionContainer.insertAdjacentHTML('beforebegin', newPromotionHTML);
+            closePromotionModal();
+            showNotification('促销活动创建成功！');
+        }
+
+        // 添加表单变化监听，实时更新预览
+        document.addEventListener('input', function(e) {
+            if (e.target.closest('#promotionModal')) {
+                updatePromotionPreview();
+            }
+        });
+
+        document.addEventListener('change', function(e) {
+            if (e.target.closest('#promotionModal')) {
+                updatePromotionPreview();
+            }
+        });
+
+        // 通知系统
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type} show`;
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // 保存状态更新
+        function updateSaveStatus(saved = true) {
+            const saveStatus = document.getElementById('saveStatus');
+            if (saved) {
+                saveStatus.innerHTML = '<span>●</span> 已保存';
+                saveStatus.className = 'save-status';
+            } else {
+                saveStatus.innerHTML = '<span>●</span> 未保存';
+                saveStatus.className = 'save-status unsaved';
+            }
+        }
+
+        // 自动保存功能
+        document.addEventListener('input', function(e) {
+            if (e.target.classList.contains('price-input') || e.target.classList.contains('description-textarea')) {
+                updateSaveStatus(false);
+                // 延迟保存，避免频繁请求
+                clearTimeout(window.autoSaveTimer);
+                window.autoSaveTimer = setTimeout(() => {
+                    // 这里应该发送保存请求
+                    updateSaveStatus(true);
+                    console.log('自动保存:', e.target.value);
+                }, 2000);
+            }
+        });
+
+        // 页面加载动画
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化今日日期
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('expiryDate').value = today;
+            
+            // 初始化促销活动时间
+            const now = new Date();
+            const startTime = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 明天
+            const endTime = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 一周后
+            
+            document.getElementById('promotionStartTime').value = startTime.toISOString().slice(0, 16);
+            document.getElementById('promotionEndTime').value = endTime.toISOString().slice(0, 16);
+            
+            // 模拟加载动画
+            setTimeout(() => {
+                document.body.style.opacity = '1';
+            }, 100);
+        });
+    </script>
+</body>
+</html>

@@ -11,12 +11,29 @@ export interface WorkflowAttributes {
   category: string | null;
   platform: string | null; // coze, make, n8n, comfyui
   cover_url: string | null;
-  workflow_config: object | null;
-  price: number; // 价格（0表示免费）
-  is_svip_free: boolean; // SVIP是否免费
+
+  // 下载相关
+  download_url: string | null; // 压缩包下载链接
+  file_size: string | null; // 文件大小 (如 "7.45KB")
+
+  // 文档链接
+  video_url: string | null; // 教学视频链接
+  feishu_link: string | null; // 飞书文档链接
+  related_links: object[] | null; // 相关链接数组 [{title, url, description}]
+
+  // 插件说明
+  requires_paid_plugin: boolean; // 是否需要付费插件
+  plugin_note: string | null; // 插件说明
+
+  // 教学图片
+  images: { url: string; description: string }[] | null; // 教学图片数组 [{url, description}]
+
+  // 统计
   view_count: number;
-  use_count: number;
+  use_count: number; // 下载次数
   rating: number;
+
+  // 状态
   is_public: boolean;
   is_official: boolean;
   status: 'published' | 'draft' | 'offline';
@@ -27,8 +44,10 @@ export interface WorkflowAttributes {
 // Attributes that are optional during creation
 interface WorkflowCreationAttributes extends Optional<WorkflowAttributes,
   'id' | 'creator_id' | 'description' | 'category' | 'platform' | 'cover_url' |
-  'workflow_config' | 'price' | 'is_svip_free' | 'view_count' | 'use_count' |
-  'rating' | 'is_public' | 'is_official' | 'status' | 'created_at' | 'updated_at'> {}
+  'download_url' | 'file_size' | 'video_url' | 'feishu_link' | 'related_links' |
+  'requires_paid_plugin' | 'plugin_note' | 'images' |
+  'view_count' | 'use_count' | 'rating' | 'is_public' | 'is_official' |
+  'status' | 'created_at' | 'updated_at'> {}
 
 // Workflow model class
 class Workflow extends Model<WorkflowAttributes, WorkflowCreationAttributes> implements WorkflowAttributes {
@@ -39,12 +58,29 @@ class Workflow extends Model<WorkflowAttributes, WorkflowCreationAttributes> imp
   public category!: string | null;
   public platform!: string | null;
   public cover_url!: string | null;
-  public workflow_config!: object | null;
-  public price!: number;
-  public is_svip_free!: boolean;
+
+  // 下载相关
+  public download_url!: string | null;
+  public file_size!: string | null;
+
+  // 文档链接
+  public video_url!: string | null;
+  public feishu_link!: string | null;
+  public related_links!: object[] | null;
+
+  // 插件说明
+  public requires_paid_plugin!: boolean;
+  public plugin_note!: string | null;
+
+  // 教学图片
+  public images!: { url: string; description: string }[] | null;
+
+  // 统计
   public view_count!: number;
   public use_count!: number;
   public rating!: number;
+
+  // 状态
   public is_public!: boolean;
   public is_official!: boolean;
   public status!: 'published' | 'draft' | 'offline';
@@ -81,7 +117,7 @@ Workflow.init(
     category: {
       type: DataTypes.STRING(50),
       allowNull: true,
-      comment: '分类：video/scraping/image/content/automation/social/analysis'
+      comment: '分类：self_media/celebrity/tools/image_process/ecommerce/video/education/image_gen/novel'
     },
     platform: {
       type: DataTypes.STRING(50),
@@ -93,21 +129,56 @@ Workflow.init(
       allowNull: true,
       comment: '封面图'
     },
-    workflow_config: {
+
+    // 下载相关
+    download_url: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+      comment: '压缩包下载链接'
+    },
+    file_size: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+      comment: '文件大小'
+    },
+
+    // 文档链接
+    video_url: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+      comment: '教学视频链接'
+    },
+    feishu_link: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+      comment: '飞书文档链接'
+    },
+    related_links: {
       type: DataTypes.JSON,
       allowNull: true,
-      comment: '工作流节点配置'
+      comment: '相关链接数组 [{title, url, description}]'
     },
-    price: {
-      type: DataTypes.DECIMAL(10, 2),
-      defaultValue: 0,
-      comment: '价格（0表示免费）'
-    },
-    is_svip_free: {
+
+    // 插件说明
+    requires_paid_plugin: {
       type: DataTypes.BOOLEAN,
-      defaultValue: true,
-      comment: 'SVIP是否免费'
+      defaultValue: false,
+      comment: '是否需要付费插件'
     },
+    plugin_note: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+      comment: '插件说明'
+    },
+
+    // 教学图片
+    images: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      comment: '教学图片数组 [{url, description}]'
+    },
+
+    // 统计
     view_count: {
       type: DataTypes.INTEGER,
       defaultValue: 0,
@@ -116,13 +187,15 @@ Workflow.init(
     use_count: {
       type: DataTypes.INTEGER,
       defaultValue: 0,
-      comment: '使用次数'
+      comment: '下载次数'
     },
     rating: {
       type: DataTypes.DECIMAL(3, 2),
       defaultValue: 0.00,
       comment: '评分'
     },
+
+    // 状态
     is_public: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,

@@ -9,7 +9,8 @@ import {
   mockPay,
   getOrderStatus,
   getRechargeHistory,
-  getRechargeConfig
+  getRechargeConfig,
+  continuePayment
 } from '../controllers/rechargeController';
 
 const router = Router();
@@ -48,5 +49,12 @@ router.get('/order/:orderNo', getOrderStatus);
  * 需要登录
  */
 router.get('/history', authenticate, getRechargeHistory);
+
+/**
+ * GET /api/recharge/continue/:orderNo
+ * 继续支付（获取待支付订单的支付信息）
+ * 需要登录
+ */
+router.get('/continue/:orderNo', authenticate, continuePayment);
 
 export default router;

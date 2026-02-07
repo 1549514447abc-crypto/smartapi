@@ -19,6 +19,10 @@ export interface UserAttributes {
   last_login_ip: string | null;
   balance: number;
   bonus_balance: number;
+  commission_balance: number;
+  pending_commission_balance: number; // 待结算佣金余额（15天内）
+  total_commission_earned: number; // 累计获得佣金
+  total_commission_withdrawn: number; // 累计提现佣金
   points: number;
   referral_level: number;
   total_recharged: number;
@@ -30,6 +34,14 @@ export interface UserAttributes {
   membership_type: string | null;
   membership_expiry: Date | null;
   is_course_student: boolean;
+  referral_code: string | null; // 用户专属推荐码
+  referred_by_user_id: number | null; // 推荐人用户ID
+  referred_at: Date | null; // 被推荐时间
+  user_category: string | null; // 用户分类（normal, blogger, vip等）
+  custom_course_rate: number | null; // 自定义课程佣金比例(%)
+  custom_membership_rate: number | null; // 自定义会员佣金比例(%)
+  commission_note: string | null; // 佣金备注说明
+  jianying_client_expire: Date | null; // 剪映客户端到期时间
   created_at: Date;
   updated_at: Date;
 }
@@ -38,12 +50,14 @@ export interface UserAttributes {
 interface UserCreationAttributes extends Optional<UserAttributes,
   'id' | 'email' | 'phone' | 'avatar_url' | 'nickname' | 'status' |
   'user_type' | 'metadata' | 'last_login_at' | 'last_login_ip' |
-  'balance' | 'bonus_balance' | 'points' | 'referral_level' | 'total_recharged' | 'total_consumed' |
+  'balance' | 'bonus_balance' | 'commission_balance' | 'pending_commission_balance' | 'total_commission_earned' | 'total_commission_withdrawn' | 'points' | 'referral_level' | 'total_recharged' | 'total_consumed' |
   'workflow_member_status' | 'workflow_member_expire' |
   'ai_content_member_status' | 'ai_content_member_expire' |
   'wechat_openid' | 'wechat_unionid' |
   'membership_type' | 'membership_expiry' | 'is_course_student' |
-  'created_at' | 'updated_at'> {}
+  'referral_code' | 'referred_by_user_id' | 'referred_at' |
+  'user_category' | 'custom_course_rate' | 'custom_membership_rate' | 'commission_note' |
+  'jianying_client_expire' | 'created_at' | 'updated_at'> {}
 
 // User model class
 class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
@@ -63,6 +77,10 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
   public last_login_ip!: string | null;
   public balance!: number;
   public bonus_balance!: number;
+  public commission_balance!: number;
+  public pending_commission_balance!: number;
+  public total_commission_earned!: number;
+  public total_commission_withdrawn!: number;
   public points!: number;
   public referral_level!: number;
   public total_recharged!: number;
@@ -74,6 +92,14 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
   public membership_type!: string | null;
   public membership_expiry!: Date | null;
   public is_course_student!: boolean;
+  public referral_code!: string | null;
+  public referred_by_user_id!: number | null;
+  public referred_at!: Date | null;
+  public user_category!: string | null;
+  public custom_course_rate!: number | null;
+  public custom_membership_rate!: number | null;
+  public commission_note!: string | null;
+  public jianying_client_expire!: Date | null;
   public readonly created_at!: Date;
   public readonly updated_at!: Date;
 
@@ -187,6 +213,30 @@ User.init(
       defaultValue: 0,
       comment: '赠金余额'
     },
+    commission_balance: {
+      type: DataTypes.DECIMAL(10, 4),
+      allowNull: false,
+      defaultValue: 0,
+      comment: '可提现佣金余额（已结算）'
+    },
+    pending_commission_balance: {
+      type: DataTypes.DECIMAL(10, 4),
+      allowNull: false,
+      defaultValue: 0,
+      comment: '待结算佣金余额（15天结算期内）'
+    },
+    total_commission_earned: {
+      type: DataTypes.DECIMAL(10, 4),
+      allowNull: false,
+      defaultValue: 0,
+      comment: '累计获得佣金总额'
+    },
+    total_commission_withdrawn: {
+      type: DataTypes.DECIMAL(10, 4),
+      allowNull: false,
+      defaultValue: 0,
+      comment: '累计提现佣金总额'
+    },
     points: {
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false,
@@ -246,6 +296,48 @@ User.init(
       allowNull: false,
       defaultValue: false,
       comment: '是否为课程学员'
+    },
+    referral_code: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+      unique: true,
+      comment: '用户专属推荐码'
+    },
+    referred_by_user_id: {
+      type: DataTypes.BIGINT,
+      allowNull: true,
+      comment: '推荐人用户ID'
+    },
+    referred_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: '被推荐时间'
+    },
+    user_category: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+      defaultValue: 'normal',
+      comment: '用户分类（normal, blogger, vip等）'
+    },
+    custom_course_rate: {
+      type: DataTypes.DECIMAL(5, 2),
+      allowNull: true,
+      comment: '自定义课程佣金比例(%)'
+    },
+    custom_membership_rate: {
+      type: DataTypes.DECIMAL(5, 2),
+      allowNull: true,
+      comment: '自定义会员佣金比例(%)'
+    },
+    commission_note: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      comment: '佣金备注说明'
+    },
+    jianying_client_expire: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: '剪映客户端到期时间'
     }
   },
   {
@@ -259,7 +351,9 @@ User.init(
       { fields: ['email'] },
       { fields: ['phone'] },
       { fields: ['status'] },
-      { fields: ['wechat_openid'] }
+      { fields: ['wechat_openid'] },
+      { fields: ['referral_code'] },
+      { fields: ['user_category'] }
     ]
   }
 );

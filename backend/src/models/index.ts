@@ -17,6 +17,19 @@ import AppDownload from './AppDownload';
 import Prompt from './Prompt';
 import UserPrompt from './UserPrompt';
 import PromptCategory from './PromptCategory';
+import SystemConfig from './SystemConfig';
+import PaymentConfig from './PaymentConfig';
+import InvoiceApplication from './InvoiceApplication';
+import WithdrawalRequest from './WithdrawalRequest';
+import WithdrawalTransfer from './WithdrawalTransfer';
+import CommissionSetting from './CommissionSetting';
+import UserCategory from './UserCategory';
+
+// 配置额外的关联（避免循环依赖）
+WithdrawalRequest.hasMany(WithdrawalTransfer, {
+  foreignKey: 'withdrawal_id',
+  as: 'transfers'
+});
 
 // Export all models
 export {
@@ -35,7 +48,14 @@ export {
   AppDownload,
   Prompt,
   UserPrompt,
-  PromptCategory
+  PromptCategory,
+  SystemConfig,
+  PaymentConfig,
+  InvoiceApplication,
+  WithdrawalRequest,
+  WithdrawalTransfer,
+  CommissionSetting,
+  UserCategory
 };
 
 // This ensures all model associations are loaded when the app starts
@@ -55,5 +75,12 @@ export default {
   AppDownload,
   Prompt,
   UserPrompt,
-  PromptCategory
+  PromptCategory,
+  SystemConfig,
+  PaymentConfig,
+  InvoiceApplication,
+  WithdrawalRequest,
+  WithdrawalTransfer,
+  CommissionSetting,
+  UserCategory
 };

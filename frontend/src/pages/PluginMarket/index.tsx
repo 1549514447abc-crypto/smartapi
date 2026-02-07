@@ -52,15 +52,22 @@ const getCategoryIcon = (category: string | null) => {
     case 'image':
       return <Image className="w-5 h-5" />;
     case 'video':
+    case 'editing':
       return <Video className="w-5 h-5" />;
     case 'content':
       return <FileText className="w-5 h-5" />;
     case 'llm':
+    case 'ai_image':
+    case 'ai_video':
+    case 'ai_digital':
       return <Bot className="w-5 h-5" />;
-    case 'automation':
+    case 'tools':
       return <Settings className="w-5 h-5" />;
     case 'scraping':
       return <Globe className="w-5 h-5" />;
+    case 'voice':
+    case 'music':
+      return <Puzzle className="w-5 h-5" />;
     default:
       return <Puzzle className="w-5 h-5" />;
   }
@@ -71,15 +78,26 @@ const getCategoryColor = (category: string | null) => {
     case 'image':
       return 'bg-violet-100 text-violet-600';
     case 'video':
+    case 'editing':
       return 'bg-pink-100 text-pink-600';
     case 'content':
       return 'bg-emerald-100 text-emerald-600';
     case 'llm':
       return 'bg-sky-100 text-sky-600';
-    case 'automation':
+    case 'ai_image':
+      return 'bg-purple-100 text-purple-600';
+    case 'ai_video':
+      return 'bg-rose-100 text-rose-600';
+    case 'ai_digital':
+      return 'bg-indigo-100 text-indigo-600';
+    case 'tools':
       return 'bg-amber-100 text-amber-600';
     case 'scraping':
       return 'bg-orange-100 text-orange-600';
+    case 'voice':
+      return 'bg-cyan-100 text-cyan-600';
+    case 'music':
+      return 'bg-teal-100 text-teal-600';
     default:
       return 'bg-slate-100 text-slate-600';
   }
@@ -137,6 +155,11 @@ const PluginMarket = () => {
   };
 
   const viewPluginDetail = (plugin: Plugin) => {
+    // 待上线插件不可点击
+    if (plugin.status === 'pending' || plugin.status === 'coming_soon') {
+      message.info('该插件即将上线，敬请期待！');
+      return;
+    }
     navigate(`/plugin-market/${plugin.id}`);
   };
 
@@ -254,7 +277,7 @@ const PluginMarket = () => {
               <div
                 key={plugin.id}
                 onClick={() => viewPluginDetail(plugin)}
-                className="card p-4 sm:p-5 cursor-pointer group"
+                className={`card p-4 sm:p-5 group ${plugin.status === 'pending' || plugin.status === 'coming_soon' ? 'cursor-default opacity-80' : 'cursor-pointer'}`}
               >
                 <div className="flex gap-3 sm:gap-4">
                   {/* 图标 */}
@@ -269,10 +292,14 @@ const PluginMarket = () => {
                   {/* 信息 */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between mb-1">
-                      <h3 className="font-semibold text-slate-900 group-hover:text-sky-600 transition-colors truncate text-sm sm:text-base">
+                      <h3 className={`font-semibold text-slate-900 transition-colors truncate text-sm sm:text-base ${plugin.status !== 'pending' && plugin.status !== 'coming_soon' ? 'group-hover:text-sky-600' : ''}`}>
                         {plugin.name}
                       </h3>
-                      {plugin.is_free ? (
+                      {plugin.status === 'pending' || plugin.status === 'coming_soon' ? (
+                        <span className="text-xs px-1.5 sm:px-2 py-0.5 rounded-full bg-amber-100 text-amber-600 font-medium flex-shrink-0 ml-2">
+                          敬请期待
+                        </span>
+                      ) : plugin.is_free ? (
                         <span className="text-xs px-1.5 sm:px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-600 font-medium flex-shrink-0 ml-2">
                           免费
                         </span>
@@ -288,22 +315,30 @@ const PluginMarket = () => {
                     </p>
 
                     <div className="flex items-center gap-3 sm:gap-4 text-xs text-slate-400">
-                      <span className="flex items-center gap-1">
-                        <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-400 fill-amber-400" />
-                        {Number(plugin.rating || 0).toFixed(1)}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Download className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                        {plugin.install_count || 0}
-                      </span>
+                      {plugin.status === 'approved' ? (
+                        <>
+                          <span className="flex items-center gap-1">
+                            <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-400 fill-amber-400" />
+                            {Number(plugin.rating || 0).toFixed(1)}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Download className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                            {plugin.install_count || 0}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-slate-400">即将上线</span>
+                      )}
                       <span className={`hidden sm:inline px-2 py-0.5 rounded-full text-xs ${getCategoryColor(plugin.category)}`}>
-                        {plugin.category || '其他'}
+                        {categories.find(c => c.category_key === plugin.category)?.category_name || plugin.category || '其他'}
                       </span>
                     </div>
                   </div>
 
-                  {/* 箭头 */}
-                  <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-slate-300 group-hover:text-sky-500 transition-colors flex-shrink-0 self-center" />
+                  {/* 箭头 - 待上线插件不显示 */}
+                  {plugin.status !== 'pending' && plugin.status !== 'coming_soon' && (
+                    <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-slate-300 group-hover:text-sky-500 transition-colors flex-shrink-0 self-center" />
+                  )}
                 </div>
               </div>
             ))}

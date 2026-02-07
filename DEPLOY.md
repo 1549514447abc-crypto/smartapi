@@ -1,16 +1,17 @@
 # SmartAPI 部署文档
 
-> 最后更新: 2025-12-14
+> 最后更新: 2025-12-31
 
 ## 目录
 
 1. [服务器环境](#服务器环境)
-2. [腾讯云安全组配置](#腾讯云安全组配置)
-3. [安全防护 (fail2ban)](#安全防护-fail2ban)
-4. [部署步骤](#部署步骤)
-5. [Nginx配置](#nginx配置)
-6. [常用命令](#常用命令)
-7. [故障排查](#故障排查)
+2. [支付配置](#支付配置)
+3. [腾讯云安全组配置](#腾讯云安全组配置)
+4. [安全防护 (fail2ban)](#安全防护-fail2ban)
+5. [部署步骤](#部署步骤)
+6. [Nginx配置](#nginx配置)
+7. [常用命令](#常用命令)
+8. [故障排查](#故障排查)
 
 ---
 
@@ -21,10 +22,12 @@
 | 项目 | 值 |
 |------|-----|
 | 服务器IP | 119.29.37.208 |
-| 操作系统 | CentOS / Ubuntu |
-| SSH端口 | 22 |
+| 操作系统 | OpenCloudOS (CentOS兼容) |
+| SSH端口 | 22, 443 (备用) |
 | SSH账号 | root |
 | SSH密码 | 119689Abc. |
+
+> **SSH端口说明**: 部分运营商会封锁22端口，如果连不上可以用443端口：`ssh -p 443 root@119.29.37.208`
 
 ### 宝塔面板
 
@@ -114,10 +117,19 @@ python -c "from dashscope.audio.asr import Transcription; print('OK')"
 
 | 站点 | 地址 |
 |------|------|
-| 用户前端 | http://contentcube.cn/smartapi/ |
-| 管理后台 | http://contentcube.cn/admin/ |
-| API | http://contentcube.cn/api/ |
-| 视频文件 | http://contentcube.cn/videos/ |
+| 用户前端 | https://contentcube.cn/smartapi/ |
+| 管理后台 | https://contentcube.cn/admin/ |
+| API | https://contentcube.cn/api/ |
+| 视频文件 | https://contentcube.cn/videos/ |
+
+### 公司信息
+
+| 项目 | 值 |
+|------|-----|
+| 公司名称 | 长沙芯跃科技有限公司 |
+| ICP备案号 | 湘ICP备2025140799号 |
+| 邮箱 | contentcubecn@163.com |
+| 微信 | OTR4936 |
 
 ### 管理员账号
 
@@ -125,6 +137,122 @@ python -c "from dashscope.audio.asr import Transcription; print('OK')"
 |------|-----|
 | 用户名 | admin |
 | 密码 | 123456 |
+
+---
+
+## 支付配置
+
+### 证书目录结构
+
+```
+/www/certs/                      # 证书专用目录 (chmod 700)
+├── alipay/                      # 支付宝证书 (chmod 700)
+│   ├── appCertPublicKey.crt     # 应用公钥证书 (chmod 600)
+│   ├── alipayCertPublicKey.crt  # 支付宝公钥证书 (chmod 600)
+│   └── alipayRootCert.crt       # 支付宝根证书 (chmod 600)
+└── wechat/                      # 微信支付证书 (chmod 700)
+    ├── apiclient_cert.pem       # 商户证书 (chmod 600)
+    ├── apiclient_key.pem        # 商户私钥 (chmod 600)
+    └── apiclient_cert.p12       # PKCS12格式证书 (chmod 600)
+```
+
+### 环境变量配置 (/www/smartapi/.env)
+
+```env
+# ===== 基础配置 =====
+PORT=3000
+NODE_ENV=production
+JWT_SECRET=smartapi_jwt_secret_key_2024
+
+# ===== 数据库配置 =====
+DB_HOST=127.0.0.1
+DB_PORT=13306
+DB_USER=root
+DB_PASSWORD=119689Abc.
+DB_NAME=smartapi_dev
+
+# ===== API 配置 =====
+ALAPI_TOKEN=CgCwvYmlF0jTkqsG
+UPLOAD_BASE_URL=http://contentcube.cn
+
+# ===== 支付宝配置 =====
+ALIPAY_APP_ID=2021006115621581
+ALIPAY_PRIVATE_KEY=你的私钥内容
+ALIPAY_GATEWAY=https://openapi.alipay.com/gateway.do
+ALIPAY_APP_CERT_PATH=/www/certs/alipay/appCertPublicKey.crt
+ALIPAY_PUBLIC_CERT_PATH=/www/certs/alipay/alipayCertPublicKey.crt
+ALIPAY_ROOT_CERT_PATH=/www/certs/alipay/alipayRootCert.crt
+ALIPAY_NOTIFY_URL=https://contentcube.cn/api/payment/alipay/notify
+ALIPAY_RETURN_URL=https://contentcube.cn/smartapi/payment/result
+
+# ===== 微信支付配置 =====
+WECHAT_APP_ID=wx68b9c82d7b905aea
+WECHAT_APP_SECRET=你的AppSecret
+WECHAT_MCH_ID=1737634691
+WECHAT_API_KEY_V2=你的V2密钥
+WECHAT_API_KEY_V3=你的V3密钥
+WECHAT_CERT_PATH=/www/certs/wechat/apiclient_cert.pem
+WECHAT_KEY_PATH=/www/certs/wechat/apiclient_key.pem
+WECHAT_NOTIFY_URL=https://contentcube.cn/api/payment/wechat/notify
+WECHAT_RETURN_URL=https://contentcube.cn/smartapi/payment/result
+
+# ===== 阿里云短信配置 (待配置) =====
+# ALIYUN_ACCESS_KEY_ID=
+# ALIYUN_ACCESS_KEY_SECRET=
+# ALIYUN_SMS_SIGN_NAME=长沙芯跃科技
+# ALIYUN_SMS_TEMPLATE_LOGIN=SMS_500495002
+# ALIYUN_SMS_TEMPLATE_REGISTER=SMS_500560002
+```
+
+### 支付宝配置信息
+
+| 项目 | 值 |
+|------|-----|
+| AppID | 2021006115621581 |
+| 签名方式 | RSA2 (证书模式) |
+| 网关 | https://openapi.alipay.com/gateway.do |
+
+### 微信支付配置信息
+
+| 项目 | 值 |
+|------|-----|
+| 公众号 | 创作魔方ContentCube服务号 |
+| AppID | wx68b9c82d7b905aea |
+| 商户号 | 1737634691 |
+
+### 阿里云短信配置信息
+
+| 项目 | 值 |
+|------|-----|
+| AccessKey ID | LTAI5t7S85zKvNPEw45NVyUY |
+| 短信签名 | 长沙芯跃科技 |
+| 登录验证码模板 | SMS_500495002 |
+| 注册验证码模板 | SMS_500560002 |
+
+### 支付 API 接口
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| `/api/payment/alipay/status` | GET | 检查支付宝服务状态 |
+| `/api/payment/alipay/create` | POST | 创建PC端支付订单 |
+| `/api/payment/alipay/wap` | POST | 创建手机网站支付订单 |
+| `/api/payment/alipay/notify` | POST | 支付宝异步通知回调 |
+| `/api/payment/alipay/return` | GET | 支付宝同步返回页面 |
+| `/api/payment/wechat/status` | GET | 检查微信支付状态 |
+| `/api/payment/wechat/native` | POST | 创建扫码支付订单 |
+| `/api/payment/wechat/h5` | POST | 创建H5支付订单 |
+| `/api/payment/wechat/notify` | POST | 微信支付异步通知回调 |
+
+### 证书权限设置
+
+```bash
+# 设置证书目录权限
+chmod 700 /www/certs/alipay /www/certs/wechat
+
+# 设置证书文件权限
+chmod 600 /www/certs/alipay/*
+chmod 600 /www/certs/wechat/*
+```
 
 ---
 
@@ -706,11 +834,87 @@ VALUES
 
 **解决方案**: 检查 `backend/src/controllers/userController.ts` 中使用的是 `user.userType` 而不是 `user.user_type`
 
+### 8. SSH连接超时或被拒绝
+
+**原因**: 部分运营商会封锁22端口的出站流量
+
+**诊断方法**:
+
+```bash
+# 1. 在服务器上运行tcpdump监听
+tcpdump -i eth0 host 你的公网IP
+
+# 2. 本地尝试连接
+ssh root@119.29.37.208
+
+# 3. 如果tcpdump没有任何输出，说明数据包根本没到服务器，是运营商封了
+```
+
+**解决方案**: 使用443端口（运营商不会封HTTPS端口）
+
+```bash
+# 在服务器添加443端口
+echo "Port 443" >> /etc/ssh/sshd_config
+systemctl restart sshd
+
+# 本地连接
+ssh -p 443 root@119.29.37.208
+```
+
+**以后删除443端口** (如需要):
+
+```bash
+sed -i '/^Port 443$/d' /etc/ssh/sshd_config && systemctl restart sshd
+```
+
 ---
 
-## 快速部署脚本
+## 一键部署脚本
 
-### SSH 连接脚本 (Python)
+### 使用方法
+
+```bash
+# 安装依赖 (首次使用)
+pip install paramiko
+
+# 方式一：交互式菜单
+python scripts/deploy.py
+
+# 方式二：命令行参数
+python scripts/deploy.py all        # 部署全部
+python scripts/deploy.py frontend   # 只部署前端
+python scripts/deploy.py backend    # 只部署后端
+python scripts/deploy.py admin      # 只部署管理后台
+```
+
+### 交互式菜单选项
+
+```
+请选择要部署的内容:
+  1. 全部部署 (前端 + 后端 + 管理后台)
+  2. 只部署前端
+  3. 只部署后端
+  4. 只部署管理后台
+  5. 只构建不部署
+  0. 退出
+```
+
+### 部署脚本位置
+
+`scripts/deploy.py` - 统一部署脚本
+
+### 部署流程
+
+1. **构建阶段**: 本地执行 `npm run build` 构建项目
+2. **打包阶段**: 创建 tar.gz 压缩包（排除视频等大文件）
+3. **上传阶段**: 通过 SFTP 上传到服务器
+4. **解压阶段**: 在服务器上解压到目标目录
+5. **重启阶段**: PM2 重启后端服务（仅后端部署）
+6. **验证阶段**: 检查服务状态和 API 健康检查
+
+---
+
+## SSH 连接脚本 (参考)
 
 ```python
 #!/usr/bin/env python3
@@ -758,6 +962,9 @@ ssh.close()
 
 | 日期 | 版本 | 说明 |
 |------|------|------|
+| 2025-12-31 | 2.4 | 添加支付宝、微信支付配置；添加阿里云短信配置；添加公司备案信息 |
+| 2025-12-19 | 2.3 | 添加SSH端口443备用方案，解决运营商封22端口问题 |
+| 2025-12-17 | 2.2 | 添加一键部署脚本 (scripts/deploy.py) |
 | 2025-12-14 | 2.1 | 添加 Python 环境配置、fail2ban 安全防护、视频文案提取故障排查 |
 | 2025-12-14 | 2.0 | 完整重写，基于实际部署 |
 | 2025-12-13 | 1.0 | 初始版本 |

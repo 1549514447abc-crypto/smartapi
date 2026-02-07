@@ -51,6 +51,13 @@ export const registerSchema = Joi.object({
     .allow(null, '')
     .messages({
       'string.max': 'Nickname cannot exceed 50 characters'
+    }),
+  referral_code: Joi.string()
+    .length(6)
+    .optional()
+    .allow(null, '')
+    .messages({
+      'string.length': '推荐码必须是6位字符'
     })
 });
 

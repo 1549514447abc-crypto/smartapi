@@ -1,0 +1,302 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>SmartAPI 预览首页（轻盈优雅版）</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: linear-gradient(140deg, #f8fbff 0%, #fdf7ff 40%, #f5fbf7 100%); color:#0f172a; }
+    .shell { border-radius: 28px; border:1px solid #e8ecf3; box-shadow:0 20px 50px rgba(15,23,42,0.08); overflow:hidden; position:relative; background: linear-gradient(135deg, #f6fbff, #fbf7ff 60%, #f7fdf9); }
+    .hero-ink { position:absolute; inset:0; background: radial-gradient(circle at 20% 20%, rgba(56,189,248,0.25) 0, transparent 40%), radial-gradient(circle at 75% 15%, rgba(236,72,153,0.18) 0, transparent 45%), radial-gradient(circle at 15% 80%, rgba(52,211,153,0.16) 0, transparent 40%); }
+    .glass { background:rgba(255,255,255,0.8); border:1px solid rgba(15,23,42,0.05); border-radius:20px; box-shadow:0 10px 30px rgba(15,23,42,0.06); }
+    .nav-btn { width:42px; height:42px; border-radius:999px; border:1px solid #e0e7f0; display:flex; align-items:center; justify-content:center; color:#0f172a; background:#fff; box-shadow:0 6px 18px rgba(15,23,42,0.08); }
+    .dot { height:10px; border-radius:999px; background:#d7deea; width:10px; transition:all .25s ease; }
+    .dot.active { background:#0ea5e9; width:28px; box-shadow:0 0 0 6px rgba(14,165,233,0.15); }
+    .card { background:#fff; border:1px solid #e7ecf2; border-radius:16px; box-shadow:0 12px 32px rgba(15,23,42,0.06); }
+    .pill { padding:6px 12px; border-radius:999px; font-size:12px; font-weight:700; letter-spacing:0.2px; }
+    .badge { border:1px solid #e3e8ef; border-radius:12px; padding:6px 10px; font-size:12px; background:#f8fafc; }
+  </style>
+</head>
+<body class="min-h-screen">
+  <div class="max-w-6xl mx-auto px-4 py-8 space-y-8">
+    <!-- 顶部提示条 -->
+    <div class="card p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div class="flex items-center gap-2 text-sm text-slate-700">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span class="font-semibold text-emerald-600">平台稳定运行</span>
+        <span class="text-slate-400">|</span>
+        <span>180w+ 智能体 · 1亿+ 调用量 · 15w+ 构建师</span>
+      </div>
+      <div class="flex gap-2 text-xs">
+        <span class="pill bg-emerald-50 text-emerald-700">质量/稳定优先</span>
+        <span class="pill bg-sky-50 text-sky-700">5×7 快速响应</span>
+        <span class="pill bg-amber-50 text-amber-700">持续上新</span>
+      </div>
+    </div>
+
+    <!-- 横幅滑动 -->
+    <section class="shell p-6 lg:p-10 text-slate-900">
+      <div class="hero-ink"></div>
+      <div class="relative flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-6">
+        <div class="space-y-2">
+          <p class="text-sm uppercase tracking-[0.25em] text-slate-500">SmartAPI</p>
+          <h1 class="text-3xl lg:text-5xl font-bold leading-tight">创作者的一站式「速推」工作台</h1>
+          <p class="text-sm lg:text-base text-slate-600">对齐你现在的功能：视频提取、插件市场、工作流、提示词、剪映助手、充值/推广，逐一展示。</p>
+        </div>
+        <div class="flex gap-2">
+          <button class="nav-btn" id="prevBtn">‹</button>
+          <button class="nav-btn" id="nextBtn">›</button>
+        </div>
+      </div>
+
+      <div class="relative overflow-hidden">
+        <div class="space-y-8">
+          <!-- slide 1: 视频文案提取 -->
+          <div class="grid lg:grid-cols-2 gap-6 items-center slide" data-index="0">
+            <div class="space-y-3">
+              <div class="pill bg-sky-50 text-sky-700 inline-flex items-center gap-2">HOT <span class="text-xs">视频提取</span></div>
+              <h2 class="text-2xl lg:text-3xl font-semibold">视频文案提取</h2>
+              <p class="text-slate-600 text-sm lg:text-base">抖音/快手/小红书/B 站一键抓取，带时间轴；批量导出与去水印清洗，快速拿到可用脚本。</p>
+              <div class="flex flex-wrap gap-2 text-xs text-slate-600">
+                <span class="pill bg-slate-100">秒级响应</span>
+                <span class="pill bg-slate-100">批量导出</span>
+                <span class="pill bg-slate-100">格式清洗</span>
+              </div>
+              <div class="flex gap-3">
+                <a href="/video-extract" class="px-5 py-3 rounded-xl bg-gradient-to-r from-sky-400 to-emerald-400 text-white font-semibold shadow-lg">立即体验</a>
+                <a href="/plugin-market" class="px-4 py-3 rounded-xl border border-slate-200 text-slate-700 bg-white">查看插件</a>
+              </div>
+            </div>
+            <div class="glass h-64 lg:h-80 flex items-center justify-center text-slate-500 text-sm">
+              <div class="w-full h-full bg-gradient-to-br from-white to-slate-50 rounded-2xl border border-slate-100 flex items-center justify-center">占位：视频提取图</div>
+            </div>
+          </div>
+
+          <!-- slide 2: 插件市场 -->
+          <div class="grid lg:grid-cols-2 gap-6 items-center slide hidden" data-index="1">
+            <div class="space-y-3">
+              <div class="pill bg-emerald-50 text-emerald-700 inline-flex items-center gap-2">NEW <span class="text-xs">插件</span></div>
+              <h2 class="text-2xl lg:text-3xl font-semibold">插件市场</h2>
+              <p class="text-slate-600 text-sm lg:text-base">AI 插件生态：图像/视频生成、数据提取、LLM 接口，直接调用或二开，示例齐全。</p>
+              <div class="flex flex-wrap gap-2 text-xs text-slate-600">
+                <span class="pill bg-slate-100">56+ 插件</span>
+                <span class="pill bg-slate-100">持续上新</span>
+                <span class="pill bg-slate-100">示例/文档</span>
+              </div>
+              <div class="flex gap-3">
+                <a href="/plugin-market" class="px-5 py-3 rounded-xl bg-gradient-to-r from-sky-400 to-emerald-400 text-white font-semibold shadow-lg">浏览插件</a>
+                <a href="/prompt-market" class="px-4 py-3 rounded-xl border border-slate-200 text-slate-700 bg-white">提示词市场</a>
+              </div>
+            </div>
+            <div class="glass h-64 lg:h-80 flex items-center justify-center text-slate-500 text-sm">
+              <div class="w-full h-full bg-gradient-to-br from-white to-slate-50 rounded-2xl border border-slate-100 flex items-center justify-center">占位：插件市场图</div>
+            </div>
+          </div>
+
+          <!-- slide 3: 工作流商城 -->
+          <div class="grid lg:grid-cols-2 gap-6 items-center slide hidden" data-index="2">
+            <div class="space-y-3">
+              <div class="pill bg-amber-50 text-amber-700 inline-flex items-center gap-2">SOON <span class="text-xs">编排</span></div>
+              <h2 class="text-2xl lg:text-3xl font-semibold">工作流商城</h2>
+              <p class="text-slate-600 text-sm lg:text-base">零代码自动化模板，覆盖选品、脚本、剪辑、客服；可视化编排，一键部署、监控与告警。</p>
+              <div class="flex flex-wrap gap-2 text-xs text-slate-600">
+                <span class="pill bg-slate-100">1000+ 模板</span>
+                <span class="pill bg-slate-100">可视化编排</span>
+                <span class="pill bg-slate-100">重试/告警</span>
+              </div>
+              <div class="flex gap-3">
+                <a href="/workflow-store" class="px-5 py-3 rounded-xl bg-gradient-to-r from-sky-400 to-emerald-400 text-white font-semibold shadow-lg">查看工作流</a>
+                <a href="/course" class="px-4 py-3 rounded-xl border border-slate-200 text-slate-700 bg-white">学习搭建</a>
+              </div>
+            </div>
+            <div class="glass h-64 lg:h-80 flex items-center justify-center text-slate-500 text-sm">
+              <div class="w-full h-full bg-gradient-to-br from-white to-slate-50 rounded-2xl border border-slate-100 flex items-center justify-center">占位：工作流图</div>
+            </div>
+          </div>
+
+          <!-- slide 4: 提示词市场 -->
+          <div class="grid lg:grid-cols-2 gap-6 items-center slide hidden" data-index="3">
+            <div class="space-y-3">
+              <div class="pill bg-violet-50 text-violet-700 inline-flex items-center gap-2">PROMPT <span class="text-xs">创意</span></div>
+              <h2 class="text-2xl lg:text-3xl font-semibold">提示词市场</h2>
+              <p class="text-slate-600 text-sm lg:text-base">精选提示词与场景预设，支持一键套用到插件或工作流，快速启动创意生产。</p>
+              <div class="flex flex-wrap gap-2 text-xs text-slate-600">
+                <span class="pill bg-slate-100">分类齐全</span>
+                <span class="pill bg-slate-100">一键套用</span>
+                <span class="pill bg-slate-100">可组合插件</span>
+              </div>
+              <div class="flex gap-3">
+                <a href="/prompt-market" class="px-5 py-3 rounded-xl bg-gradient-to-r from-sky-400 to-emerald-400 text-white font-semibold shadow-lg">逛提示词</a>
+                <a href="/plugin-market" class="px-4 py-3 rounded-xl border border-slate-200 text-slate-700 bg-white">配合插件</a>
+              </div>
+            </div>
+            <div class="glass h-64 lg:h-80 flex items-center justify-center text-slate-500 text-sm">
+              <div class="w-full h-full bg-gradient-to-br from-white to-slate-50 rounded-2xl border border-slate-100 flex items-center justify-center">占位：提示词市场图</div>
+            </div>
+          </div>
+
+          <!-- slide 5: 剪映助手 -->
+          <div class="grid lg:grid-cols-2 gap-6 items-center slide hidden" data-index="4">
+            <div class="space-y-3">
+              <div class="pill bg-pink-50 text-pink-700 inline-flex items-center gap-2">TOOL <span class="text-xs">剪辑</span></div>
+              <h2 class="text-2xl lg:text-3xl font-semibold">剪映助手</h2>
+              <p class="text-slate-600 text-sm lg:text-base">脚本生成、分镜规划、字幕与模板适配，显著提升剪辑效率，适配热门模板。</p>
+              <div class="flex flex-wrap gap-2 text-xs text-slate-600">
+                <span class="pill bg-slate-100">分镜规划</span>
+                <span class="pill bg-slate-100">字幕生成</span>
+                <span class="pill bg-slate-100">模板适配</span>
+              </div>
+              <div class="flex gap-3">
+                <a href="/jianying-helper" class="px-5 py-3 rounded-xl bg-gradient-to-r from-sky-400 to-emerald-400 text-white font-semibold shadow-lg">立即使用</a>
+                <a href="/plugin-market" class="px-4 py-3 rounded-xl border border-slate-200 text-slate-700 bg-white">更多工具</a>
+              </div>
+            </div>
+            <div class="glass h-64 lg:h-80 flex items-center justify-center text-slate-500 text-sm">
+              <div class="w-full h-full bg-gradient-to-br from-white to-slate-50 rounded-2xl border border-slate-100 flex items-center justify-center">占位：剪映助手图</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex gap-3 mt-6">
+          <button class="dot active" data-dot="0"></button>
+          <button class="dot" data-dot="1"></button>
+          <button class="dot" data-dot="2"></button>
+          <button class="dot" data-dot="3"></button>
+          <button class="dot" data-dot="4"></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 下滑介绍：获取第三方平台数据 -->
+    <section class="card p-6 lg:p-8 space-y-4">
+      <div class="space-y-1">
+        <h3 class="text-lg lg:text-xl font-bold text-slate-900">载，轻松获取创作素材</h3>
+        <p class="text-sm lg:text-base text-slate-600">获取第三方平台数据：连接各大平台数据源，可获取淘宝、京东、拼多多、抖音、快手、小红书、B 站等平台数据，助力内容创作决策。</p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <span class="badge">淘宝</span>
+        <span class="badge">京东</span>
+        <span class="badge">拼多多</span>
+        <span class="badge">抖音</span>
+        <span class="badge">快手</span>
+        <span class="badge">小红书</span>
+        <span class="badge">B 站</span>
+      </div>
+    </section>
+
+    <!-- 数据亮点 / 质量稳定 -->
+    <section class="card p-6 lg:p-8 space-y-4">
+      <div class="space-y-1">
+        <h3 class="text-lg lg:text-xl font-bold text-slate-900">我们非常重视质量和稳定性</h3>
+        <p class="text-sm text-slate-600">越来越多的智能体开发者选择我们的插件，质量、稳定性与及时响应是我们的核心。</p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="card p-5 bg-gradient-to-br from-emerald-50 to-white border-emerald-100">
+          <p class="text-sm text-emerald-700">智能体</p>
+          <p class="text-3xl font-bold mt-1 text-emerald-900">180w++</p>
+          <p class="text-xs text-emerald-700 mt-2">规模验证，持续增长</p>
+        </div>
+        <div class="card p-5 bg-gradient-to-br from-sky-50 to-white border-sky-100">
+          <p class="text-sm text-sky-700">调用量</p>
+          <p class="text-3xl font-bold mt-1 text-sky-900">1亿++</p>
+          <p class="text-xs text-sky-700 mt-2">稳定输出，链路可观测</p>
+        </div>
+        <div class="card p-5 bg-gradient-to-br from-amber-50 to-white border-amber-100">
+          <p class="text-sm text-amber-700">智能体构建师</p>
+          <p class="text-3xl font-bold mt-1 text-amber-900">15w++</p>
+          <p class="text-xs text-amber-700 mt-2">开发者信任与选择</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 核心功能导航（对齐现有路由） -->
+    <section class="card p-6 lg:p-8 space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-lg lg:text-xl font-bold text-slate-900">核心功能导航</h3>
+          <p class="text-sm text-slate-600">对应现有路由，快速前往</p>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="card p-4">
+          <p class="text-xs text-sky-600 font-semibold mb-1">提取</p>
+          <h4 class="font-semibold text-slate-900 mb-1">视频文案提取</h4>
+          <p class="text-sm text-slate-600">多平台视频脚本抽取，支持批量与时间轴。</p>
+          <a href="/video-extract" class="text-xs text-emerald-600">前往 /video-extract</a>
+        </div>
+        <div class="card p-4">
+          <p class="text-xs text-sky-600 font-semibold mb-1">生态</p>
+          <h4 class="font-semibold text-slate-900 mb-1">插件市场</h4>
+          <p class="text-sm text-slate-600">AI 插件集合，图像/视频/LLM/数据。</p>
+          <a href="/plugin-market" class="text-xs text-emerald-600">前往 /plugin-market</a>
+        </div>
+        <div class="card p-4">
+          <p class="text-xs text-sky-600 font-semibold mb-1">编排</p>
+          <h4 class="font-semibold text-slate-900 mb-1">工作流商城</h4>
+          <p class="text-sm text-slate-600">零代码自动化场景模板。</p>
+          <a href="/workflow-store" class="text-xs text-emerald-600">前往 /workflow-store</a>
+        </div>
+        <div class="card p-4">
+          <p class="text-xs text-sky-600 font-semibold mb-1">创意</p>
+          <h4 class="font-semibold text-slate-900 mb-1">提示词市场</h4>
+          <p class="text-sm text-slate-600">精选提示词，一键套用。</p>
+          <a href="/prompt-market" class="text-xs text-emerald-600">前往 /prompt-market</a>
+        </div>
+        <div class="card p-4">
+          <p class="text-xs text-sky-600 font-semibold mb-1">工具</p>
+          <h4 class="font-semibold text-slate-900 mb-1">剪映助手</h4>
+          <p class="text-sm text-slate-600">脚本/分镜/字幕/模板适配。</p>
+          <a href="/jianying-helper" class="text-xs text-emerald-600">前往 /jianying-helper</a>
+        </div>
+        <div class="card p-4">
+          <p class="text-xs text-sky-600 font-semibold mb-1">增长</p>
+          <h4 class="font-semibold text-slate-900 mb-1">充值与推广</h4>
+          <p class="text-sm text-slate-600">充值中心与推广返利渠道。</p>
+          <a href="/recharge" class="text-xs text-emerald-600">前往 /recharge</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- 底部 CTA -->
+    <section class="card p-6 lg:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div>
+        <h3 class="text-lg lg:text-xl font-bold text-slate-900">立即开启智能创作</h3>
+        <p class="text-sm text-slate-600">注册即享体验额度，随时扩容</p>
+      </div>
+      <div class="flex gap-3">
+        <a href="/register" class="px-5 py-3 rounded-xl bg-gradient-to-r from-cyan-400 to-emerald-400 text-white font-semibold shadow-lg">免费注册</a>
+        <a href="/plugin-market" class="px-4 py-3 rounded-xl bg-white border border-slate-200 text-slate-700">浏览插件</a>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    const dots = Array.from(document.querySelectorAll('.dot'));
+    let current = 0;
+    let timer = null;
+
+    function show(idx) {
+      slides.forEach(s => s.classList.add('hidden'));
+      dots.forEach(d => d.classList.remove('active'));
+      slides[idx].classList.remove('hidden');
+      dots[idx].classList.add('active');
+      current = idx;
+    }
+
+    function next() { show((current + 1) % slides.length); }
+    function prev() { show((current - 1 + slides.length) % slides.length); }
+
+    function start() { timer = setInterval(next, 5000); }
+    function reset() { clearInterval(timer); start(); }
+
+    document.getElementById('nextBtn').addEventListener('click', () => { next(); reset(); });
+    document.getElementById('prevBtn').addEventListener('click', () => { prev(); reset(); });
+    dots.forEach((d, i) => d.addEventListener('click', () => { show(i); reset(); }));
+
+    show(0);
+    start();
+  </script>
+</body>
+</html>

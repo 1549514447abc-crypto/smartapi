@@ -49,3 +49,36 @@ temp/
 # Package lock files (optional, 可以保留)
 # package-lock.json
 # yarn.lock
+
+# Test files
+**/test-*.py
+**/test_*.py
+**/*_test.py
+**/*_test.js
+**/test-*.js
+scripts/test_*.py
+
+# Archive files
+*.tar.gz
+*.zip
+*.rar
+*.tar
+
+# Large video files
+*.mp4
+*.avi
+*.mov
+*.mkv
+
+# Documents and images (temporary)
+*.pdf
+*.jpg
+*.jpeg
+*.png
+*.PNG
+*.gif
+
+# Temporary/misc files
+0
+backend_logs.txt
+*.txt.bak

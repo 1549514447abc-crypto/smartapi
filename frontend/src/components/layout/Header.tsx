@@ -2,14 +2,16 @@ import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button, message } from 'antd';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useLoginModalStore } from '../../store/useLoginModalStore';
 import './Header.css';
 
 export const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuthStore();
+  const { openLoginModal } = useLoginModalStore();
   const [dropdownVisible, setDropdownVisible] = useState(false);
-  let dropdownTimer: number;
+  let dropdownTimer: ReturnType<typeof setTimeout>;
 
   const showDropdown = () => {
     clearTimeout(dropdownTimer);
@@ -60,15 +62,18 @@ export const Header = () => {
     <div className="header">
       <div className="header-left">
         <div className="logo" onClick={() => navigate('/')}>
-          创作魔方Content Cube
+          <img src={`${import.meta.env.BASE_URL}logo.png`} alt="创作魔方" className="logo-img" />
+          <span>创作魔方</span>
         </div>
         <ul className="nav-menu">
           <li className={isActive('/') ? 'active' : ''} onClick={() => navigate('/')}>
             首页
           </li>
+          {/* 视频提取暂时隐藏
           <li className={isActive('/video-extract') ? 'active' : ''} onClick={() => navigate('/video-extract')}>
             视频文案提取
           </li>
+          */}
           <li className={isActive('/plugin-market') ? 'active' : ''} onClick={() => navigate('/plugin-market')}>
             插件市场
           </li>
@@ -83,10 +88,10 @@ export const Header = () => {
       <div className="header-right">
         <Button
           className="promote-button"
-          onClick={() => navigate('/referral')}
+          onClick={() => navigate('/commission')}
         >
           <span>💰</span>
-          推广返佣
+          我的佣金
         </Button>
         {user ? (
           <div
@@ -167,7 +172,7 @@ export const Header = () => {
             </div>
           </div>
         ) : (
-          <Button type="primary" onClick={() => navigate('/login')}>
+          <Button type="primary" onClick={() => openLoginModal()}>
             登录
           </Button>
         )}

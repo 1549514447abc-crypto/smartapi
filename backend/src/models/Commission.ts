@@ -13,9 +13,10 @@ export interface CommissionAttributes {
   commission_rate: number; // 佣金比例
   source_amount: number; // 来源金额（充值或消费）
   source_type: 'recharge' | 'consume' | 'course' | 'membership'; // 来源类型
-  source_id: number | null; // 来源记录ID
+  source_id: number | null; // 来源记录ID（订单ID）
   status: 'pending' | 'settled' | 'cancelled'; // 状态
-  settled_at: Date | null; // 结算时间
+  settled_at: Date | null; // 结算时间（转为可提现的时间）
+  confirmed_at: Date | null; // 确认时间（15天后确认）
   notes: string | null; // 备注
   created_at: Date;
   updated_at: Date;
@@ -23,7 +24,7 @@ export interface CommissionAttributes {
 
 // Attributes that are optional during creation
 interface CommissionCreationAttributes extends Optional<CommissionAttributes,
-  'id' | 'source_id' | 'status' | 'settled_at' | 'notes' | 'created_at' | 'updated_at'> {}
+  'id' | 'source_id' | 'status' | 'settled_at' | 'confirmed_at' | 'notes' | 'created_at' | 'updated_at'> {}
 
 // Commission model class
 class Commission extends Model<CommissionAttributes, CommissionCreationAttributes> implements CommissionAttributes {
@@ -38,6 +39,7 @@ class Commission extends Model<CommissionAttributes, CommissionCreationAttribute
   public source_id!: number | null;
   public status!: 'pending' | 'settled' | 'cancelled';
   public settled_at!: Date | null;
+  public confirmed_at!: Date | null;
   public notes!: string | null;
   public readonly created_at!: Date;
   public readonly updated_at!: Date;
@@ -110,13 +112,18 @@ Commission.init(
     },
     status: {
       type: DataTypes.ENUM('pending', 'settled', 'cancelled'),
-      defaultValue: 'settled',
-      comment: '状态：pending-待结算, settled-已结算, cancelled-已取消'
+      defaultValue: 'pending',
+      comment: '状态：pending-待结算(15天), settled-已结算(可提现), cancelled-已取消'
     },
     settled_at: {
       type: DataTypes.DATE,
       allowNull: true,
-      comment: '结算时间'
+      comment: '结算时间（转为可提现状态的时间）'
+    },
+    confirmed_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: '确认时间（15天后自动确认的时间）'
     },
     notes: {
       type: DataTypes.TEXT,

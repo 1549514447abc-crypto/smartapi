@@ -42,10 +42,12 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
       <Card className="w-full max-w-md shadow-xl" variant="borderless">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-            <span className="text-white font-bold text-2xl">S</span>
-          </div>
-          <h1 className="text-2xl font-bold text-gray-800">SmartAPI 管理后台</h1>
+          <img
+            src={`${import.meta.env.BASE_URL}logo.png`}
+            alt="创作魔方"
+            className="w-16 h-16 mx-auto mb-4 rounded-2xl"
+          />
+          <h1 className="text-2xl font-bold text-gray-800">创作魔方管理后台</h1>
           <p className="text-gray-500 mt-2">请使用管理员账号登录</p>
         </div>
 

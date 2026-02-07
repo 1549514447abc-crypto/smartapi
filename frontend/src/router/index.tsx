@@ -10,7 +10,6 @@ const Login = lazy(() => import('../pages/Auth/Login'));
 const Register = lazy(() => import('../pages/Auth/Register'));
 const WorkflowStore = lazy(() => import('../pages/WorkflowStore'));
 const PluginMarket = lazy(() => import('../pages/PluginMarket'));
-const VideoExtract = lazy(() => import('../pages/VideoExtract'));
 const Recharge = lazy(() => import('../pages/Recharge'));
 
 // Loading component
@@ -69,16 +68,17 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         )
       },
-      {
-        path: 'video-extract',
-        element: (
-          <ProtectedRoute>
-            <Suspense fallback={<LoadingFallback />}>
-              <VideoExtract />
-            </Suspense>
-          </ProtectedRoute>
-        )
-      },
+      // 视频提取暂时隐藏
+      // {
+      //   path: 'video-extract',
+      //   element: (
+      //     <ProtectedRoute>
+      //       <Suspense fallback={<LoadingFallback />}>
+      //         <VideoExtract />
+      //       </Suspense>
+      //     </ProtectedRoute>
+      //   )
+      // },
       {
         path: 'recharge',
         element: (

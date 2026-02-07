@@ -14,6 +14,10 @@ import {
   Tag,
   Tabs,
   Upload,
+  Card,
+  Row,
+  Col,
+  Spin,
 } from 'antd';
 import {
   PlusOutlined,
@@ -21,6 +25,8 @@ import {
   DeleteOutlined,
   UploadOutlined,
   SettingOutlined,
+  SearchOutlined,
+  ReloadOutlined,
 } from '@ant-design/icons';
 import api from '../../api/request';
 
@@ -327,8 +333,37 @@ const Prompts = () => {
     .filter(c => c.is_active)
     .map(c => ({ value: c.key, label: c.name }));
 
+  // 响应式：始终使用卡片视图
+  const [isMobile, setIsMobile] = useState(true);
+  const [keyword, setKeyword] = useState('');
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 1800);
+    window.addEventListener('resize', handleResize);
+    handleResize();
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // 过滤提示词
+  const filteredPrompts = prompts.filter(p =>
+    !keyword || p.title.toLowerCase().includes(keyword.toLowerCase())
+  );
+
   return (
     <div>
+      {/* 页面标题 */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 16, marginBottom: 24 }}>
+        <div>
+          <h1 style={{ fontSize: 24, fontWeight: 600, color: '#0f172a', margin: 0 }}>提示词管理</h1>
+          <p style={{ fontSize: 14, color: '#64748b', margin: '4px 0 0' }}>管理提示词库内容</p>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <Button icon={<ReloadOutlined />} onClick={fetchPrompts}>刷新</Button>
+          <Button icon={<UploadOutlined />} onClick={() => setImportModalVisible(true)}>批量导入</Button>
+          <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>添加提示词</Button>
+        </div>
+      </div>
+
       <Tabs
         defaultActiveKey="prompts"
         items={[
@@ -336,26 +371,71 @@ const Prompts = () => {
             key: 'prompts',
             label: '提示词列表',
             children: (
-              <>
-                <div className="flex justify-between items-center mb-4">
-                  <Space>
-                    <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-                      添加提示词
-                    </Button>
-                    <Button icon={<UploadOutlined />} onClick={() => setImportModalVisible(true)}>
-                      批量导入
-                    </Button>
-                  </Space>
-                </div>
-                <Table
-                  columns={promptColumns}
-                  dataSource={prompts}
-                  rowKey="id"
-                  loading={loading}
-                  pagination={{ pageSize: 20 }}
-                  scroll={{ x: 1000 }}
-                />
-              </>
+              <Card bordered={false} styles={{ body: { padding: isMobile ? 12 : 24 } }}>
+                {/* 搜索栏 */}
+                <Row gutter={[12, 12]} style={{ marginBottom: 20 }}>
+                  <Col xs={24} sm={16} md={12} lg={8}>
+                    <Input
+                      placeholder="搜索提示词..."
+                      prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+                      value={keyword}
+                      onChange={(e) => setKeyword(e.target.value)}
+                      allowClear
+                      style={{ width: '100%' }}
+                    />
+                  </Col>
+                </Row>
+
+                {loading ? (
+                  <div style={{ textAlign: 'center', padding: 40 }}><Spin size="large" /></div>
+                ) : isMobile ? (
+                  /* 卡片视图 */
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {filteredPrompts.map((prompt) => (
+                      <div key={prompt.id} style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 16, background: '#fff' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: 12, marginBottom: 12 }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <h3 style={{ margin: '0 0 4px', fontSize: 16, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {prompt.title}
+                            </h3>
+                            <p style={{ margin: 0, color: '#64748b', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {prompt.description}
+                            </p>
+                          </div>
+                          <Tag color={prompt.is_active ? 'green' : 'red'} style={{ flexShrink: 0 }}>
+                            {prompt.is_active ? '上架' : '下架'}
+                          </Tag>
+                        </div>
+
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+                          <Tag color="blue">{getCategoryName(prompt.category)}</Tag>
+                          <span style={{ fontSize: 13, color: '#f97316', fontWeight: 600 }}>¥{prompt.price}</span>
+                          <span style={{ fontSize: 12, color: '#64748b' }}>使用:{prompt.usage_count}</span>
+                          <span style={{ fontSize: 12, color: '#64748b' }}>购买:{prompt.purchase_count}</span>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: 8, borderTop: '1px solid #f1f5f9', paddingTop: 12, flexWrap: 'wrap' }}>
+                          <Button size="small" icon={<EditOutlined />} onClick={() => handleEdit(prompt)} style={{ flex: 1 }}>编辑</Button>
+                          <Popconfirm title="确定删除？" onConfirm={() => handleDelete(prompt.id)} okText="确定" cancelText="取消">
+                            <Button size="small" danger icon={<DeleteOutlined />} style={{ flex: 1 }}>删除</Button>
+                          </Popconfirm>
+                        </div>
+                      </div>
+                    ))}
+                    {filteredPrompts.length === 0 && (
+                      <div style={{ textAlign: 'center', padding: 40, color: '#94a3b8' }}>暂无数据</div>
+                    )}
+                  </div>
+                ) : (
+                  <Table
+                    columns={promptColumns}
+                    dataSource={filteredPrompts}
+                    rowKey="id"
+                    pagination={{ pageSize: 20 }}
+                    scroll={{ x: 1000 }}
+                  />
+                )}
+              </Card>
             ),
           },
           {
@@ -363,19 +443,52 @@ const Prompts = () => {
             label: '分类管理',
             icon: <SettingOutlined />,
             children: (
-              <>
-                <div className="flex justify-between items-center mb-4">
+              <Card bordered={false} styles={{ body: { padding: isMobile ? 12 : 24 } }}>
+                <div style={{ marginBottom: 16 }}>
                   <Button type="primary" icon={<PlusOutlined />} onClick={handleAddCategory}>
                     添加分类
                   </Button>
                 </div>
-                <Table
-                  columns={categoryColumns}
-                  dataSource={categories}
-                  rowKey="id"
-                  pagination={false}
-                />
-              </>
+
+                {isMobile ? (
+                  /* 分类卡片视图 */
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {categories.map((cat) => (
+                      <div key={cat.id} style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 16, background: '#fff' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: 12, marginBottom: 8 }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <h3 style={{ margin: '0 0 4px', fontSize: 15, fontWeight: 600 }}>
+                              {cat.icon} {cat.name}
+                            </h3>
+                            <p style={{ margin: 0, color: '#64748b', fontSize: 13 }}>
+                              {cat.key} · 排序: {cat.sort_order}
+                            </p>
+                          </div>
+                          <Tag color={cat.is_active ? 'green' : 'red'} style={{ flexShrink: 0 }}>
+                            {cat.is_active ? '启用' : '禁用'}
+                          </Tag>
+                        </div>
+                        {cat.description && (
+                          <p style={{ margin: '8px 0', color: '#64748b', fontSize: 12 }}>{cat.description}</p>
+                        )}
+                        <div style={{ display: 'flex', gap: 8, borderTop: '1px solid #f1f5f9', paddingTop: 12, flexWrap: 'wrap' }}>
+                          <Button size="small" icon={<EditOutlined />} onClick={() => handleEditCategory(cat)} style={{ flex: 1 }}>编辑</Button>
+                          <Popconfirm title="确定删除？" onConfirm={() => handleDeleteCategory(cat.id)} okText="确定" cancelText="取消">
+                            <Button size="small" danger icon={<DeleteOutlined />} style={{ flex: 1 }}>删除</Button>
+                          </Popconfirm>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <Table
+                    columns={categoryColumns}
+                    dataSource={categories}
+                    rowKey="id"
+                    pagination={false}
+                  />
+                )}
+              </Card>
             ),
           },
         ]}

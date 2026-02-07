@@ -8,17 +8,24 @@ import {
   useWorkflow,
   getWorkflowStatistics
 } from '../controllers/workflowController';
-import { authenticate, requireAdmin } from '../middleware/auth';
+import { authenticate, requireAdmin, optionalAuth } from '../middleware/auth';
 
 const router = express.Router();
 
 /**
  * @route   GET /api/workflows
  * @desc    Get all workflows with filtering and pagination
- * @access  Public
+ * @access  Public (支持管理员token解析)
  * @query   page, limit, category, platform, price_filter, search, sort_by
  */
-router.get('/', getWorkflows);
+router.get('/', optionalAuth, getWorkflows);
+
+/**
+ * @route   GET /api/workflows/admin/statistics
+ * @desc    Get workflow statistics (admin only)
+ * @access  Private + Admin
+ */
+router.get('/admin/statistics', authenticate, requireAdmin, getWorkflowStatistics);
 
 /**
  * @route   GET /api/workflows/:id
@@ -54,16 +61,5 @@ router.delete('/:id', authenticate, deleteWorkflow);
  * @access  Public
  */
 router.post('/:id/use', useWorkflow);
-
-/**
- * Admin routes
- */
-
-/**
- * @route   GET /api/workflows/admin/statistics
- * @desc    Get workflow statistics (admin only)
- * @access  Private + Admin
- */
-router.get('/admin/statistics', authenticate, requireAdmin, getWorkflowStatistics);
 
 export default router;

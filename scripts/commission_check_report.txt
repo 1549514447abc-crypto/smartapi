@@ -1,0 +1,35 @@
+================================================================================
+返佣链路检查报告 - 2026-01-10 09:17:09
+================================================================================
+
+【1. 测试用户状态】
+id	username	phone	balance	bonus_balance	commission_balance	pending_commission_balance	membership_type	is_course_student	referred_by_user_id
+213	testuserone	13800000001	0.0000	0.0000	0.0000	0.6000	none	0	NULL
+214	testusertwo	13800000002	1990.1000	0.0000	0.0000	0.0000	yearly	1	213
+
+
+【2. 推荐关系】
+id	referrer	referee	referral_code	status	total_contribution
+1	testuserone	testusertwo	QH3JHYP7	active	4.0000
+
+
+【3. 佣金记录】
+id	referrer	referee	source_type	source_amount	commission_rate	amount	status	created_at
+1	testuserone	testusertwo	recharge	1.0000	10.00	0.1000	pending	2026-01-10 09:00:26
+2	testuserone	testusertwo	membership	1.0000	30.00	0.3000	pending	2026-01-10 09:00:26
+3	testuserone	testusertwo	recharge	1.0000	10.00	0.1000	pending	2026-01-10 09:00:39
+4	testuserone	testusertwo	course	1.0000	10.00	0.1000	pending	2026-01-10 09:00:41
+
+
+【4. 课程订单】
+id	order_no	username	course_title	amount	status	created_at
+13	BAL202601100900414396	testusertwo	AI自动化工作流实战课	1.00	completed	2026-01-10 09:00:41
+
+
+【5. 佣金配置 (normal 分类)】
+category_key	category_name	default_course_rate	default_membership_rate
+normal	普通用户	10.00	30.00
+
+
+【6. 总结】
+检查失败: 'gbk' codec can't encode character '\u2705' in position 2: illegal multibyte sequence

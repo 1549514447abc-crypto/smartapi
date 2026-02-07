@@ -5,6 +5,7 @@ import CourseSetting from '../models/CourseSetting';
 import CourseLesson from '../models/CourseLesson';
 import CourseOrder from '../models/CourseOrder';
 import CourseExtra from '../models/CourseExtra';
+import SystemConfig, { ConfigKey } from '../models/SystemConfig';
 import { successResponse, errorResponse } from '../utils/response';
 
 /**
@@ -22,7 +23,18 @@ export const getCourseInfo = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    successResponse(res, courseSetting);
+    // 从系统配置获取价格（优先使用系统配置）
+    const coursePrice = await SystemConfig.getNumberConfig(ConfigKey.COURSE_PRICE);
+    const courseOriginalPrice = await SystemConfig.getNumberConfig(ConfigKey.COURSE_ORIGINAL_PRICE);
+
+    // 合并课程数据，使用系统配置的价格
+    const courseData = {
+      ...courseSetting.toJSON(),
+      current_price: coursePrice || courseSetting.current_price,
+      original_price: courseOriginalPrice || courseSetting.original_price
+    };
+
+    successResponse(res, courseData);
   } catch (error: any) {
     console.error('Get course info error:', error);
     errorResponse(res, error.message || 'Failed to get course info', 500);
@@ -85,8 +97,19 @@ export const getFullCourseData = async (req: Request, res: Response): Promise<vo
       order: [['sort_order', 'ASC']]
     });
 
+    // 从系统配置获取价格（优先使用系统配置）
+    const coursePrice = await SystemConfig.getNumberConfig(ConfigKey.COURSE_PRICE);
+    const courseOriginalPrice = await SystemConfig.getNumberConfig(ConfigKey.COURSE_ORIGINAL_PRICE);
+
+    // 合并课程数据，使用系统配置的价格
+    const courseData = courseSetting ? {
+      ...courseSetting.toJSON(),
+      current_price: coursePrice || courseSetting.current_price,
+      original_price: courseOriginalPrice || courseSetting.original_price
+    } : null;
+
     successResponse(res, {
-      course: courseSetting,
+      course: courseData,
       lessons,
       extras
     });

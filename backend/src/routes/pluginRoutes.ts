@@ -10,17 +10,24 @@ import {
   getMyInstalledPlugins,
   getPluginStatistics
 } from '../controllers/pluginController';
-import { authenticate, requireAdmin } from '../middleware/auth';
+import { authenticate, requireAdmin, optionalAuth } from '../middleware/auth';
 
 const router = express.Router();
 
 /**
  * @route   GET /api/plugins
  * @desc    Get all plugins with filtering and pagination
- * @access  Public
+ * @access  Public (但会解析token以区分管理员)
  * @query   page, limit, category, is_free, search, sort_by
  */
-router.get('/', getPlugins);
+router.get('/', optionalAuth, getPlugins);
+
+/**
+ * @route   GET /api/plugins/admin/statistics
+ * @desc    Get plugin statistics (admin only)
+ * @access  Private + Admin
+ */
+router.get('/admin/statistics', authenticate, requireAdmin, getPluginStatistics);
 
 /**
  * @route   GET /api/plugins/my/installed
@@ -70,16 +77,5 @@ router.post('/:id/install', authenticate, installPlugin);
  * @access  Private (requires authentication)
  */
 router.post('/:id/uninstall', authenticate, uninstallPlugin);
-
-/**
- * Admin routes
- */
-
-/**
- * @route   GET /api/plugins/admin/statistics
- * @desc    Get plugin statistics (admin only)
- * @access  Private + Admin
- */
-router.get('/admin/statistics', authenticate, requireAdmin, getPluginStatistics);
 
 export default router;

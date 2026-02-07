@@ -12,6 +12,10 @@ const sequelize = new Sequelize({
   dialect: 'mysql',
   timezone: '+08:00',
   logging: process.env.NODE_ENV === 'development' ? console.log : false,
+  dialectOptions: {
+    charset: 'utf8mb4',
+    collate: 'utf8mb4_unicode_ci'
+  },
   pool: {
     max: 10,
     min: 0,

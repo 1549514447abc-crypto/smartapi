@@ -7,6 +7,8 @@ import { successResponse, errorResponse } from '../utils/response';
 import { generateApiKey } from '../utils/apiKey';
 import supabaseService from '../services/SupabaseService';
 import sequelize from '../config/database';
+import SystemConfig, { ConfigKey } from '../models/SystemConfig';
+import commissionService from '../services/CommissionService';
 
 /**
  * Register a new user
@@ -21,7 +23,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const { username, email, phone, password, nickname } = value;
+    const { username, email, phone, password, nickname, referral_code } = value;
 
     // Check if username already exists
     const existingUser = await User.findOne({ where: { username } });
@@ -51,11 +53,14 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     // Hash password
     const password_hash = await hashPassword(password);
 
+    // 获取注册赠金配置
+    const registerBonus = await SystemConfig.getNumberConfig(ConfigKey.REGISTER_BONUS);
+
     // 开启事务
     const transaction = await sequelize.transaction();
 
     try {
-      // 1. Create user with default balance (1元注册赠金)
+      // 1. Create user with default balance (注册赠金从配置读取)
       const newUser = await User.create({
         username,
         email: email || null,
@@ -64,7 +69,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         nickname: nickname || username,
         status: 'active',
         user_type: 'normal',
-        balance: 1.0000, // 注册默认送1元
+        balance: registerBonus,
         total_recharged: 0,
         total_consumed: 0
       }, { transaction });
@@ -83,30 +88,37 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       );
 
       // 3. 记录余额日志（注册赠金）
-      await sequelize.query(
-        `INSERT INTO balance_logs
-         (user_id, change_type, change_amount, balance_before, balance_after, source, description)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        {
-          replacements: [
-            userId,
-            'recharge',
-            1.0000,
-            0,
-            1.0000,
-            'web',
-            '注册赠金'
-          ],
-          transaction
-        }
-      );
+      if (registerBonus > 0) {
+        await sequelize.query(
+          `INSERT INTO balance_logs
+           (user_id, change_type, change_amount, balance_before, balance_after, source, description)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          {
+            replacements: [
+              userId,
+              'recharge',
+              registerBonus,
+              0,
+              registerBonus,
+              'web',
+              '注册赠金'
+            ],
+            transaction
+          }
+        );
+      }
+
+      // 4. 处理推荐码绑定
+      if (referral_code) {
+        await commissionService.bindReferral(userId, referral_code, transaction);
+      }
 
       // 提交事务
       await transaction.commit();
 
       // 4. 同步到 Supabase（异步，失败不影响注册）
       // 必须先同步用户，再同步 API Key（避免外键约束错误）
-      supabaseService.syncUser(userId, 1.0000)
+      supabaseService.syncUser(userId, registerBonus)
         .then(() => {
           // 用户同步成功后，再同步 API Key
           return supabaseService.syncApiKey(apiKey, userId, '默认密钥');
@@ -184,10 +196,24 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     const clientIp = req.ip ||
                      (Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor) ||
                      'unknown';
-    await user.update({
+
+    // 检查会员是否过期
+    const updateData: any = {
       last_login_at: new Date(),
       last_login_ip: clientIp
-    });
+    };
+
+    if (user.membership_type && user.membership_type !== 'none' && user.membership_expiry) {
+      const expiryDate = new Date(user.membership_expiry);
+      if (expiryDate < new Date()) {
+        // 会员已过期，重置为非会员
+        updateData.membership_type = 'none';
+        updateData.membership_expiry = null;
+        console.log(`用户 ${user.username} 的会员已过期，自动重置为非会员`);
+      }
+    }
+
+    await user.update(updateData);
 
     // Generate JWT token
     const token = generateToken({
@@ -225,10 +251,159 @@ export const getCurrentUser = async (req: Request, res: Response): Promise<void>
       return;
     }
 
+    // 检查会员是否过期
+    if (user.membership_type && user.membership_type !== 'none' && user.membership_expiry) {
+      const expiryDate = new Date(user.membership_expiry);
+      if (expiryDate < new Date()) {
+        // 会员已过期，重置为非会员
+        await user.update({
+          membership_type: 'none',
+          membership_expiry: null
+        });
+        console.log(`用户 ${user.username} 的会员已过期，自动重置为非会员`);
+      }
+    }
+
     // Return user data (without password)
     successResponse(res, user.toSafeJSON(), 'User retrieved successfully');
   } catch (error: any) {
     console.error('Get current user error:', error);
     errorResponse(res, 'Failed to get user info', 500, error.message);
+  }
+};
+
+/**
+ * 修改密码（已有密码的用户）
+ * POST /api/auth/change-password
+ */
+export const changePassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      errorResponse(res, '请先登录', 401);
+      return;
+    }
+
+    const { oldPassword, newPassword } = req.body;
+
+    if (!oldPassword || !newPassword) {
+      errorResponse(res, '请输入旧密码和新密码', 400);
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      errorResponse(res, '新密码至少6个字符', 400);
+      return;
+    }
+
+    // 获取用户
+    const user = await User.findByPk(req.user.userId);
+    if (!user) {
+      errorResponse(res, '用户不存在', 404);
+      return;
+    }
+
+    // 验证旧密码
+    if (!user.password_hash) {
+      errorResponse(res, '您尚未设置密码，请使用"设置密码"功能', 400);
+      return;
+    }
+
+    const isOldPasswordValid = await comparePassword(oldPassword, user.password_hash);
+    if (!isOldPasswordValid) {
+      errorResponse(res, '旧密码错误', 400);
+      return;
+    }
+
+    // 更新密码
+    const newPasswordHash = await hashPassword(newPassword);
+    await user.update({ password_hash: newPasswordHash });
+
+    successResponse(res, null, '密码修改成功');
+  } catch (error: any) {
+    console.error('Change password error:', error);
+    errorResponse(res, '密码修改失败', 500, error.message);
+  }
+};
+
+/**
+ * 设置密码（手机注册用户首次设置）
+ * POST /api/auth/set-password
+ */
+export const setPassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      errorResponse(res, '请先登录', 401);
+      return;
+    }
+
+    const { newPassword } = req.body;
+
+    if (!newPassword) {
+      errorResponse(res, '请输入新密码', 400);
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      errorResponse(res, '密码至少6个字符', 400);
+      return;
+    }
+
+    // 获取用户
+    const user = await User.findByPk(req.user.userId);
+    if (!user) {
+      errorResponse(res, '用户不存在', 404);
+      return;
+    }
+
+    // 检查是否已有密码（手机注册用户虽然有随机密码，但允许设置）
+    const isPhoneUser = /^user_\d{4}_[a-z0-9]+$/.test(user.username);
+    if (user.password_hash && !isPhoneUser) {
+      errorResponse(res, '您已设置过密码，请使用"修改密码"功能', 400);
+      return;
+    }
+
+    // 设置密码
+    const passwordHash = await hashPassword(newPassword);
+    await user.update({ password_hash: passwordHash });
+
+    successResponse(res, null, '密码设置成功');
+  } catch (error: any) {
+    console.error('Set password error:', error);
+    errorResponse(res, '密码设置失败', 500, error.message);
+  }
+};
+
+/**
+ * 判断用户是否是手机注册用户（用户名格式为 user_xxxx_xxx）
+ */
+const isPhoneRegisteredUser = (username: string): boolean => {
+  return /^user_\d{4}_[a-z0-9]+$/.test(username);
+};
+
+/**
+ * 检查用户是否已设置密码
+ * GET /api/auth/has-password
+ * 注意：手机注册用户虽然有随机密码，但视为"未设置密码"
+ */
+export const hasPassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      errorResponse(res, '请先登录', 401);
+      return;
+    }
+
+    const user = await User.findByPk(req.user.userId);
+    if (!user) {
+      errorResponse(res, '用户不存在', 404);
+      return;
+    }
+
+    // 手机注册用户虽然有随机密码，但用户不知道，所以返回 false
+    const hasRealPassword = !!user.password_hash && !isPhoneRegisteredUser(user.username);
+
+    successResponse(res, { hasPassword: hasRealPassword }, '查询成功');
+  } catch (error: any) {
+    console.error('Has password check error:', error);
+    errorResponse(res, '查询失败', 500, error.message);
   }
 };

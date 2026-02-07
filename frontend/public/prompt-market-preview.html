@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>提示词市场 - 预览</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lucide-static@0.263.1/font/lucide.min.css">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      background: linear-gradient(135deg, #fef3e2 0%, #fce7f3 50%, #ede9fe 100%);
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      border: 1px solid rgba(0,0,0,0.05);
+    }
+    .line-clamp-2 {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body class="p-4 md:p-8">
+  <div class="max-w-6xl mx-auto space-y-6">
+
+    <!-- Header -->
+    <div class="card p-6 relative overflow-hidden">
+      <div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-violet-200 via-purple-200 to-pink-200 rounded-full blur-3xl translate-x-1/3 -translate-y-1/3 opacity-60"></div>
+
+      <div class="relative">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-2xl font-bold text-slate-900">提示词市场</h1>
+            <p class="text-sm text-slate-500">精选优质 AI 提示词，助你高效创作</p>
+          </div>
+        </div>
+
+        <!-- 会员提示 -->
+        <div class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200">
+          <svg class="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+          </svg>
+          <span class="text-sm text-amber-700 font-medium">您是会员，所有提示词免费获取</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 搜索和分类 -->
+    <div class="card p-4">
+      <div class="flex flex-col sm:flex-row gap-4">
+        <div class="relative flex-1">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input type="text" placeholder="搜索提示词..." class="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none transition-all">
+        </div>
+      </div>
+
+      <!-- 分类标签 -->
+      <div class="flex flex-wrap gap-2 mt-4">
+        <button class="px-3 py-1.5 rounded-lg text-sm font-medium bg-violet-500 text-white shadow-md shadow-violet-200">全部 (24)</button>
+        <button class="px-3 py-1.5 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">内容创作 (8)</button>
+        <button class="px-3 py-1.5 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">设计创意 (4)</button>
+        <button class="px-3 py-1.5 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">开发编程 (5)</button>
+        <button class="px-3 py-1.5 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">办公效率 (3)</button>
+        <button class="px-3 py-1.5 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">营销文案 (4)</button>
+      </div>
+    </div>
+
+    <!-- 提示词列表 -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+      <!-- 卡片1 - 已拥有 -->
+      <div class="card p-5 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all group">
+        <div class="flex items-start justify-between mb-3">
+          <div class="flex-1 min-w-0">
+            <h3 class="font-semibold text-slate-900 truncate group-hover:text-violet-600 transition-colors">爆款小红书文案生成器</h3>
+            <span class="inline-block mt-1 px-2 py-0.5 rounded text-xs bg-violet-100 text-violet-600">内容创作</span>
+          </div>
+          <span class="flex-shrink-0 px-2 py-1 rounded-lg bg-emerald-100 text-emerald-600 text-xs font-medium">已拥有</span>
+        </div>
+        <p class="text-sm text-slate-500 line-clamp-2 mb-3">一键生成吸引眼球的小红书爆款文案，包含标题、正文、标签，让你的笔记轻松获得高曝光</p>
+        <div class="flex items-center justify-between text-xs text-slate-400">
+          <div class="flex items-center gap-3">
+            <span class="flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+              1,234
+            </span>
+            <span class="flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+              856
+            </span>
+          </div>
+          <span>SmartAPI官方</span>
+        </div>
+        <div class="flex flex-wrap gap-1 mt-3">
+          <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-500 text-xs">小红书</span>
+          <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-500 text-xs">爆款</span>
+          <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-500 text-xs">文案</span>
+        </div>
+      </div>
+
+      <!-- 卡片2 - 待购买 -->
+      <div class="card p-5 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all group">
+        <div class="flex items-start justify-between mb-3">
+          <div class="flex-1 min-w-0">
+            <h3 class="font-semibold text-slate-900 truncate group-hover:text-violet-600 transition-colors">专业代码审查助手</h3>
+            <span class="inline-block mt-1 px-2 py-0.5 rounded text-xs bg-violet-100 text-violet-600">开发编程</span>
+          </div>
+          <span class="flex-shrink-0 px-2 py-1 rounded-lg bg-orange-100 text-orange-600 text-xs font-bold">¥9.9</span>
+        </div>
+        <p class="text-sm text-slate-500 line-clamp-2 mb-3">深度分析代码质量，发现潜在Bug和安全漏洞，提供优化建议和最佳实践指导</p>
+        <div class="flex items-center justify-between text-xs text-slate-400">
+          <div class="flex items-center gap-3">
+            <span class="flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+              892
+            </span>
+            <span class="flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+              423
+            </span>
+          </div>
+          <span>技术达人</span>
+        </div>
+        <div class="flex flex-wrap gap-1 mt-3">
+          <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-500 text-xs">代码审查</span>
+          <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-500 text-xs">Bug</span>
+        </div>
+      </div>
+
+      <!-- 卡片3 -->
+      <div class="card p-5 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all group">
+        <div class="flex items-start justify-between mb-3">
+          <div class="flex-1 min-w-0">
+            <h3 class="font-semibold text-slate-900 truncate group-hover:text-violet-600 transition-colors">抖音爆款视频脚本</h3>
+            <span class="inline-block mt-1 px-2 py-0.5 rounded text-xs bg-violet-100 text-violet-600">内容创作</span>
+          </div>
+          <span class="flex-shrink-0 px-2 py-1 rounded-lg bg-orange-100 text-orange-600 text-xs font-bold">¥9.9</span>
+        </div>
+        <p class="text-sm text-slate-500 line-clamp-2 mb-3">生成抓人眼球的短视频脚本，包含开场hook、内容节奏、结尾引导，提升完播率</p>
+        <div class="flex items-center justify-between text-xs text-slate-400">
+          <div class="flex items-center gap-3">
+            <span class="flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+              2,156
+            </span>
+            <span class="flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+              1,024
+            </span>
+          </div>
+          <span>短视频大师</span>
+        </div>
+        <div class="flex flex-wrap gap-1 mt-3">
+          <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-500 text-xs">抖音</span>
+          <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-500 text-xs">脚本</span>
+          <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-500 text-xs">爆款</span>
+        </div>
+      </div>
+
+      <!-- 卡片4 -->
+      <div class="card p-5 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all group">
+        <div class="flex items-start justify-between mb-3">
+          <div class="flex-1 min-w-0">
+            <h3 class="font-semibold text-slate-900 truncate group-hover:text-violet-600 transition-colors">PPT大纲生成器</h3>
+            <span class="inline-block mt-1 px-2 py-0.5 rounded text-xs bg-violet-100 text-violet-600">办公效率</span>
+          </div>
+          <span class="flex-shrink-0 px-2 py-1 rounded-lg bg-emerald-100 text-emerald-600 text-xs font-medium">已拥有</span>
+        </div>
+        <p class="text-sm text-slate-500 line-clamp-2 mb-3">快速生成结构清晰、逻辑完整的PPT大纲，支持各种主题，节省80%准备时间</p>
+        <div class="flex items-center justify-between text-xs text-slate-400">
+          <div class="flex items-center gap-3">
+            <span class="flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+              1,567
+            </span>
+            <span class="flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+              678
+            </span>
+          </div>
+          <span>效率狂人</span>
+        </div>
+        <div class="flex flex-wrap gap-1 mt-3">
+          <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-500 text-xs">PPT</span>
+          <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-500 text-xs">大纲</span>
+        </div>
+      </div>
+
+      <!-- 卡片5 -->
+      <div class="card p-5 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all group">
+        <div class="flex items-start justify-between mb-3">
+          <div class="flex-1 min-w-0">
+            <h3 class="font-semibold text-slate-900 truncate group-hover:text-violet-600 transition-colors">Midjourney提示词优化器</h3>
+            <span class="inline-block mt-1 px-2 py-0.5 rounded text-xs bg-violet-100 text-violet-600">设计创意</span>
+          </div>
+          <span class="flex-shrink-0 px-2 py-1 rounded-lg bg-orange-100 text-orange-600 text-xs font-bold">¥9.9</span>
+        </div>
+        <p class="text-sm text-slate-500 line-clamp-2 mb-3">将简单描述转化为专业级MJ提示词，包含风格、光影、构图等参数，出图效果翻倍</p>
+        <div class="flex items-center justify-between text-xs text-slate-400">
+          <div class="flex items-center gap-3">
+            <span class="flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+              3,421
+            </span>
+            <span class="flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+              1,892
+            </span>
+          </div>
+          <span>AI艺术家</span>
+        </div>
+        <div class="flex flex-wrap gap-1 mt-3">
+          <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-500 text-xs">Midjourney</span>
+          <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-500 text-xs">AI绘画</span>
+        </div>
+      </div>
+
+      <!-- 卡片6 -->
+      <div class="card p-5 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all group">
+        <div class="flex items-start justify-between mb-3">
+          <div class="flex-1 min-w-0">
+            <h3 class="font-semibold text-slate-900 truncate group-hover:text-violet-600 transition-colors">朋友圈营销文案大师</h3>
+            <span class="inline-block mt-1 px-2 py-0.5 rounded text-xs bg-violet-100 text-violet-600">营销文案</span>
+          </div>
+          <span class="flex-shrink-0 px-2 py-1 rounded-lg bg-orange-100 text-orange-600 text-xs font-bold">¥9.9</span>
+        </div>
+        <p class="text-sm text-slate-500 line-clamp-2 mb-3">生成不刷屏、不招人烦的高转化朋友圈文案，软植入产品卖点，提升私域转化率</p>
+        <div class="flex items-center justify-between text-xs text-slate-400">
+          <div class="flex items-center gap-3">
+            <span class="flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+              987
+            </span>
+            <span class="flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+              456
+            </span>
+          </div>
+          <span>营销专家</span>
+        </div>
+        <div class="flex flex-wrap gap-1 mt-3">
+          <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-500 text-xs">朋友圈</span>
+          <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-500 text-xs">私域</span>
+          <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-500 text-xs">转化</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 详情弹窗 -->
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4" id="modal">
+      <div class="absolute inset-0 bg-black/50"></div>
+      <div class="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+        <!-- Header -->
+        <div class="p-6 border-b border-slate-200">
+          <div class="flex items-start justify-between">
+            <div class="flex-1 min-w-0 pr-4">
+              <h2 class="text-xl font-bold text-slate-900 mb-2">爆款小红书文案生成器</h2>
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="px-2 py-0.5 rounded text-xs bg-violet-100 text-violet-600">内容创作</span>
+                <span class="px-2 py-0.5 rounded text-xs bg-slate-100 text-slate-500">小红书</span>
+                <span class="px-2 py-0.5 rounded text-xs bg-slate-100 text-slate-500">爆款</span>
+                <span class="px-2 py-0.5 rounded text-xs bg-slate-100 text-slate-500">文案</span>
+              </div>
+            </div>
+            <button class="p-2 rounded-lg hover:bg-slate-100 text-slate-400" onclick="document.getElementById('modal').style.display='none'">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Content -->
+        <div class="p-6 overflow-y-auto max-h-[50vh]">
+          <div class="mb-4">
+            <h4 class="text-sm font-medium text-slate-500 mb-2">简介</h4>
+            <p class="text-slate-700">一键生成吸引眼球的小红书爆款文案，包含标题、正文、标签，让你的笔记轻松获得高曝光。支持多种风格：种草、测评、教程、日常分享等。</p>
+          </div>
+
+          <div>
+            <h4 class="text-sm font-medium text-slate-500 mb-2">提示词内容</h4>
+            <div class="relative">
+              <div class="p-4 rounded-lg bg-slate-50 border border-slate-200">
+                <pre class="text-sm text-slate-700 whitespace-pre-wrap font-sans">你是一位资深的小红书内容创作专家，擅长撰写高互动、高转化的爆款笔记。
+
+请根据用户提供的主题/产品，生成一篇小红书风格的笔记，包含：
+
+【标题】
+- 使用数字+痛点/好处的标题公式
+- 添加适当的emoji增加吸引力
+- 控制在20字以内
+
+【正文】
+- 开头用hook抓住注意力
+- 分点陈述，每点2-3句
+- 使用口语化、亲切的语气
+- 适当使用emoji分隔段落
+- 结尾设置互动引导
+
+【标签】
+- 生成10-15个相关标签
+- 包含热门标签和长尾标签
+
+【注意事项】
+- 避免硬广感，注重真实体验分享
+- 突出产品/服务的独特卖点
+- 制造紧迫感或稀缺感</pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="p-6 border-t border-slate-200 bg-slate-50">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4 text-sm text-slate-500">
+              <span class="flex items-center gap-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                1,234 次使用
+              </span>
+              <span class="flex items-center gap-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                856 人购买
+              </span>
+            </div>
+
+            <button class="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-violet-500 to-purple-500 text-white font-medium shadow-lg shadow-violet-200 hover:shadow-xl transition-all">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+              复制提示词
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 未购买的弹窗示例 -->
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden" id="modal2">
+      <div class="absolute inset-0 bg-black/50"></div>
+      <div class="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+        <div class="p-6 border-b border-slate-200">
+          <div class="flex items-start justify-between">
+            <div class="flex-1 min-w-0 pr-4">
+              <h2 class="text-xl font-bold text-slate-900 mb-2">专业代码审查助手</h2>
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="px-2 py-0.5 rounded text-xs bg-violet-100 text-violet-600">开发编程</span>
+                <span class="px-2 py-0.5 rounded text-xs bg-slate-100 text-slate-500">代码审查</span>
+              </div>
+            </div>
+            <button class="p-2 rounded-lg hover:bg-slate-100 text-slate-400">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="p-6 overflow-y-auto max-h-[50vh]">
+          <div class="mb-4">
+            <h4 class="text-sm font-medium text-slate-500 mb-2">简介</h4>
+            <p class="text-slate-700">深度分析代码质量，发现潜在Bug和安全漏洞，提供优化建议和最佳实践指导。</p>
+          </div>
+
+          <div>
+            <h4 class="text-sm font-medium text-slate-500 mb-2">提示词内容</h4>
+            <div class="relative">
+              <div class="p-4 rounded-lg bg-slate-50 border border-slate-200 blur-sm select-none">
+                <pre class="text-sm text-slate-700 whitespace-pre-wrap font-sans">你是一位资深的代码审查专家，拥有10年以上的软件开发经验...
+
+请对用户提供的代码进行全面审查，包括：
+
+【代码质量】
+- 命名规范检查
+- 代码结构分析
+- 复杂度评估...</pre>
+              </div>
+
+              <!-- 未购买遮罩 -->
+              <div class="absolute inset-0 flex items-center justify-center bg-slate-50/80 rounded-lg">
+                <div class="text-center">
+                  <svg class="w-8 h-8 text-slate-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                  <p class="text-slate-600 font-medium">购买后查看完整内容</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-6 border-t border-slate-200 bg-slate-50">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4 text-sm text-slate-500">
+              <span class="flex items-center gap-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                892 次使用
+              </span>
+              <span class="flex items-center gap-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                423 人购买
+              </span>
+            </div>
+
+            <button class="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-orange-500 to-pink-500 text-white font-medium shadow-lg shadow-orange-200 hover:shadow-xl transition-all">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+              ¥9.9 购买
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // 点击卡片打开弹窗
+    document.querySelectorAll('.card').forEach((card, index) => {
+      if (index < 6) { // 只给列表卡片添加点击事件
+        card.addEventListener('click', () => {
+          document.getElementById('modal').style.display = 'flex';
+        });
+      }
+    });
+
+    // 点击遮罩关闭弹窗
+    document.querySelectorAll('.fixed .bg-black\\/50').forEach(overlay => {
+      overlay.addEventListener('click', () => {
+        overlay.parentElement.style.display = 'none';
+      });
+    });
+  </script>
+</body>
+</html>

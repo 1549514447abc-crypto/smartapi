@@ -38,7 +38,7 @@ interface PromptListResponse {
     total: number;
     page: number;
     pageSize: number;
-    is_member: boolean;
+    is_yearly_member: boolean;
   };
 }
 
@@ -56,7 +56,7 @@ const PromptMarket = () => {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [keyword, setKeyword] = useState('');
-  const [isMember, setIsMember] = useState(false);
+  const [isYearlyMember, setIsYearlyMember] = useState(false);
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
   const [showDetail, setShowDetail] = useState(false);
   const [purchasing, setPurchasing] = useState(false);
@@ -78,7 +78,7 @@ const PromptMarket = () => {
       const response = await api.get<PromptListResponse>('/prompts/list', { params });
       if (response.success) {
         setPrompts(response.data.list);
-        setIsMember(response.data.is_member);
+        setIsYearlyMember(response.data.is_yearly_member);
       }
     } catch (error) {
       console.error('获取提示词列表失败:', error);
@@ -119,7 +119,7 @@ const PromptMarket = () => {
     if (!selectedPrompt) return;
 
     // 如果是会员或已拥有，直接关闭弹窗
-    if (selectedPrompt.is_owned || isMember) {
+    if (selectedPrompt.is_owned || isYearlyMember) {
       message.success('您已拥有此提示词');
       return;
     }
@@ -133,7 +133,7 @@ const PromptMarket = () => {
 
     try {
       setPurchasing(true);
-      const response = await api.post<{ success: boolean; message: string; data: { new_balance: number } }>(
+      const response = await api.post<{ success: boolean; message: string; data: { prompt: Prompt; new_balance: number } }>(
         `/prompts/purchase/${selectedPrompt.id}`
       );
       if (response.success) {
@@ -141,8 +141,12 @@ const PromptMarket = () => {
         // 刷新用户信息和提示词列表
         refreshUser();
         fetchPrompts();
-        // 更新当前选中的提示词
-        setSelectedPrompt({ ...selectedPrompt, is_owned: true });
+        // 使用后端返回的完整提示词数据更新当前选中的提示词
+        if (response.data?.prompt) {
+          setSelectedPrompt({ ...response.data.prompt, is_owned: true });
+        } else {
+          setSelectedPrompt({ ...selectedPrompt, is_owned: true });
+        }
         setShowPurchaseConfirm(false);
       }
     } catch (error: any) {
@@ -208,19 +212,19 @@ const PromptMarket = () => {
           </div>
 
           {/* 会员提示 */}
-          {isAuthenticated && isMember && (
+          {isAuthenticated && isYearlyMember && (
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200">
               <Crown className="w-4 h-4 text-amber-500" />
-              <span className="text-sm text-amber-700 font-medium">您是会员，所有提示词免费获取</span>
+              <span className="text-sm text-amber-700 font-medium">您是年度会员，可免费查看所有提示词</span>
             </div>
           )}
 
-          {isAuthenticated && !isMember && (
+          {isAuthenticated && !isYearlyMember && (
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-50 border border-slate-200">
               <Sparkles className="w-4 h-4 text-slate-400" />
-              <span className="text-sm text-slate-600">开通会员可免费获取所有提示词</span>
+              <span className="text-sm text-slate-600">开通年度会员可免费查看所有提示词</span>
               <button
-                onClick={() => navigate('/workflow-store')}
+                onClick={() => navigate('/membership')}
                 className="text-sm text-violet-600 font-medium hover:text-violet-700"
               >
                 去开通 →
@@ -311,7 +315,7 @@ const PromptMarket = () => {
                     {getCategoryLabel(prompt.category)}
                   </span>
                 </div>
-                {prompt.is_owned || isMember ? (
+                {prompt.is_owned || isYearlyMember ? (
                   <span className="flex-shrink-0 px-2 py-1 rounded-lg bg-emerald-100 text-emerald-600 text-xs font-medium">
                     已拥有
                   </span>
@@ -396,7 +400,7 @@ const PromptMarket = () => {
                 <h4 className="text-sm font-medium text-slate-500 mb-2">提示词内容</h4>
                 <div className="relative">
                   <div className={`p-4 rounded-lg bg-slate-50 border border-slate-200 ${
-                    !selectedPrompt.is_owned && !isMember ? 'blur-sm select-none' : ''
+                    !selectedPrompt.is_owned && !isYearlyMember ? 'blur-sm select-none' : ''
                   }`}>
                     <pre className="text-sm text-slate-700 whitespace-pre-wrap font-sans">
                       {selectedPrompt.content}
@@ -404,7 +408,7 @@ const PromptMarket = () => {
                   </div>
 
                   {/* 未购买遮罩 */}
-                  {!selectedPrompt.is_owned && !isMember && (
+                  {!selectedPrompt.is_owned && !isYearlyMember && (
                     <div className="absolute inset-0 flex items-center justify-center bg-slate-50/80 rounded-lg">
                       <div className="text-center">
                         <Lock className="w-8 h-8 text-slate-400 mx-auto mb-2" />
@@ -431,7 +435,7 @@ const PromptMarket = () => {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  {selectedPrompt.is_owned || isMember ? (
+                  {selectedPrompt.is_owned || isYearlyMember ? (
                     <button
                       onClick={handleCopy}
                       className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-violet-500 to-purple-500 text-white font-medium shadow-lg shadow-violet-200 hover:shadow-xl transition-all"

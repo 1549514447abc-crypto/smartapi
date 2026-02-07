@@ -108,7 +108,7 @@ const JianyingHelper = () => {
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="space-y-6">
       {/* 顶部标题区 */}
       <div className="card p-6 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-72 h-72 bg-gradient-to-br from-pink-200 via-violet-200 to-sky-200 rounded-full blur-3xl translate-x-1/3 -translate-y-1/3 opacity-60"></div>
@@ -173,25 +173,15 @@ const JianyingHelper = () => {
             </div>
             <div className="flex-1">
               <h3 className="font-semibold text-slate-900 text-lg mb-1">Mac 版本</h3>
-              <p className="text-sm text-slate-500 mb-3">
-                支持 macOS 10.15 及以上
+              <p className="text-sm text-amber-600 mb-3 font-medium">
+                暂未上线，敬请期待
               </p>
-              {appInfo?.mac_version && (
-                <p className="text-xs text-slate-400 mb-3">
-                  当前版本：v{appInfo.mac_version}
-                </p>
-              )}
               <button
-                onClick={() => handleDownload('mac')}
-                className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                  appInfo?.mac_url
-                    ? 'bg-gradient-to-r from-slate-600 to-slate-800 text-white shadow-lg shadow-slate-200 hover:shadow-xl'
-                    : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                }`}
-                disabled={!appInfo?.mac_url}
+                disabled
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-slate-100 text-slate-400 cursor-not-allowed"
               >
                 <Download className="w-4 h-4" />
-                {appInfo?.mac_url ? '立即下载' : '暂未发布'}
+                敬请期待
               </button>
             </div>
           </div>
@@ -254,11 +244,11 @@ const JianyingHelper = () => {
 
         {/* 功能特性 */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {(appInfo?.features || [
-            { title: '一键导入剪映草稿', description: '快速将草稿导入剪映，节省创作时间' },
-            { title: '智能模板管理', description: '管理和复用您的创作模板' },
-            { title: '云端同步备份', description: '安全备份您的创作内容' }
-          ]).map((feature, index) => (
+          {[
+            { title: '极速导入', description: '复制链接即可秒同步到本地' },
+            { title: '一键生成剪映草稿', description: '实现工作流内容与本地剪映无缝对接' },
+            { title: '智能合成', description: '从素材到成片，自动完成' }
+          ].map((feature, index) => (
             <div
               key={index}
               className="p-4 rounded-xl bg-gradient-to-br from-slate-50 to-white border border-slate-100"

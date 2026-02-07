@@ -1,6 +1,7 @@
 import express from 'express';
 import {
   extractVideo,
+  extractVideoBatch,
   getTasks,
   getTaskById,
   deleteTask,
@@ -18,6 +19,13 @@ const router = express.Router();
  * @access  Private (requires authentication)
  */
 router.post('/extract', authenticate, extractVideo);
+
+/**
+ * @route   POST /api/video/extract-batch
+ * @desc    Batch extract video information from multiple URLs
+ * @access  Private (requires authentication)
+ */
+router.post('/extract-batch', authenticate, extractVideoBatch);
 
 /**
  * @route   GET /api/video/tasks

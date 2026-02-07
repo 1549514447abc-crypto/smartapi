@@ -33,16 +33,25 @@ const PromptCategory = sequelize.define('PromptCategory', {
   updatedAt: 'updated_at',
 });
 
+// 新分类列表（2024-12更新）
 const defaultCategories = [
-  { key: 'content', name: '内容创作', icon: 'edit', description: '文章、文案、创意写作等', sort_order: 100 },
-  { key: 'design', name: '设计创意', icon: 'highlight', description: '设计灵感、创意方案等', sort_order: 90 },
-  { key: 'code', name: '开发编程', icon: 'code', description: '代码生成、技术文档等', sort_order: 80 },
-  { key: 'office', name: '办公效率', icon: 'file-text', description: '邮件、报告、会议纪要等', sort_order: 70 },
-  { key: 'education', name: '教育学习', icon: 'read', description: '学习辅导、知识问答等', sort_order: 60 },
-  { key: 'analysis', name: '思维分析', icon: 'bulb', description: '问题分析、决策支持等', sort_order: 50 },
-  { key: 'translation', name: '翻译写作', icon: 'translation', description: '多语言翻译、润色等', sort_order: 40 },
-  { key: 'marketing', name: '营销文案', icon: 'shopping', description: '广告文案、营销策划等', sort_order: 30 },
-  { key: 'other', name: '其他', icon: 'appstore', description: '其他类型提示词', sort_order: 0 },
+  { key: 'self_media', name: '自媒体文案', icon: '📱', description: '公众号、小红书、抖音等自媒体文案', sort_order: 170 },
+  { key: 'other_copywriting', name: '其他文案', icon: '📝', description: '各类通用文案写作', sort_order: 160 },
+  { key: 'ai_drawing', name: 'AI绘图', icon: '🎨', description: 'Midjourney、Stable Diffusion等AI绘图提示词', sort_order: 150 },
+  { key: 'ai_video', name: 'AI视频生成', icon: '🎬', description: 'Sora、Runway等AI视频生成提示词', sort_order: 140 },
+  { key: 'screenplay', name: '剧本创作', icon: '🎭', description: '剧本、脚本、分镜创作', sort_order: 130 },
+  { key: 'novel', name: '小说生成', icon: '📚', description: '网文、小说、故事创作', sort_order: 120 },
+  { key: 'business', name: '商业', icon: '💼', description: '商业计划、市场分析等', sort_order: 110 },
+  { key: 'coding', name: '编程助手', icon: '💻', description: '代码生成、调试、技术文档', sort_order: 100 },
+  { key: 'story_assist', name: '故事创作/辅助文案', icon: '✍️', description: '故事创作、文案辅助', sort_order: 90 },
+  { key: 'education', name: '教育学习', icon: '📖', description: '学习辅导、知识问答', sort_order: 80 },
+  { key: 'marketing', name: '市场营销', icon: '📈', description: '营销策划、推广文案', sort_order: 70 },
+  { key: 'roleplay', name: '角色扮演', icon: '🎮', description: '虚拟角色、对话模拟', sort_order: 60 },
+  { key: 'office', name: '办公辅助', icon: '📋', description: '邮件、报告、会议纪要等', sort_order: 50 },
+  { key: 'ecommerce', name: '电商运营', icon: '🛒', description: '商品文案、运营策划', sort_order: 40 },
+  { key: 'job_resume', name: '求职/简历', icon: '📄', description: '简历优化、面试准备', sort_order: 30 },
+  { key: 'legal', name: '法律', icon: '⚖️', description: '法律咨询、合同文书', sort_order: 20 },
+  { key: 'other_professional', name: '其他专业领域', icon: '🔧', description: '其他专业领域提示词', sort_order: 10 },
 ];
 
 async function initCategories() {
@@ -54,7 +63,19 @@ async function initCategories() {
     await PromptCategory.sync();
     console.log('表结构同步完成');
 
-    // 插入默认分类
+    // 获取新分类的所有key
+    const newCategoryKeys = defaultCategories.map(c => c.key);
+
+    // 禁用不在新列表中的旧分类
+    const [disabledCount] = await PromptCategory.update(
+      { is_active: false },
+      { where: { key: { [Sequelize.Op.notIn]: newCategoryKeys } } }
+    );
+    if (disabledCount > 0) {
+      console.log(`已禁用 ${disabledCount} 个旧分类`);
+    }
+
+    // 插入或更新分类
     for (const cat of defaultCategories) {
       const [category, created] = await PromptCategory.findOrCreate({
         where: { key: cat.key },
@@ -62,13 +83,22 @@ async function initCategories() {
       });
 
       if (created) {
-        console.log(`创建分类: ${cat.name}`);
+        console.log(`✅ 创建分类: ${cat.name}`);
       } else {
-        console.log(`分类已存在: ${cat.name}`);
+        // 更新已存在的分类
+        await category.update({
+          name: cat.name,
+          icon: cat.icon,
+          description: cat.description,
+          sort_order: cat.sort_order,
+          is_active: true
+        });
+        console.log(`🔄 更新分类: ${cat.name}`);
       }
     }
 
-    console.log('\n初始化完成！');
+    console.log('\n✅ 初始化完成！');
+    console.log(`共 ${defaultCategories.length} 个分类`);
     process.exit(0);
   } catch (error) {
     console.error('错误:', error.message);

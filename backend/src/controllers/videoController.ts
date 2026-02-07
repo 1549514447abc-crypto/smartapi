@@ -1,9 +1,12 @@
 import { Request, Response } from 'express';
 import VideoExtractionTask from '../models/VideoExtractionTask';
 import User from '../models/User';
+import SystemConfig, { ConfigKey } from '../models/SystemConfig';
+import sequelize from '../config/database';
 import AlapiService from '../services/AlapiService';
 import DashscopeAsrService from '../services/DashscopeAsrService';
 import DoubaoLlmService from '../services/DoubaoLlmService';
+import supabaseService from '../services/SupabaseService';
 import { successResponse, errorResponse } from '../utils/response';
 import Joi from 'joi';
 
@@ -23,27 +26,55 @@ const extractVideoSchema = Joi.object({
     })
 });
 
+// Validation schema for batch video extraction
+const batchExtractVideoSchema = Joi.object({
+  urls: Joi.array()
+    .items(Joi.string().allow(''))
+    .required()
+    .messages({
+      'array.base': 'urls must be an array',
+      'any.required': 'Video URLs are required'
+    }),
+  enableCorrection: Joi.boolean()
+    .default(false)
+    .messages({
+      'boolean.base': 'enableCorrection must be a boolean'
+    })
+});
+
 /**
  * Calculate cost based on used seconds and user membership
+ * 计费标准从系统配置读取：
+ * - 非会员: video_rate_normal (默认 0.002 元/秒)
+ * - 年度会员: video_rate_yearly (默认 0.0015 元/秒)
+ * - 课程学员: video_rate_course (默认 0.0013 元/秒)
  */
-const calculateCost = (usedSeconds: number, enableCorrection: boolean, user: User): number => {
-  // Base cost: 0.02 credits per second
-  let costPerSecond = 0.02;
+const calculateCost = async (usedSeconds: number, enableCorrection: boolean, user: User): Promise<number> => {
+  // 从系统配置读取费率
+  const rateNormal = await SystemConfig.getNumberConfig(ConfigKey.VIDEO_RATE_NORMAL) || 0.002;
+  const rateYearly = await SystemConfig.getNumberConfig(ConfigKey.VIDEO_RATE_YEARLY) || 0.0015;
+  const rateCourse = await SystemConfig.getNumberConfig(ConfigKey.VIDEO_RATE_COURSE) || 0.0013;
 
-  // Check if user has active workflow membership
+  let costPerSecond = rateNormal;
+
   const now = new Date();
-  if (user.workflow_member_expire && new Date(user.workflow_member_expire) > now) {
-    // Check membership type based on status
-    if (user.workflow_member_status === 'yearly') {
-      costPerSecond = 0.015; // 25% off for yearly
-    } else if (user.workflow_member_status === 'monthly') {
-      costPerSecond = 0.018; // 10% off for monthly
-    }
+
+  // 检查课程学员身份（优先级最高）
+  if (user.is_course_student) {
+    costPerSecond = rateCourse;
+  }
+  // 检查年度会员
+  else if (user.membership_type === 'yearly' && user.membership_expiry && new Date(user.membership_expiry) > now) {
+    costPerSecond = rateYearly;
+  }
+  // 检查课程会员类型
+  else if (user.membership_type === 'course' && user.membership_expiry && new Date(user.membership_expiry) > now) {
+    costPerSecond = rateCourse;
   }
 
   let totalCost = usedSeconds * costPerSecond;
 
-  // Additional cost for correction: 0.01 credits
+  // Additional cost for correction: 0.01 credits (if enabled)
   if (enableCorrection) {
     totalCost += 0.01;
   }
@@ -161,7 +192,7 @@ const processVideoExtraction = async (taskId: number, url: string, enableCorrect
     // Reload user to get latest balance
     await user.reload();
 
-    const cost = calculateCost(
+    const cost = await calculateCost(
       task.used_seconds || 0,
       enableCorrection,
       user
@@ -173,34 +204,60 @@ const processVideoExtraction = async (taskId: number, url: string, enableCorrect
     console.log(`   Correction enabled: ${enableCorrection}`);
     console.log(`   Total cost: ${cost} credits`);
 
-    // Check balance
-    if (user.balance < cost) {
-      await task.update({
-        status: 'failed',
-        error_message: `Insufficient balance. Required: ${cost}, Available: ${user.balance}`,
-        completed_at: new Date()
-      });
-      return;
+    // Calculate balance after deduction (can be negative)
+    const balanceBefore = user.balance;
+    const balanceAfter = user.balance - cost;
+    const needsRecharge = balanceAfter < 0;
+
+    if (needsRecharge) {
+      console.log(`⚠️ Balance will be negative after deduction: ${balanceBefore} → ${balanceAfter}`);
     }
 
-    // Deduct balance
+    // Deduct balance and update total_consumed
     await user.update({
-      balance: user.balance - cost
+      balance: balanceAfter,
+      total_consumed: Number(user.total_consumed || 0) + cost
     });
 
-    console.log(`✅ Balance deducted: ${user.balance + cost} → ${user.balance}`);
+    // Create balance log record
+    await sequelize.query(
+      `INSERT INTO balance_logs (user_id, change_type, change_amount, balance_before, balance_after, source, service_name, description, created_at)
+       VALUES (?, 'consumption', ?, ?, ?, 'video_extraction', 'video_extract', ?, NOW())`,
+      {
+        replacements: [
+          userId,
+          -cost,
+          balanceBefore,
+          balanceAfter,
+          `视频提取: ${task.video_title || task.original_url.substring(0, 50)}...`
+        ]
+      }
+    );
+
+    console.log(`✅ Balance deducted: ${balanceBefore} → ${balanceAfter}`);
+
+    // 异步同步余额到 Supabase（不阻塞响应）
+    supabaseService.syncBalance(userId, balanceAfter).catch(err => {
+      console.error('Supabase 同步余额失败:', err);
+    });
 
     // ========================================
     // Mark task as completed
     // ========================================
     await task.update({
       status: 'completed',
+      cost: cost,
       completed_at: new Date()
     });
 
     console.log(`\n🎉 Extraction completed successfully!`);
     console.log(`   Task ID: ${task.id}`);
-    console.log(`   Total time: ${Date.now() - startTime}ms\n`);
+    console.log(`   Total time: ${Date.now() - startTime}ms`);
+    if (needsRecharge) {
+      console.log(`   ⚠️ User needs to recharge! Balance: ${balanceAfter}\n`);
+    } else {
+      console.log('');
+    }
 
   } catch (error: any) {
     // Update task as failed
@@ -245,6 +302,13 @@ export const extractVideo = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
+    // Check minimum balance before creating task (0.5 yuan minimum)
+    const MIN_BALANCE_REQUIRED = 0.5;
+    if (user.balance < MIN_BALANCE_REQUIRED) {
+      errorResponse(res, `余额不足，请先充值。当前余额: ¥${user.balance.toFixed(2)}，最低需要: ¥${MIN_BALANCE_REQUIRED}`, 402);
+      return;
+    }
+
     // Create initial task record
     const task = await VideoExtractionTask.create({
       user_id: userId,
@@ -270,6 +334,140 @@ export const extractVideo = async (req: Request, res: Response): Promise<void> =
   } catch (error: any) {
     console.error('Extract video error:', error);
     errorResponse(res, 'Failed to create video extraction task', 500, error.message);
+  }
+};
+
+/**
+ * Helper function to extract URL from share text
+ */
+const extractUrlFromText = (text: string): string | null => {
+  const urlPatterns = [
+    /https?:\/\/v\.douyin\.com\/[^\s]+/i,
+    /https?:\/\/www\.douyin\.com\/video\/[^\s]+/i,
+    /https?:\/\/www\.bilibili\.com\/video\/[^\s]+/i,
+    /https?:\/\/b23\.tv\/[^\s]+/i,
+    /https?:\/\/v\.kuaishou\.com\/[^\s]+/i,
+    /https?:\/\/www\.xiaohongshu\.com\/[^\s]+/i,
+    /https?:\/\/xhslink\.com\/[^\s]+/i,
+    /https?:\/\/[^\s]+/i
+  ];
+
+  for (const pattern of urlPatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      return match[0].replace(/[,，。！!?？\s]+$/, '');
+    }
+  }
+  return null;
+};
+
+/**
+ * Batch extract video transcripts from multiple URLs
+ * POST /api/video/extract-batch
+ */
+export const extractVideoBatch = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Validate request body
+    const { error, value } = batchExtractVideoSchema.validate(req.body);
+    if (error) {
+      errorResponse(res, error.details[0].message, 400);
+      return;
+    }
+
+    const { urls, enableCorrection } = value;
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      errorResponse(res, 'User authentication required', 401);
+      return;
+    }
+
+    // Get user info
+    const user = await User.findByPk(userId);
+    if (!user) {
+      errorResponse(res, 'User not found', 404);
+      return;
+    }
+
+    // Check minimum balance
+    const MIN_BALANCE_REQUIRED = 0.5;
+    if (user.balance < MIN_BALANCE_REQUIRED) {
+      errorResponse(res, `余额不足，请先充值。当前余额: ¥${user.balance.toFixed(2)}，最低需要: ¥${MIN_BALANCE_REQUIRED}`, 402);
+      return;
+    }
+
+    // Filter and validate URLs
+    const validUrls: string[] = [];
+    const invalidUrls: { index: number; url: string; reason: string }[] = [];
+
+    urls.forEach((rawUrl: string, index: number) => {
+      const trimmed = rawUrl.trim();
+      if (!trimmed) {
+        // Skip empty lines
+        return;
+      }
+
+      const extractedUrl = extractUrlFromText(trimmed);
+      if (extractedUrl) {
+        validUrls.push(extractedUrl);
+      } else {
+        invalidUrls.push({
+          index: index + 1,
+          url: trimmed.substring(0, 50) + (trimmed.length > 50 ? '...' : ''),
+          reason: '无法识别的链接格式'
+        });
+      }
+    });
+
+    if (validUrls.length === 0) {
+      errorResponse(res, '没有有效的视频链接', 400);
+      return;
+    }
+
+    // Limit batch size
+    const MAX_BATCH_SIZE = 10;
+    if (validUrls.length > MAX_BATCH_SIZE) {
+      errorResponse(res, `批量提取最多支持 ${MAX_BATCH_SIZE} 个链接，当前 ${validUrls.length} 个`, 400);
+      return;
+    }
+
+    // Create tasks for all valid URLs
+    const createdTasks: { task_id: number; url: string; status: string }[] = [];
+
+    for (const url of validUrls) {
+      const task = await VideoExtractionTask.create({
+        user_id: userId,
+        original_url: url,
+        status: 'pending',
+        enable_correction: enableCorrection
+      });
+
+      console.log(`\n🎬 Batch Task #${task.id} created for URL: ${url.substring(0, 60)}...`);
+
+      // Start async processing
+      processVideoExtraction(task.id, url, enableCorrection, userId);
+
+      createdTasks.push({
+        task_id: task.id,
+        url: url,
+        status: 'pending'
+      });
+    }
+
+    console.log(`\n📦 Batch extraction: ${createdTasks.length} tasks created`);
+
+    successResponse(res, {
+      total: validUrls.length,
+      tasks: createdTasks,
+      invalid_urls: invalidUrls,
+      message: invalidUrls.length > 0
+        ? `已创建 ${createdTasks.length} 个任务，${invalidUrls.length} 个链接无效`
+        : `已创建 ${createdTasks.length} 个任务`
+    }, 'Batch extraction tasks created', 202);
+
+  } catch (error: any) {
+    console.error('Batch extract video error:', error);
+    errorResponse(res, 'Failed to create batch extraction tasks', 500, error.message);
   }
 };
 

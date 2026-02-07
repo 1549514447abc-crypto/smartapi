@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { verifyToken, JwtPayload } from '../utils/jwt';
+import User from '../models/User';
 
 // Extend Express Request interface to include user
 declare global {
@@ -13,11 +14,11 @@ declare global {
 /**
  * Auth middleware to verify JWT token
  */
-export const authenticate = (
+export const authenticate = async (
   req: Request,
   res: Response,
   next: NextFunction
-): void => {
+): Promise<void> => {
   try {
     // Get token from header
     const authHeader = req.headers.authorization;
@@ -35,6 +36,27 @@ export const authenticate = (
     // Verify token
     const decoded = verifyToken(token);
 
+    // 检查用户是否被禁用
+    const user = await User.findByPk(decoded.userId, {
+      attributes: ['id', 'status']
+    });
+
+    if (!user) {
+      res.status(401).json({
+        success: false,
+        message: '用户不存在'
+      });
+      return;
+    }
+
+    if (user.status === 'suspended') {
+      res.status(403).json({
+        success: false,
+        message: '账号已被停用'
+      });
+      return;
+    }
+
     // Attach user to request
     req.user = decoded;
 
@@ -50,18 +72,27 @@ export const authenticate = (
 /**
  * Optional auth middleware - doesn't require token but will decode if present
  */
-export const optionalAuth = (
+export const optionalAuth = async (
   req: Request,
   res: Response,
   next: NextFunction
-): void => {
+): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
 
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
       const decoded = verifyToken(token);
-      req.user = decoded;
+
+      // 检查用户是否被禁用
+      const user = await User.findByPk(decoded.userId, {
+        attributes: ['id', 'status']
+      });
+
+      // 只有用户存在且未被禁用时才设置 req.user
+      if (user && user.status !== 'suspended') {
+        req.user = decoded;
+      }
     }
 
     next();
@@ -97,3 +128,6 @@ export const requireAdmin = (
 
   next();
 };
+
+// Alias for requireAdmin for compatibility
+export const adminOnly = requireAdmin;

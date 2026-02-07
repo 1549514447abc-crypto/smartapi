@@ -20,6 +20,7 @@ export interface VideoExtractionTaskAttributes {
   corrected_transcript: string | null;
   audio_duration: number | null;
   used_seconds: number | null;
+  cost: number | null;
   enable_correction: boolean;
   correction_cost: number | null;
   raw_response: object | null;
@@ -34,7 +35,7 @@ interface VideoExtractionTaskCreationAttributes extends Optional<VideoExtraction
   'id' | 'platform' | 'video_url' | 'video_title' | 'video_cover' |
   'video_duration' | 'author_name' | 'author_avatar' | 'audio_url' |
   'transcript' | 'corrected_transcript' | 'audio_duration' | 'used_seconds' |
-  'enable_correction' | 'correction_cost' | 'raw_response' |
+  'cost' | 'enable_correction' | 'correction_cost' | 'raw_response' |
   'status' | 'error_message' | 'created_at' | 'completed_at'> {}
 
 // VideoExtractionTask model class
@@ -55,6 +56,7 @@ class VideoExtractionTask extends Model<VideoExtractionTaskAttributes, VideoExtr
   public corrected_transcript!: string | null;
   public audio_duration!: number | null;
   public used_seconds!: number | null;
+  public cost!: number | null;
   public enable_correction!: boolean;
   public correction_cost!: number | null;
   public raw_response!: object | null;
@@ -141,6 +143,11 @@ VideoExtractionTask.init(
       type: DataTypes.DECIMAL(10, 2),
       allowNull: true,
       comment: '计费秒数'
+    },
+    cost: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+      comment: '扣费金额(元)'
     },
     enable_correction: {
       type: DataTypes.BOOLEAN,

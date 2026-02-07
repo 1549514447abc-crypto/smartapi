@@ -6,30 +6,73 @@ import User from '../models/User';
 import { successResponse, errorResponse } from '../utils/response';
 import Joi from 'joi';
 
+// 新的工作流分类
+const validCategories = ['self_media', 'celebrity', 'tools', 'image_process', 'ecommerce', 'video', 'education', 'image_gen', 'novel'];
+
+// 平台选项
+const validPlatforms = ['coze', 'make', 'n8n', 'comfyui'];
+
 // Validation schema for workflow creation
 const createWorkflowSchema = Joi.object({
   name: Joi.string().max(200).required(),
   description: Joi.string().allow(null, ''),
-  category: Joi.string().valid('video', 'scraping', 'image', 'content', 'automation', 'social', 'analysis', 'other').allow(null),
-  platform: Joi.string().valid('coze', 'make', 'n8n', 'comfyui').allow(null),
-  cover_url: Joi.string().uri().max(500).allow(null, ''),
-  workflow_config: Joi.object().allow(null),
-  price: Joi.number().min(0).default(0),
-  is_svip_free: Joi.boolean().default(true),
-  is_public: Joi.boolean().default(true)
+  category: Joi.string().valid(...validCategories).allow(null),
+  platform: Joi.string().valid(...validPlatforms).allow(null, ''),
+  cover_url: Joi.string().max(500).allow(null, ''),
+  // 下载相关
+  download_url: Joi.string().max(500).allow(null, ''),
+  file_size: Joi.string().max(50).allow(null, ''),
+  // 链接
+  video_url: Joi.string().max(500).allow(null, ''),
+  feishu_link: Joi.string().max(500).allow(null, ''),
+  related_links: Joi.array().items(Joi.object({
+    title: Joi.string().allow(''),
+    url: Joi.string().allow(''),
+    description: Joi.string().allow(null, '')
+  })).allow(null),
+  // 插件说明
+  requires_paid_plugin: Joi.boolean().default(true),
+  plugin_note: Joi.string().max(500).allow(null, ''),
+  // 教学图片
+  images: Joi.array().items(Joi.object({
+    url: Joi.string().required(),
+    description: Joi.string().allow('', null)
+  })).allow(null),
+  // 状态
+  is_public: Joi.boolean().default(true),
+  is_official: Joi.boolean().default(false),
+  status: Joi.string().valid('published', 'draft', 'offline').default('published')
 });
 
 // Validation schema for workflow update
 const updateWorkflowSchema = Joi.object({
   name: Joi.string().max(200),
   description: Joi.string().allow(null, ''),
-  category: Joi.string().valid('video', 'scraping', 'image', 'content', 'automation', 'social', 'analysis', 'other').allow(null),
-  platform: Joi.string().valid('coze', 'make', 'n8n', 'comfyui').allow(null),
-  cover_url: Joi.string().uri().max(500).allow(null, ''),
-  workflow_config: Joi.object().allow(null),
-  price: Joi.number().min(0),
-  is_svip_free: Joi.boolean(),
+  category: Joi.string().valid(...validCategories).allow(null),
+  platform: Joi.string().valid(...validPlatforms).allow(null, ''),
+  cover_url: Joi.string().max(500).allow(null, ''),
+  // 下载相关
+  download_url: Joi.string().max(500).allow(null, ''),
+  file_size: Joi.string().max(50).allow(null, ''),
+  // 链接
+  video_url: Joi.string().max(500).allow(null, ''),
+  feishu_link: Joi.string().max(500).allow(null, ''),
+  related_links: Joi.array().items(Joi.object({
+    title: Joi.string().allow(''),
+    url: Joi.string().allow(''),
+    description: Joi.string().allow(null, '')
+  })).allow(null),
+  // 插件说明
+  requires_paid_plugin: Joi.boolean(),
+  plugin_note: Joi.string().max(500).allow(null, ''),
+  // 教学图片
+  images: Joi.array().items(Joi.object({
+    url: Joi.string().required(),
+    description: Joi.string().allow('', null)
+  })).allow(null),
+  // 状态
   is_public: Joi.boolean(),
+  is_official: Joi.boolean(),
   status: Joi.string().valid('published', 'draft', 'offline')
 });
 
@@ -50,12 +93,23 @@ export const getWorkflows = async (req: Request, res: Response): Promise<void> =
     const priceFilter = req.query.price_filter as string; // 'free', 'paid', 'svip'
     const search = req.query.search as string;
     const sortBy = req.query.sort_by as string || 'latest'; // latest, popular, rating, price_low, price_high
+    const statusFilter = req.query.status as string;
+    const isAdmin = req.user?.userType === 'admin';
 
     // Build where clause
-    const where: any = {
-      status: 'published',
-      is_public: true
-    };
+    const where: any = {};
+
+    // 状态筛选：前端只显示已发布的，管理后台可以看全部
+    if (statusFilter) {
+      // 如果指定了status筛选，使用指定的status
+      if (statusFilter !== 'all') {
+        where.status = statusFilter;
+      }
+    } else if (!isAdmin) {
+      // 非管理员只能看到已发布的工作流
+      where.status = 'published';
+    }
+    // 管理员不传status时可以看到所有状态
 
     if (category && category !== 'all') {
       where.category = category;
@@ -226,14 +280,7 @@ export const createWorkflow = async (req: Request, res: Response): Promise<void>
  */
 export const updateWorkflow = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = req.user?.userId;
-    const isAdmin = req.user?.userType === 'admin';
     const workflowId = parseInt(req.params.id);
-
-    if (!userId) {
-      errorResponse(res, 'User authentication required', 401);
-      return;
-    }
 
     // Find workflow
     const workflow = await Workflow.findByPk(workflowId);
@@ -243,19 +290,14 @@ export const updateWorkflow = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    // Check permissions
-    const isCreator = userId === workflow.creator_id;
-    if (!isCreator && !isAdmin) {
-      errorResponse(res, 'Permission denied', 403);
-      return;
-    }
-
     // Validate request body
     const { error, value } = updateWorkflowSchema.validate(req.body);
     if (error) {
       errorResponse(res, error.details[0].message, 400);
       return;
     }
+
+    // 管理后台，直接更新
 
     // Update workflow
     await workflow.update(value);
@@ -274,14 +316,7 @@ export const updateWorkflow = async (req: Request, res: Response): Promise<void>
  */
 export const deleteWorkflow = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = req.user?.userId;
-    const isAdmin = req.user?.userType === 'admin';
     const workflowId = parseInt(req.params.id);
-
-    if (!userId) {
-      errorResponse(res, 'User authentication required', 401);
-      return;
-    }
 
     // Find workflow
     const workflow = await Workflow.findByPk(workflowId);
@@ -291,14 +326,7 @@ export const deleteWorkflow = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    // Check permissions
-    const isCreator = userId === workflow.creator_id;
-    if (!isCreator && !isAdmin) {
-      errorResponse(res, 'Permission denied', 403);
-      return;
-    }
-
-    // Delete workflow
+    // 管理后台，直接删除
     await workflow.destroy();
 
     successResponse(res, null, 'Workflow deleted successfully');

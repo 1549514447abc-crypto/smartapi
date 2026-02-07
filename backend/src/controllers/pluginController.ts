@@ -12,10 +12,12 @@ const createPluginSchema = Joi.object({
   name: Joi.string().max(200).required(),
   description: Joi.string().allow(null, ''),
   category: Joi.string().max(50).allow(null),
-  icon_url: Joi.string().uri().max(500).allow(null, ''),
+  icon_url: Joi.string().max(500).allow(null, ''),
   plugin_config: Joi.object().allow(null),
   version: Joi.string().max(20).default('1.0.0'),
-  is_free: Joi.boolean().default(true)
+  is_free: Joi.boolean().default(true),
+  status: Joi.string().valid('approved', 'pending', 'rejected', 'offline', 'coming_soon'),
+  feishu_link: Joi.string().max(500).allow(null, '')
 });
 
 // Validation schema for plugin update
@@ -23,11 +25,12 @@ const updatePluginSchema = Joi.object({
   name: Joi.string().max(200),
   description: Joi.string().allow(null, ''),
   category: Joi.string().max(50).allow(null),
-  icon_url: Joi.string().uri().max(500).allow(null, ''),
+  icon_url: Joi.string().max(500).allow(null, ''),
   plugin_config: Joi.object().allow(null),
   version: Joi.string().max(20),
   is_free: Joi.boolean(),
-  status: Joi.string().valid('approved', 'pending', 'rejected', 'offline')
+  status: Joi.string().valid('approved', 'pending', 'rejected', 'offline', 'coming_soon'),
+  feishu_link: Joi.string().max(500).allow(null, '')
 });
 
 /**
@@ -46,11 +49,16 @@ export const getPlugins = async (req: Request, res: Response): Promise<void> => 
     const isFree = req.query.is_free as string; // 'true', 'false', or undefined
     const search = req.query.search as string;
     const sortBy = req.query.sort_by as string || 'latest'; // latest, popular, rating
+    const status = req.query.status as string; // 状态筛选
 
     // Build where clause
-    const where: any = {
-      status: 'approved' // Only show approved plugins
-    };
+    const where: any = {};
+
+    // 如果指定了status筛选，则使用指定的status
+    if (status) {
+      where.status = status;
+    }
+    // 否则显示所有状态
 
     if (category && category !== 'all') {
       where.category = category;
@@ -71,18 +79,21 @@ export const getPlugins = async (req: Request, res: Response): Promise<void> => 
 
     // Build order clause
     let order: any[] = [];
+    // 状态排序：已上架 > 即将上线 > 已下架 > 其他
+    const statusOrder = sequelize.literal("FIELD(`Plugin`.`status`, 'approved', 'coming_soon', 'offline', 'pending', 'rejected')");
+
     switch (sortBy) {
       case 'latest':
-        order = [['created_at', 'DESC']];
+        order = [statusOrder, ['created_at', 'DESC']];
         break;
       case 'popular':
-        order = [['install_count', 'DESC']];
+        order = [statusOrder, ['install_count', 'DESC']];
         break;
       case 'rating':
-        order = [['rating', 'DESC'], ['review_count', 'DESC']];
+        order = [statusOrder, ['rating', 'DESC'], ['review_count', 'DESC']];
         break;
       default:
-        order = [['created_at', 'DESC']];
+        order = [statusOrder, ['created_at', 'DESC']];
     }
 
     // Query plugins
@@ -139,34 +150,8 @@ export const getPluginById = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    // Check if user can access this plugin
-    if (plugin.status !== 'approved') {
-      const userId = req.user?.userId;
-      const isDeveloper = userId === plugin.developer_id;
-      const isAdmin = req.user?.userType === 'admin';
-
-      if (!isDeveloper && !isAdmin) {
-        errorResponse(res, 'Plugin not accessible', 403);
-        return;
-      }
-    }
-
-    // Check if current user has installed this plugin
-    let isInstalled = false;
-    if (req.user?.userId) {
-      const installation = await UserPlugin.findOne({
-        where: {
-          user_id: req.user.userId,
-          plugin_id: pluginId
-        }
-      });
-      isInstalled = !!installation;
-    }
-
-    successResponse(res, {
-      ...plugin.toJSON(),
-      is_installed: isInstalled
-    }, 'Plugin retrieved successfully');
+    // 管理后台，直接返回所有插件详情
+    successResponse(res, plugin, 'Plugin retrieved successfully');
 
   } catch (error: any) {
     console.error('Get plugin error:', error);
@@ -194,14 +179,17 @@ export const createPlugin = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
+    // 管理后台，直接使用指定的状态，默认offline
+    const status = value.status || 'offline';
+
     // Create plugin
     const plugin = await Plugin.create({
       ...value,
       developer_id: userId,
-      status: 'pending' // New plugins need approval
+      status
     });
 
-    successResponse(res, plugin, 'Plugin created successfully and pending approval', 201);
+    successResponse(res, plugin, 'Plugin created successfully', 201);
 
   } catch (error: any) {
     console.error('Create plugin error:', error);
@@ -215,27 +203,13 @@ export const createPlugin = async (req: Request, res: Response): Promise<void> =
  */
 export const updatePlugin = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = req.user?.userId;
-    const isAdmin = req.user?.userType === 'admin';
     const pluginId = parseInt(req.params.id);
-
-    if (!userId) {
-      errorResponse(res, 'User authentication required', 401);
-      return;
-    }
 
     // Find plugin
     const plugin = await Plugin.findByPk(pluginId);
 
     if (!plugin) {
       errorResponse(res, 'Plugin not found', 404);
-      return;
-    }
-
-    // Check permissions
-    const isDeveloper = userId === plugin.developer_id;
-    if (!isDeveloper && !isAdmin) {
-      errorResponse(res, 'Permission denied', 403);
       return;
     }
 
@@ -246,12 +220,7 @@ export const updatePlugin = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    // Only admins can change status
-    if (value.status && !isAdmin) {
-      delete value.status;
-    }
-
-    // Update plugin
+    // 管理后台，直接更新
     await plugin.update(value);
 
     successResponse(res, plugin, 'Plugin updated successfully');
@@ -268,14 +237,7 @@ export const updatePlugin = async (req: Request, res: Response): Promise<void> =
  */
 export const deletePlugin = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = req.user?.userId;
-    const isAdmin = req.user?.userType === 'admin';
     const pluginId = parseInt(req.params.id);
-
-    if (!userId) {
-      errorResponse(res, 'User authentication required', 401);
-      return;
-    }
 
     // Find plugin
     const plugin = await Plugin.findByPk(pluginId);
@@ -285,13 +247,7 @@ export const deletePlugin = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    // Check permissions
-    const isDeveloper = userId === plugin.developer_id;
-    if (!isDeveloper && !isAdmin) {
-      errorResponse(res, 'Permission denied', 403);
-      return;
-    }
-
+    // 管理后台，直接删除
     // Delete plugin (also deletes related user_plugins records due to CASCADE)
     await plugin.destroy();
 
@@ -473,6 +429,8 @@ export const getPluginStatistics = async (req: Request, res: Response): Promise<
   try {
     const totalPlugins = await Plugin.count();
     const approvedPlugins = await Plugin.count({ where: { status: 'approved' } });
+    const comingSoonPlugins = await Plugin.count({ where: { status: 'coming_soon' } });
+    const offlinePlugins = await Plugin.count({ where: { status: 'offline' } });
     const pendingPlugins = await Plugin.count({ where: { status: 'pending' } });
     const rejectedPlugins = await Plugin.count({ where: { status: 'rejected' } });
 
@@ -492,6 +450,8 @@ export const getPluginStatistics = async (req: Request, res: Response): Promise<
     successResponse(res, {
       total_plugins: totalPlugins,
       approved_plugins: approvedPlugins,
+      coming_soon_plugins: comingSoonPlugins,
+      offline_plugins: offlinePlugins,
       pending_plugins: pendingPlugins,
       rejected_plugins: rejectedPlugins,
       total_installations: totalInstallations,

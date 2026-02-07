@@ -6,7 +6,9 @@ import {
   updateUserStatus,
   updateUserMembership,
   adjustUserBalance,
-  getUserStats
+  getUserStats,
+  resetUserPassword,
+  updateUserCommission
 } from '../controllers/userController';
 
 const router = Router();
@@ -31,5 +33,11 @@ router.put('/:id/membership', updateUserMembership);
 
 // 调整用户余额
 router.post('/:id/balance', adjustUserBalance);
+
+// 重置用户密码
+router.post('/:id/reset-password', resetUserPassword);
+
+// 更新用户佣金设置
+router.put('/:id/commission', updateUserCommission);
 
 export default router;

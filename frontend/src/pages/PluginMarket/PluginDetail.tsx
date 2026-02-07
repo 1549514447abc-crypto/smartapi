@@ -26,15 +26,34 @@ interface Plugin {
   };
 }
 
+interface PluginCategory {
+  category_key: string;
+  category_name: string;
+  icon: string;
+}
+
 const PluginDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [plugin, setPlugin] = useState<Plugin | null>(null);
+  const [categories, setCategories] = useState<PluginCategory[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    fetchCategories();
     fetchPluginDetail();
   }, [id]);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await api.get<{ success: boolean; data: PluginCategory[] }>('/plugin-categories');
+      if (response.success) {
+        setCategories(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch categories:', error);
+    }
+  };
 
   const fetchPluginDetail = async () => {
     setLoading(true);
@@ -57,6 +76,13 @@ const PluginDetail = () => {
     } else {
       message.warning('暂无详情链接');
     }
+  };
+
+  // 获取分类信息
+  const getCategoryInfo = () => {
+    if (!plugin?.category) return { name: '其他', icon: '🔧' };
+    const category = categories.find(c => c.category_key === plugin.category);
+    return category ? { name: category.category_name, icon: category.icon } : { name: plugin.category, icon: '🔧' };
   };
 
   if (loading) {
@@ -104,13 +130,7 @@ const PluginDetail = () => {
                   <img src={plugin.icon_url} alt={plugin.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
                   <div className="plugin-icon-placeholder" style={{ width: '100%', height: '100%', fontSize: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {plugin.category === 'image' && '🎨'}
-                    {plugin.category === 'video' && '🎬'}
-                    {plugin.category === 'content' && '✍️'}
-                    {plugin.category === 'scraping' && '🕷️'}
-                    {plugin.category === 'automation' && '⚙️'}
-                    {plugin.category === 'llm' && '🤖'}
-                    {(!plugin.category || !['image', 'video', 'content', 'scraping', 'automation', 'llm'].includes(plugin.category)) && '🔧'}
+                    {getCategoryInfo().icon}
                   </div>
                 )}
               </div>
@@ -132,10 +152,9 @@ const PluginDetail = () => {
                 <Descriptions.Item label="插件名称">{plugin.name}</Descriptions.Item>
                 <Descriptions.Item label="版本">{plugin.version}</Descriptions.Item>
                 <Descriptions.Item label="分类">
-                  <Tag color="blue">{plugin.category || '其他'}</Tag>
+                  <Tag color="blue">{getCategoryInfo().icon} {getCategoryInfo().name}</Tag>
                 </Descriptions.Item>
                 <Descriptions.Item label="安装次数">{plugin.install_count} 次</Descriptions.Item>
-                <Descriptions.Item label="评分">{plugin.rating} 分 ({plugin.review_count} 条评论)</Descriptions.Item>
                 <Descriptions.Item label="价格">
                   {plugin.is_free ? (
                     <Tag color="success">免费</Tag>

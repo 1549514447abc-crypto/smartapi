@@ -1,4 +1,9 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { message } from 'antd';
+import { useAuthStore } from '../../store/useAuthStore';
+import { api } from '../../api/request';
+import PaymentModal from '../../components/PaymentModal';
 import {
   GraduationCap,
   Play,
@@ -15,11 +20,76 @@ import {
   Star,
   Sparkles,
   Target,
-  TrendingUp
+  TrendingUp,
+  X,
+  Copy,
+  AlertCircle
 } from 'lucide-react';
 
 const CourseLanding = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, isCourseStudent } = useAuthStore();
+  const [confirmVisible, setConfirmVisible] = useState(false);
+  const [paymentVisible, setPaymentVisible] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
+  const [orderNo, setOrderNo] = useState('');
+  const [coursePrice, setCoursePrice] = useState(799);
+  const [courseOriginalPrice, setCourseOriginalPrice] = useState(1299);
+
+  // 获取价格配置
+  useEffect(() => {
+    api.get<{ success: boolean; data: { coursePrice: number; courseOriginalPrice: number } }>('/system-config/prices')
+      .then(res => {
+        if (res.success) {
+          if (res.data.coursePrice) {
+            setCoursePrice(res.data.coursePrice);
+          }
+          if (res.data.courseOriginalPrice) {
+            setCourseOriginalPrice(res.data.courseOriginalPrice);
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handlePurchase = () => {
+    if (!isAuthenticated) {
+      message.warning('请先登录');
+      navigate('/login', { state: { from: '/course' } });
+      return;
+    }
+    // 检查是否已经是课程学员
+    if (isCourseStudent()) {
+      message.info('您已经是课程学员，无需重复购买');
+      navigate('/course/trial');
+      return;
+    }
+    // 显示确认购买弹窗
+    setConfirmVisible(true);
+  };
+
+  const handleConfirmPurchase = () => {
+    setConfirmVisible(false);
+    setPaymentVisible(true);
+  };
+
+  const handlePaymentSuccess = (newOrderNo?: string) => {
+    setPaymentVisible(false);
+    if (newOrderNo) {
+      setOrderNo(newOrderNo);
+    }
+    setSuccessVisible(true);
+  };
+
+  const handleCopyOrderNo = () => {
+    navigator.clipboard.writeText(orderNo);
+    message.success('订单号已复制');
+  };
+
+  const handleSuccessClose = () => {
+    setSuccessVisible(false);
+    window.location.reload();
+  };
 
   const trialLessons = [
     '第一课：AI如何让普通人成为超级个体',
@@ -82,7 +152,7 @@ const CourseLanding = () => {
   ];
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
+    <div className="space-y-8">
       {/* Hero Section */}
       <section className="card p-6 sm:p-8 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-72 h-72 bg-gradient-to-br from-violet-200 to-pink-200 rounded-full blur-3xl translate-x-1/3 -translate-y-1/3 opacity-60"></div>
@@ -111,8 +181,8 @@ const CourseLanding = () => {
           {/* 价格区域 */}
           <div className="flex flex-wrap items-end gap-4 mb-6">
             <div className="flex items-baseline gap-2">
-              <span className="text-4xl sm:text-5xl font-bold text-orange-500">¥799</span>
-              <span className="text-lg text-slate-400 line-through">¥999</span>
+              <span className="text-4xl sm:text-5xl font-bold text-orange-500">¥{coursePrice}</span>
+              <span className="text-lg text-slate-400 line-through">¥{courseOriginalPrice}</span>
             </div>
             <span className="text-sm text-slate-500">限时优惠</span>
           </div>
@@ -127,7 +197,7 @@ const CourseLanding = () => {
               免费试听10节课
             </button>
             <button
-              onClick={() => navigate('/course/payment')}
+              onClick={handlePurchase}
               className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-orange-400 to-pink-400 text-white font-semibold shadow-lg shadow-orange-200 hover:shadow-xl transition-all"
             >
               <GraduationCap className="w-5 h-5" />
@@ -313,18 +383,18 @@ const CourseLanding = () => {
       <section className="card p-6 sm:p-8 bg-gradient-to-r from-orange-50 to-pink-50 border-orange-200">
         <div className="text-center">
           <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-2">
-            999的课，给你3000+的价值
+            {courseOriginalPrice}的课，给你3000+的价值
           </h2>
           <p className="text-slate-600 mb-6">解锁AI时代的超级技能</p>
 
           <div className="flex flex-wrap items-center justify-center gap-4 mb-6">
             <div className="text-center">
               <p className="text-sm text-slate-500 mb-1">原价</p>
-              <p className="text-2xl text-slate-400 line-through">¥999</p>
+              <p className="text-2xl text-slate-400 line-through">¥{courseOriginalPrice}</p>
             </div>
             <div className="text-center px-6 py-3 rounded-2xl bg-gradient-to-r from-orange-400 to-pink-400">
               <p className="text-xs text-white/80 mb-1">限时优惠</p>
-              <p className="text-3xl font-bold text-white">¥799</p>
+              <p className="text-3xl font-bold text-white">¥{coursePrice}</p>
             </div>
           </div>
 
@@ -337,7 +407,7 @@ const CourseLanding = () => {
               先试听再决定
             </button>
             <button
-              onClick={() => navigate('/course/payment')}
+              onClick={handlePurchase}
               className="flex items-center gap-2 px-8 py-3 rounded-xl bg-gradient-to-r from-orange-400 to-pink-400 text-white font-semibold shadow-lg shadow-orange-200 hover:shadow-xl transition-all"
             >
               <GraduationCap className="w-5 h-5" />
@@ -373,6 +443,187 @@ const CourseLanding = () => {
           ))}
         </div>
       </section>
+
+      {/* 确认购买弹窗 */}
+      {confirmVisible && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            {/* 头部 */}
+            <div className="flex items-center justify-between p-4 border-b border-slate-200">
+              <h3 className="font-bold text-lg text-slate-900">确认购买课程</h3>
+              <button
+                onClick={() => setConfirmVisible(false)}
+                className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-5 h-5 text-slate-500" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              {/* 课程信息 */}
+              <div className="bg-gradient-to-r from-orange-50 to-pink-50 rounded-xl p-4 mb-5">
+                <h4 className="font-bold text-slate-900 mb-3">课程名称：</h4>
+                <p className="text-lg font-semibold text-orange-600 mb-3">Coze实战训练营</p>
+
+                <h4 className="font-bold text-slate-900 mb-2">课程内容：</h4>
+                <p className="text-slate-600 mb-3">100节系统课程，31个实战项目</p>
+
+                <h4 className="font-bold text-slate-900 mb-2">支付金额：</h4>
+                <p className="text-2xl font-bold text-orange-500">¥{coursePrice}</p>
+              </div>
+
+              {/* 购买须知 */}
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-5">
+                <div className="flex items-start gap-2 mb-3">
+                  <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <h4 className="font-bold text-amber-800">购买须知</h4>
+                </div>
+                <ul className="space-y-2 text-sm text-amber-900">
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 flex-shrink-0"></span>
+                    点击"确认购买"后将生成订单号和微信二维码
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 flex-shrink-0"></span>
+                    请扫码添加讲师微信，并发送订单号
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 flex-shrink-0"></span>
+                    讲师确认后将通过微信发送完整课程资料
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 flex-shrink-0"></span>
+                    课程支持永久回看，提供完整源码和练习题
+                  </li>
+                </ul>
+              </div>
+
+              {/* 按钮 */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setConfirmVisible(false)}
+                  className="flex-1 py-3 rounded-xl bg-slate-100 text-slate-700 font-medium hover:bg-slate-200 transition-colors"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={handleConfirmPurchase}
+                  className="flex-1 py-3 rounded-xl bg-gradient-to-r from-orange-400 to-pink-400 text-white font-semibold shadow-lg shadow-orange-200 hover:shadow-xl transition-all"
+                >
+                  确认购买
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 支付弹窗 */}
+      <PaymentModal
+        visible={paymentVisible}
+        onClose={() => setPaymentVisible(false)}
+        onSuccess={handlePaymentSuccess}
+        productType="course"
+        productName="Coze实战训练营"
+        productPrice={coursePrice}
+        productDescription="100节系统课程 + 31个实战项目 + 一年会员权益"
+      />
+
+      {/* 支付成功弹窗 */}
+      {successVisible && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            {/* 头部 */}
+            <div className="flex items-center justify-between p-4 border-b border-slate-200">
+              <h3 className="font-bold text-lg text-slate-900">支付成功</h3>
+              <button
+                onClick={handleSuccessClose}
+                className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-5 h-5 text-slate-500" />
+              </button>
+            </div>
+
+            <div className="p-6 text-center">
+              {/* 成功图标 */}
+              <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-500 flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-10 h-10" />
+              </div>
+              <h4 className="text-xl font-bold text-slate-900 mb-2">恭喜您购买成功！</h4>
+              <p className="text-slate-500 mb-6">请按以下步骤领取课程</p>
+
+              {/* 订单号 */}
+              {orderNo && (
+                <div className="bg-slate-50 rounded-xl p-4 mb-4">
+                  <p className="text-sm text-slate-500 mb-2">您的订单号</p>
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="text-lg font-mono font-bold text-slate-900">{orderNo}</span>
+                    <button
+                      onClick={handleCopyOrderNo}
+                      className="p-1.5 rounded-lg hover:bg-slate-200 transition-colors"
+                    >
+                      <Copy className="w-4 h-4 text-slate-500" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* 讲师微信 */}
+              <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-4 mb-6">
+                <p className="text-sm text-slate-600 mb-3">扫码添加讲师微信，发送订单号领取课程</p>
+                <div className="w-40 h-40 mx-auto mb-3 bg-white rounded-xl p-2 shadow-sm">
+                  {/* 这里放讲师微信二维码 */}
+                  <img
+                    src="/wechat-qr.png"
+                    alt="讲师微信"
+                    className="w-full h-full object-contain"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                      (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                    }}
+                  />
+                  <div className="hidden w-full h-full flex items-center justify-center text-slate-400 text-sm">
+                    二维码加载中...
+                  </div>
+                </div>
+                <div className="flex items-center justify-center gap-2 text-emerald-700">
+                  <MessageCircle className="w-4 h-4" />
+                  <span className="font-semibold">微信号：OTR4936</span>
+                </div>
+              </div>
+
+              {/* 提示 */}
+              <div className="text-left bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
+                <ul className="space-y-2 text-sm text-amber-800">
+                  <li className="flex items-start gap-2">
+                    <span className="font-semibold">1.</span>
+                    截图保存此页面或复制订单号
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="font-semibold">2.</span>
+                    扫码添加讲师微信
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="font-semibold">3.</span>
+                    发送订单号给讲师确认
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="font-semibold">4.</span>
+                    讲师将通过微信发送课程资料
+                  </li>
+                </ul>
+              </div>
+
+              <button
+                onClick={handleSuccessClose}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-400 to-teal-400 text-white font-semibold shadow-lg shadow-emerald-200 hover:shadow-xl transition-all"
+              >
+                我知道了
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

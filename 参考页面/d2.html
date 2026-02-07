@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartAPI - 创作魔方 (设计修正版)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        slate: { 850: '#1e293b' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        /* 隐藏滚动条 */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        /* 选中状态的 Tab 下划线动画 */
+        .nav-link.active { color: #2563eb; }
+        .nav-link.active::after {
+            content: '';
+            display: block;
+            width: 100%;
+            height: 2px;
+            background: #2563eb;
+            margin-top: 4px;
+            border-radius: 2px;
+        }
+        .page-container { display: none; animation: fadeIn 0.3s ease-out; }
+        .page-container.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="text-slate-900 antialiased min-h-screen flex flex-col">
+
+    <nav class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center gap-2 cursor-pointer" onclick="switchPage('video')">
+                    <div class="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-white font-bold text-lg shadow-sm">S</div>
+                    <span class="text-xl font-bold text-slate-900 tracking-tight">SmartAPI</span>
+                </div>
+
+                <div class="hidden md:flex items-center space-x-1">
+                    <button onclick="switchPage('video')" id="nav-video" class="nav-link active px-4 py-2 text-sm font-semibold text-slate-600 hover:text-blue-600 transition-colors">视频提取</button>
+                    <button onclick="switchPage('workflow')" id="nav-workflow" class="nav-link px-4 py-2 text-sm font-semibold text-slate-600 hover:text-blue-600 transition-colors">工作流商店</button>
+                    <button onclick="switchPage('course')" id="nav-course" class="nav-link px-4 py-2 text-sm font-semibold text-slate-600 hover:text-blue-600 transition-colors">课程中心</button>
+                    <button class="nav-link px-4 py-2 text-sm font-semibold text-slate-600 hover:text-blue-600 transition-colors">插件市场</button>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <button class="text-sm font-semibold text-slate-600 hover:text-slate-900">登录</button>
+                    <button class="px-5 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-500 transition-all shadow-sm shadow-blue-600/20">
+                        免费注册
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div id="page-video" class="page-container active flex-1">
+        <div class="bg-white border-b border-slate-200 pb-16 pt-12">
+            <div class="max-w-4xl mx-auto px-4 text-center">
+                <h1 class="text-3xl font-bold text-slate-900 mb-4">视频文案智能提取</h1>
+                <p class="text-slate-500 mb-8 max-w-xl mx-auto">
+                    支持抖音、快手、Bilibili、小红书。一键提取视频文案，自动纠错并生成摘要。
+                </p>
+
+                <div class="relative max-w-2xl mx-auto group">
+                    <div class="absolute -inset-1 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-200"></div>
+                    <div class="relative flex bg-white rounded-xl shadow-xl border border-slate-100 p-2">
+                        <div class="flex-1 flex items-center pl-4 border-r border-slate-100">
+                            <svg class="w-5 h-5 text-slate-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+                            <input type="text" placeholder="在此粘贴视频链接..." class="w-full outline-none text-slate-700 placeholder-slate-400 bg-transparent h-10">
+                        </div>
+                        <button class="ml-2 px-6 py-2 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-lg transition-colors flex items-center gap-2">
+                            开始提取
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mt-8 flex justify-center items-center gap-6 opacity-70 grayscale hover:grayscale-0 transition-all duration-500">
+                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Supported Platforms</span>
+                    <div class="flex gap-4">
+                        <span class="px-2 py-1 rounded bg-slate-100 text-xs font-bold text-slate-600">抖音</span>
+                        <span class="px-2 py-1 rounded bg-slate-100 text-xs font-bold text-slate-600">小红书</span>
+                        <span class="px-2 py-1 rounded bg-slate-100 text-xs font-bold text-slate-600">Bilibili</span>
+                        <span class="px-2 py-1 rounded bg-slate-100 text-xs font-bold text-slate-600">快手</span>
+                    </div>
+                </div>
+
+                <div class="mt-8 max-w-lg mx-auto bg-slate-50 rounded-lg p-4 border border-slate-100 text-left">
+                    <div class="flex justify-between text-xs text-slate-500 mb-2">
+                        <span>正在处理: 抖音热门视频.mp4</span>
+                        <span>75%</span>
+                    </div>
+                    <div class="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                        <div class="bg-blue-600 h-1.5 rounded-full" style="width: 75%"></div>
+                    </div>
+                    <div class="mt-2 text-xs text-blue-600 flex items-center gap-1">
+                        <svg class="animate-spin w-3 h-3" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        正在进行 AI 智能纠错...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="flex justify-between items-end mb-6">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900">提取记录</h2>
+                    <p class="text-sm text-slate-500 mt-1">最近 30 天的提取任务</p>
+                </div>
+                <div class="flex gap-3">
+                    <button class="px-3 py-1.5 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50">批量导出 (.docx)</button>
+                    <button class="px-3 py-1.5 text-sm font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800">刷新列表</button>
+                </div>
+            </div>
+
+            <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-200">
+                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider w-10">#</th>
+                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">视频标题</th>
+                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">平台</th>
+                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">时长</th>
+                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">状态</th>
+                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        <tr class="hover:bg-blue-50/30 transition-colors">
+                            <td class="px-6 py-4 text-slate-400 text-sm">01</td>
+                            <td class="px-6 py-4">
+                                <div class="font-medium text-slate-900">如何利用 DeepSeek 快速生成爆款文案？</div>
+                                <div class="text-xs text-slate-400 mt-0.5">2025-12-16 14:20</div>
+                            </td>
+                            <td class="px-6 py-4"><span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-800">抖音</span></td>
+                            <td class="px-6 py-4 text-sm text-slate-600">03:45</td>
+                            <td class="px-6 py-4">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> 已完成
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <button class="text-sm font-medium text-blue-600 hover:text-blue-800">下载</button>
+                                <span class="text-slate-300 mx-2">|</span>
+                                <button class="text-sm font-medium text-slate-500 hover:text-slate-700">删除</button>
+                            </td>
+                        </tr>
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="page-workflow" class="page-container flex-1 bg-slate-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex gap-8 h-[calc(100vh-64px)]">
+
+            <div class="w-64 flex-shrink-0 hidden lg:block">
+                <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm h-full">
+                    <h3 class="font-bold text-slate-900 mb-6">筛选工作流</h3>
+
+                    <div class="space-y-6">
+                        <div>
+                            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">平台</div>
+                            <div class="space-y-2">
+                                <label class="flex items-center gap-2 text-sm text-slate-700 hover:text-blue-600 cursor-pointer">
+                                    <input type="checkbox" checked class="rounded border-slate-300 text-blue-600"> Coze (扣子)
+                                </label>
+                                <label class="flex items-center gap-2 text-sm text-slate-700 hover:text-blue-600 cursor-pointer">
+                                    <input type="checkbox" class="rounded border-slate-300 text-blue-600"> Dify
+                                </label>
+                                <label class="flex items-center gap-2 text-sm text-slate-700 hover:text-blue-600 cursor-pointer">
+                                    <input type="checkbox" class="rounded border-slate-300 text-blue-600"> N8N
+                                </label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">分类</div>
+                            <div class="space-y-2">
+                                <label class="flex items-center gap-2 text-sm text-slate-700"><input type="radio" name="cat" checked class="text-blue-600"> 全部</label>
+                                <label class="flex items-center gap-2 text-sm text-slate-700"><input type="radio" name="cat" class="text-blue-600"> 自媒体文案</label>
+                                <label class="flex items-center gap-2 text-sm text-slate-700"><input type="radio" name="cat" class="text-blue-600"> 自动化办公</label>
+                                <label class="flex items-center gap-2 text-sm text-slate-700"><input type="radio" name="cat" class="text-blue-600"> 数据抓取</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto pb-20 no-scrollbar">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-slate-900">精选工作流</h2>
+                    <div class="relative">
+                        <input type="text" placeholder="搜索工作流..." class="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 shadow-sm w-64">
+                        <svg class="w-4 h-4 text-slate-400 absolute left-3 top-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-lg transition-all cursor-pointer group flex flex-col h-full">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold">C</div>
+                            <span class="px-2 py-1 bg-amber-50 text-amber-700 text-xs font-bold rounded">VIP 免费</span>
+                        </div>
+                        <h3 class="font-bold text-slate-900 mb-2 group-hover:text-blue-600 transition-colors">小红书爆款文案生成</h3>
+                        <p class="text-sm text-slate-500 mb-4 line-clamp-2 flex-1">基于 Coze 平台，自动拆解爆款逻辑，一键生成种草文案。支持多风格切换。</p>
+                        <div class="flex items-center justify-between pt-4 border-t border-slate-50">
+                            <div class="text-xs text-slate-400">下载: 1.2k</div>
+                            <div class="font-bold text-slate-900">¥ 29.9</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-lg transition-all cursor-pointer group flex flex-col h-full">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="w-10 h-10 rounded-lg bg-pink-50 text-pink-600 flex items-center justify-center font-bold">N</div>
+                            <span class="px-2 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded">Free</span>
+                        </div>
+                        <h3 class="font-bold text-slate-900 mb-2 group-hover:text-blue-600 transition-colors">RSS 订阅推送到飞书</h3>
+                        <p class="text-sm text-slate-500 mb-4 line-clamp-2 flex-1">N8N 自动化流。监控指定 RSS 源，通过 Webhook 自动推送到飞书群机器人。</p>
+                        <div class="flex items-center justify-between pt-4 border-t border-slate-50">
+                            <div class="text-xs text-slate-400">下载: 856</div>
+                            <div class="font-bold text-emerald-600">免费</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-lg transition-all cursor-pointer group flex flex-col h-full">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center font-bold">D</div>
+                            <span class="px-2 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded">VIP</span>
+                        </div>
+                        <h3 class="font-bold text-slate-900 mb-2 group-hover:text-blue-600 transition-colors">Dify 知识库清洗助手</h3>
+                        <p class="text-sm text-slate-500 mb-4 line-clamp-2 flex-1">上传 PDF，自动清洗乱码、页眉页脚，输出高质量 Markdown 供知识库使用。</p>
+                        <div class="flex items-center justify-between pt-4 border-t border-slate-50">
+                            <div class="text-xs text-slate-400">下载: 2.1k</div>
+                            <div class="font-bold text-slate-900">¥ 49.0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="page-course" class="page-container flex-1 bg-white">
+        <div class="border-b border-slate-100 bg-slate-50/50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col md:flex-row gap-8 items-center">
+                <div class="flex-1">
+                    <span class="inline-block px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-bold mb-4">旗舰课程</span>
+                    <h1 class="text-3xl md:text-4xl font-extrabold text-slate-900 mb-4">Coze 智能体开发实战：<br>从零基础到商业变现</h1>
+                    <p class="text-slate-500 mb-6 text-lg">全网最系统的 AI Agent 开发教程。包含 100+ 节视频课，31 个实战案例，赠送一年 SmartAPI 会员权益。</p>
+                    <div class="flex gap-4">
+                        <button class="px-6 py-3 bg-slate-900 text-white font-semibold rounded-lg hover:bg-slate-800 shadow-lg shadow-slate-900/20">立即加入学习</button>
+                        <button class="px-6 py-3 bg-white border border-slate-200 text-slate-700 font-semibold rounded-lg hover:bg-slate-50">试看课程</button>
+                    </div>
+                </div>
+                <div class="w-full md:w-[480px] aspect-video bg-slate-200 rounded-xl shadow-2xl relative group cursor-pointer overflow-hidden">
+                    <div class="absolute inset-0 bg-black/10 flex items-center justify-center group-hover:bg-black/20 transition-all">
+                        <div class="w-16 h-16 bg-white/90 rounded-full flex items-center justify-center shadow-lg backdrop-blur hover:scale-105 transition-transform">
+                            <svg class="w-6 h-6 text-blue-600 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid grid-cols-1 lg:grid-cols-3 gap-12">
+            <div class="lg:col-span-2 space-y-6">
+                <h2 class="text-2xl font-bold text-slate-900 mb-6">课程大纲</h2>
+
+                <div class="border border-slate-200 rounded-xl overflow-hidden">
+                    <div class="bg-slate-50 px-6 py-4 flex justify-between items-center font-bold text-slate-800 border-b border-slate-200">
+                        <span>第一章：智能体认知与 Coze 基础</span>
+                        <span class="text-sm font-normal text-slate-500">5 节课 • 45 分钟</span>
+                    </div>
+                    <div class="divide-y divide-slate-100">
+                        <div class="px-6 py-4 flex items-center justify-between hover:bg-slate-50">
+                            <div class="flex items-center gap-3">
+                                <span class="w-5 h-5 rounded-full border border-green-500 text-green-500 flex items-center justify-center text-[10px]">✓</span>
+                                <span class="text-slate-600">1.1 什么是 AI Agent？商业价值在哪里？</span>
+                            </div>
+                            <span class="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded">免费试看</span>
+                        </div>
+                         <div class="px-6 py-4 flex items-center justify-between hover:bg-slate-50">
+                            <div class="flex items-center gap-3">
+                                <span class="w-5 h-5 rounded-full border border-slate-300 text-slate-300 flex items-center justify-center text-[10px]">🔒</span>
+                                <span class="text-slate-600">1.2 Coze 界面概览与 Hello World</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-1">
+                <div class="sticky top-24 bg-white border border-slate-200 rounded-xl p-6 shadow-xl">
+                    <div class="flex items-end gap-2 mb-6">
+                        <span class="text-3xl font-extrabold text-slate-900">¥ 799</span>
+                        <span class="text-slate-400 line-through mb-1">¥ 1299</span>
+                    </div>
+                    <button class="w-full py-3 bg-blue-600 text-white font-bold rounded-lg shadow-lg hover:bg-blue-500 mb-4 transition-all">立即购买</button>
+
+                    <div class="space-y-3 pt-6 border-t border-slate-100">
+                        <div class="flex items-start gap-3">
+                            <svg class="w-5 h-5 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <span class="text-sm text-slate-600">包含 100+ 节高清视频课程</span>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <svg class="w-5 h-5 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <span class="text-sm text-slate-600">赠送 <span class="font-bold text-slate-900">SmartAPI 年度会员</span> (价值 ¥299)</span>
+                        </div>
+                         <div class="flex items-start gap-3">
+                            <svg class="w-5 h-5 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <span class="text-sm text-slate-600">提供 31 个实战工作流源文件</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 简单的页面切换逻辑
+        function switchPage(pageId) {
+            // 隐藏所有页面
+            document.querySelectorAll('.page-container').forEach(el => el.classList.remove('active'));
+            // 显示目标页面
+            document.getElementById('page-' + pageId).classList.add('active');
+
+            // 更新导航状态
+            document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+            document.getElementById('nav-' + pageId).classList.add('active');
+        }
+
+        // 默认显示视频页
+        // switchPage('video');
+    </script>
+</body>
+</html>

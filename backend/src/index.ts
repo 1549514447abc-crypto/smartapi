@@ -1,10 +1,14 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import path from 'path';
 import dotenv from 'dotenv';
 import sequelize, { testConnection } from './config/database';
 import routes from './routes';
 import './models'; // Import all models to register them with Sequelize
 import orderTimeoutService from './services/OrderTimeoutService';
+import videoTaskTimeoutService from './services/VideoTaskTimeoutService';
+import commissionSettleService from './services/CommissionSettleService';
+import transferExpiryService from './services/TransferExpiryService';
 
 // Load environment variables
 dotenv.config();
@@ -22,6 +26,9 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// 静态文件服务 - 上传的文件
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // Request logging middleware (development only)
 if (process.env.NODE_ENV === 'development') {
@@ -96,8 +103,16 @@ const startServer = async () => {
       console.log(`💾 Database: ${process.env.DB_NAME}`);
       console.log('='.repeat(50));
 
-      // 启动订单超时检查服务
+      // 启动超时检查服务
       orderTimeoutService.start();
+      videoTaskTimeoutService.start();
+
+      // 启动佣金结算定时任务（每天凌晨3点执行）
+      commissionSettleService.startScheduledTask();
+      console.log('✅ 佣金结算定时任务已启动');
+
+      // 启动转账过期检查服务（每小时检查一次）
+      transferExpiryService.start();
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
@@ -109,6 +124,8 @@ const startServer = async () => {
 process.on('SIGTERM', async () => {
   console.log('SIGTERM received, closing server gracefully...');
   orderTimeoutService.stop();
+  videoTaskTimeoutService.stop();
+  transferExpiryService.stop();
   await sequelize.close();
   process.exit(0);
 });
@@ -116,6 +133,8 @@ process.on('SIGTERM', async () => {
 process.on('SIGINT', async () => {
   console.log('\nSIGINT received, closing server gracefully...');
   orderTimeoutService.stop();
+  videoTaskTimeoutService.stop();
+  transferExpiryService.stop();
   await sequelize.close();
   process.exit(0);
 });
