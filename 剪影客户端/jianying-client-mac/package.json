@@ -5,6 +5,10 @@
     "main": "main.js",
     "author": "长沙芯跃科技有限公司",
     "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/1549514447abc-crypto/smartapi.git"
+    },
     "scripts": {
         "start": "npx electron .",
         "dev": "npx electron . --inspect",
@@ -48,6 +52,7 @@
             ],
             "category": "public.app-category.video"
         },
+        "publish": null,
         "dmg": {
             "title": "剪映小助手",
             "contents": [
