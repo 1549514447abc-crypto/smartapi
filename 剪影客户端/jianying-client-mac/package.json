@@ -44,7 +44,7 @@
             "icon": "build/icon.png",
             "target": [
                 {
-                    "target": "dmg",
+                    "target": "zip",
                     "arch": [
                         "x64",
                         "arm64"
@@ -56,14 +56,7 @@
                 "CFBundleDisplayName": "剪映小助手"
             }
         },
-        "publish": null,
-        "dmg": {
-            "title": "JianyingHelper",
-            "contents": [
-                { "x": 130, "y": 220 },
-                { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
-            ]
-        }
+        "publish": null
     },
     "devDependencies": {
         "concurrently": "^8.2.2",
