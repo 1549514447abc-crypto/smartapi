@@ -1,0 +1,71 @@
+{
+    "name": "jianying-client-mac",
+    "version": "1.0.0",
+    "description": "剪映草稿导入工具 (macOS版)",
+    "main": "main.js",
+    "author": "长沙芯跃科技有限公司",
+    "license": "MIT",
+    "scripts": {
+        "start": "npx electron .",
+        "dev": "npx electron . --inspect",
+        "electron": "npx electron .",
+        "server": "node server.js",
+        "dev:full": "concurrently \"npm run server\" \"npm run dev\"",
+        "test": "echo \"No tests specified\" && exit 0",
+        "build": "electron-builder --mac",
+        "build:mac": "electron-builder --mac",
+        "pack": "electron-builder --dir"
+    },
+    "keywords": [
+        "jianying",
+        "video",
+        "electron",
+        "desktop",
+        "macos"
+    ],
+    "build": {
+        "appId": "cn.contentcube.jianying-client",
+        "productName": "剪映小助手",
+        "copyright": "Copyright © 2025 长沙芯跃科技有限公司",
+        "directories": {
+            "output": "dist"
+        },
+        "files": [
+            "**/*",
+            "!dist/**/*",
+            "!node_modules/.cache/**/*"
+        ],
+        "mac": {
+            "icon": "build/icon.png",
+            "target": [
+                {
+                    "target": "dmg",
+                    "arch": [
+                        "x64",
+                        "arm64"
+                    ]
+                }
+            ],
+            "category": "public.app-category.video"
+        },
+        "dmg": {
+            "title": "剪映小助手",
+            "contents": [
+                { "x": 130, "y": 220 },
+                { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
+            ]
+        }
+    },
+    "devDependencies": {
+        "concurrently": "^8.2.2",
+        "electron": "^28.3.3",
+        "electron-builder": "^24.13.3"
+    },
+    "dependencies": {
+        "axios": "^1.6.0",
+        "cors": "^2.8.5",
+        "dotenv": "^16.3.1",
+        "express": "^4.18.2",
+        "qrcode": "^1.5.3"
+    }
+}
