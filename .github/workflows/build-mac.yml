@@ -25,7 +25,7 @@ env:
 
 jobs:
   build-mac:
-    runs-on: macos-13
+    runs-on: macos-latest
     timeout-minutes: 30
 
     steps:
@@ -68,10 +68,15 @@ jobs:
             echo "flags=--arm64" >> $GITHUB_OUTPUT
           fi
 
-      - name: Build macOS
+      - name: Build macOS x64
         run: |
           cd "$MAC_DIR"
-          npx electron-builder --mac ${{ steps.arch.outputs.flags }} --publish never
+          npx electron-builder --mac --x64 --publish never
+
+      - name: Build macOS arm64
+        run: |
+          cd "$MAC_DIR"
+          npx electron-builder --mac --arm64 --publish never
 
       - name: List build output
         if: always()
