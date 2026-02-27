@@ -30,7 +30,7 @@
     "build": {
         "appId": "cn.contentcube.jianying-client",
         "productName": "JianyingHelper",
-        "copyright": "Copyright © 2025 长沙芯跃科技有限公司",
+        "copyright": "Copyright © 2026 长沙芯跃科技有限公司",
         "directories": {
             "output": "dist"
         },
