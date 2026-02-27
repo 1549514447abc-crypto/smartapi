@@ -44,7 +44,7 @@
             "icon": "build/icon.png",
             "target": [
                 {
-                    "target": "zip",
+                    "target": "dmg",
                     "arch": [
                         "x64",
                         "arm64"
