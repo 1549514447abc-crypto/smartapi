@@ -20,6 +20,8 @@ on:
 
 env:
   MAC_DIR: '剪影客户端/jianying-client-mac'
+  ELECTRON_CACHE: ~/.cache/electron
+  ELECTRON_BUILDER_CACHE: ~/.cache/electron-builder
 
 jobs:
   build-mac:
@@ -35,10 +37,24 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Install dependencies
+      - name: Cache Electron binaries
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+          key: electron-mac-${{ hashFiles('剪影客户端/jianying-client-mac/package.json') }}
+          restore-keys: |
+            electron-mac-
+
+      - name: Install dependencies (with retry)
         run: |
           cd "$MAC_DIR"
-          npm install
+          for i in 1 2 3; do
+            npm install && break
+            echo "npm install attempt $i failed, retrying in 10s..."
+            sleep 10
+          done
 
       - name: Determine build arch
         id: arch
@@ -58,6 +74,7 @@ jobs:
           npx electron-builder --mac ${{ steps.arch.outputs.flags }} --publish never
 
       - name: List build output
+        if: always()
         run: ls -lhR "$MAC_DIR/dist/" || echo "No dist directory"
 
       - name: Upload ZIP artifacts
@@ -68,12 +85,3 @@ jobs:
             剪影客户端/jianying-client-mac/dist/*.zip
           retention-days: 30
           if-no-files-found: warn
-
-      - name: Upload DMG artifacts (if any)
-        uses: actions/upload-artifact@v4
-        with:
-          name: mac-dmg
-          path: |
-            剪影客户端/jianying-client-mac/dist/*.dmg
-          retention-days: 30
-          if-no-files-found: ignore
