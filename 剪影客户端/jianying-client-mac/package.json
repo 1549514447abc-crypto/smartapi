@@ -52,7 +52,7 @@
                 }
             ],
             "category": "public.app-category.video",
-            "extraInfo": {
+            "extendInfo": {
                 "CFBundleDisplayName": "剪映小助手"
             }
         },
