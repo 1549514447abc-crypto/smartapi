@@ -54,9 +54,7 @@ jobs:
       - name: Build macOS
         run: |
           cd "$MAC_DIR"
-          npx electron-builder --mac ${{ steps.arch.outputs.flags }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          npx electron-builder --mac ${{ steps.arch.outputs.flags }} --publish never
 
       - name: List build output
         run: ls -lh "$MAC_DIR/dist/" || echo "No dist directory"
