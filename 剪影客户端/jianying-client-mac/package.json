@@ -29,7 +29,7 @@
     ],
     "build": {
         "appId": "cn.contentcube.jianying-client",
-        "productName": "剪映小助手",
+        "productName": "JianyingHelper",
         "copyright": "Copyright © 2025 长沙芯跃科技有限公司",
         "directories": {
             "output": "dist"
@@ -39,6 +39,7 @@
             "!dist/**/*",
             "!node_modules/.cache/**/*"
         ],
+        "artifactName": "JianyingHelper-${version}-${arch}.${ext}",
         "mac": {
             "icon": "build/icon.png",
             "target": [
@@ -50,11 +51,14 @@
                     ]
                 }
             ],
-            "category": "public.app-category.video"
+            "category": "public.app-category.video",
+            "extraInfo": {
+                "CFBundleDisplayName": "剪映小助手"
+            }
         },
         "publish": null,
         "dmg": {
-            "title": "剪映小助手",
+            "title": "JianyingHelper",
             "contents": [
                 { "x": 130, "y": 220 },
                 { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
