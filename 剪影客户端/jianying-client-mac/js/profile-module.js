@@ -988,6 +988,8 @@
                             this.token = result.data.token;
                             localStorage.setItem('jianying_token', this.token);
                             window.JianyingApp.utils.addLog(`[ProfileModule] 微信${result.data.isNewUser ? '注册' : '登录'}成功`, 'success');
+                            // 先注册设备再检查状态，防止被旧设备ID踢掉
+                            await this.registerDeviceToServer();
                             this.checkLoginStatus();
                         } else if (result.data.status === 'expired') {
                             this.stopWechatPolling();
@@ -1013,7 +1015,7 @@
         /**
          * 检查登录状态
          */
-        async checkLoginStatus() {
+        async checkLoginStatus(isRetry = false) {
             if (!this.token) {
                 this.showNotLoggedIn();
                 // 未登录时自动弹出微信扫码登录
@@ -1033,6 +1035,12 @@
                 if (response.status === 401) {
                     const errData = await response.json().catch(() => ({}));
                     if (errData.code === 'DEVICE_KICKED') {
+                        // 首次遇到设备冲突：尝试注册当前设备后重试一次
+                        if (!isRetry) {
+                            window.JianyingApp.utils.addLog('[ProfileModule] 设备ID不匹配，尝试注册当前设备...', 'info');
+                            await this.registerDeviceToServer();
+                            return this.checkLoginStatus(true);
+                        }
                         this.handleDeviceKicked();
                         return;
                     }
@@ -1369,6 +1377,8 @@
                     this.token = result.data.token;
                     localStorage.setItem('jianying_token', this.token);
                     window.JianyingApp.utils.addLog(`[ProfileModule] ${result.data.isNewUser ? '注册' : '登录'}成功`, 'success');
+                    // 先注册设备再检查状态，防止被旧设备ID踢掉
+                    await this.registerDeviceToServer();
                     this.checkLoginStatus();
                 } else {
                     this.showLoginError(result.error || result.message || '登录失败');
