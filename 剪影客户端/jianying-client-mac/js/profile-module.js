@@ -1015,7 +1015,7 @@
         /**
          * 检查登录状态
          */
-        async checkLoginStatus(isRetry = false) {
+        async checkLoginStatus() {
             if (!this.token) {
                 this.showNotLoggedIn();
                 // 未登录时自动弹出微信扫码登录
@@ -1035,12 +1035,6 @@
                 if (response.status === 401) {
                     const errData = await response.json().catch(() => ({}));
                     if (errData.code === 'DEVICE_KICKED') {
-                        // 首次遇到设备冲突：尝试注册当前设备后重试一次
-                        if (!isRetry) {
-                            window.JianyingApp.utils.addLog('[ProfileModule] 设备ID不匹配，尝试注册当前设备...', 'info');
-                            await this.registerDeviceToServer();
-                            return this.checkLoginStatus(true);
-                        }
                         this.handleDeviceKicked();
                         return;
                     }
