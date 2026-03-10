@@ -133,12 +133,77 @@
             this.clearLoginState();
             this.showNotLoggedIn();
 
-            // 弹窗提示
+            // 自定义美化弹窗
             setTimeout(() => {
-                alert('⚠️ 您的账号已在其他设备登录\n\n当前设备已下线，如需继续使用请重新登录。\n\n如非本人操作，请及时修改密码。');
+                this.showDeviceKickedModal();
             }, 100);
 
             window.JianyingApp.utils.addLog('[ProfileModule] 账号已在其他设备登录，当前设备已下线', 'warning');
+        },
+
+        /**
+         * 显示设备被踢弹窗（美化UI）
+         */
+        showDeviceKickedModal() {
+            // 移除已有弹窗
+            const existing = document.getElementById('deviceKickedOverlay');
+            if (existing) existing.remove();
+
+            const overlay = document.createElement('div');
+            overlay.id = 'deviceKickedOverlay';
+            overlay.innerHTML = `
+                <div style="
+                    position: fixed; inset: 0; z-index: 99999;
+                    background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+                    display: flex; align-items: center; justify-content: center;
+                    animation: dkFadeIn 0.2s ease;
+                ">
+                    <div style="
+                        background: #fff; border-radius: 16px; padding: 32px;
+                        max-width: 380px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                        text-align: center; animation: dkSlideUp 0.3s ease;
+                    ">
+                        <div style="
+                            width: 56px; height: 56px; border-radius: 50%;
+                            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+                            display: flex; align-items: center; justify-content: center;
+                            margin: 0 auto 16px;
+                        ">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                                <line x1="12" y1="9" x2="12" y2="13"/>
+                                <line x1="12" y1="17" x2="12.01" y2="17"/>
+                            </svg>
+                        </div>
+                        <h3 style="margin: 0 0 8px; font-size: 18px; font-weight: 600; color: #1a1a2e;">
+                            账号已在其他设备登录
+                        </h3>
+                        <p style="margin: 0 0 8px; font-size: 14px; color: #666; line-height: 1.6;">
+                            当前设备已下线，如需继续使用请重新登录。
+                        </p>
+                        <p style="margin: 0 0 24px; font-size: 12px; color: #999;">
+                            如非本人操作，请及时修改密码
+                        </p>
+                        <button id="deviceKickedBtn" style="
+                            width: 100%; padding: 12px; border: none; border-radius: 10px;
+                            background: linear-gradient(135deg, #667eea, #764ba2);
+                            color: #fff; font-size: 15px; font-weight: 500;
+                            cursor: pointer; transition: opacity 0.2s;
+                        " onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+                            我知道了
+                        </button>
+                    </div>
+                </div>
+                <style>
+                    @keyframes dkFadeIn { from { opacity: 0; } to { opacity: 1; } }
+                    @keyframes dkSlideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+                </style>
+            `;
+            document.body.appendChild(overlay);
+
+            document.getElementById('deviceKickedBtn').addEventListener('click', () => {
+                overlay.remove();
+            });
         },
 
         /**
@@ -1022,6 +1087,10 @@
             }
 
             try {
+                // 先注册设备，确保数据库里的设备ID是当前设备
+                // 这样后续请求带 X-Device-Id 时不会被自己踢掉
+                await this.registerDeviceToServer();
+
                 const response = await fetch(window.API_ENDPOINTS.jianyingClient.userInfo, {
                     headers: {
                         'Authorization': `Bearer ${this.token}`,
@@ -1172,7 +1241,7 @@
                     window.JianyingApp.utils.addLog('[ProfileModule] 定时刷新权限状态...', 'info');
                     this.checkClientAccess();
                 }
-            }, 60 * 1000); // 60秒检查一次（会员状态刷新，设备检测已由中间件处理）
+            }, 10 * 1000); // 10秒检查一次（设备踢出检测 + 会员状态刷新）
         },
 
         stopAccessCheckTimer() {
