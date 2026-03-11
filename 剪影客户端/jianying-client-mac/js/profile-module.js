@@ -1044,7 +1044,7 @@
                 }
 
                 try {
-                    const response = await fetch(`${window.API_ENDPOINTS.auth.wechatStatus}?sceneStr=${this.wechatSceneStr}`);
+                    const response = await fetch(`${window.API_ENDPOINTS.auth.wechatStatus}?sceneStr=${this.wechatSceneStr}&login_source=client`);
                     const result = await response.json();
 
                     if (result.success) {
@@ -1053,8 +1053,6 @@
                             this.token = result.data.token;
                             localStorage.setItem('jianying_token', this.token);
                             window.JianyingApp.utils.addLog(`[ProfileModule] 微信${result.data.isNewUser ? '注册' : '登录'}成功`, 'success');
-                            // 先注册设备再检查状态，防止被旧设备ID踢掉
-                            await this.registerDeviceToServer();
                             this.checkLoginStatus();
                         } else if (result.data.status === 'expired') {
                             this.stopWechatPolling();
@@ -1089,14 +1087,9 @@
             }
 
             try {
-                // 先注册设备，确保数据库里的设备ID是当前设备
-                // 这样后续请求带 X-Device-Id 时不会被自己踢掉
-                await this.registerDeviceToServer();
-
                 const response = await fetch(window.API_ENDPOINTS.jianyingClient.userInfo, {
                     headers: {
-                        'Authorization': `Bearer ${this.token}`,
-                        'X-Device-Id': this.deviceId || ''
+                        'Authorization': `Bearer ${this.token}`
                     }
                 });
 
@@ -1187,8 +1180,7 @@
             try {
                 const response = await fetch(window.API_ENDPOINTS.jianyingClient.checkAccess, {
                     headers: {
-                        'Authorization': `Bearer ${this.token}`,
-                        'X-Device-Id': this.deviceId || ''
+                        'Authorization': `Bearer ${this.token}`
                     }
                 });
 
@@ -1262,10 +1254,9 @@
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${this.token}`,
-                        'Content-Type': 'application/json',
-                        'X-Device-Id': this.deviceId || ''
+                        'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ device_id: this.deviceId || '' })
+                    body: JSON.stringify({})
                 });
 
                 const result = await response.json();
@@ -1431,7 +1422,7 @@
                 const response = await fetch(window.API_ENDPOINTS.auth.smsLogin, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone, code })
+                    body: JSON.stringify({ phone, code, login_source: 'client' })
                 });
 
                 const result = await response.json();
@@ -1440,9 +1431,7 @@
                     this.token = result.data.token;
                     localStorage.setItem('jianying_token', this.token);
                     window.JianyingApp.utils.addLog(`[ProfileModule] ${result.data.isNewUser ? '注册' : '登录'}成功`, 'success');
-                    // 先注册设备再检查状态，防止被旧设备ID踢掉
-                    await this.registerDeviceToServer();
-                    this.checkLoginStatus();
+                    await this.checkLoginStatus();
                 } else {
                     this.showLoginError(result.error || result.message || '登录失败');
                 }
@@ -1519,7 +1508,7 @@
                 }
 
                 try {
-                    const response = await fetch(`${window.API_ENDPOINTS.auth.wechatStatus}?sceneStr=${this.wechatSceneStr}`);
+                    const response = await fetch(`${window.API_ENDPOINTS.auth.wechatStatus}?sceneStr=${this.wechatSceneStr}&login_source=client`);
                     const result = await response.json();
 
                     if (result.success) {
@@ -1530,7 +1519,7 @@
                             this.token = result.data.token;
                             localStorage.setItem('jianying_token', this.token);
                             window.JianyingApp.utils.addLog(`[ProfileModule] 微信${result.data.isNewUser ? '注册' : '登录'}成功`, 'success');
-                            this.checkLoginStatus();
+                            await this.checkLoginStatus();
                         } else if (result.data.status === 'expired') {
                             this.stopWechatPolling();
                             if (pollingText) pollingText.textContent = '二维码已过期，请刷新';
